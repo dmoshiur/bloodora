@@ -1,0 +1,54 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg text-center p-4 p-lg-5" style="border-radius:22px;">
+        <div class="mx-auto d-flex align-items-center justify-content-center" style="width:72px;height:72px;border-radius:50%; background:linear-gradient(135deg,#16a34a,#22c55e); color:#fff; font-size:28px; box-shadow:0 10px 28px rgba(22,163,74,.3);"><i class="fas fa-check"></i></div>
+        <h2 class="fw-bold mt-3" style="letter-spacing:-.02em; color:#14532d;"><%= _t('shop_placed') %></h2>
+        <p class="text-muted"><%- _t('ord_received_msg', { id: order.id }) %></p>
+        <div class="row g-3 text-start mt-2">
+          <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('ord_total') %></div><div class="h5 fw-bold mb-0" style="color:var(--primary);">৳<%= order.total_amount %> <small class="text-muted" style="font-size:.8rem;"><%= _t('ord_incl_delivery', { charge: order.delivery_charge }) %></small></div></div></div>
+          <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('ord_payment') %></div><div class="fw-bold"><%= order.payment_method %> • <span class="badge <%= order.payment_status==='confirmed'?'bg-success':'bg-warning text-dark' %>"><%= _t('st_' + String(order.payment_status).toLowerCase(), {}) || order.payment_status %></span></div><div class="small text-muted"><%= order.transaction_id ? _t('ord_trxid', { trxid: order.transaction_id }) : _t('ord_no_trxid') %></div></div></div>
+          <div class="col-12"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('shop_delivery_addr') %></div><div class="fw-bold"><%= order.delivery_address %></div><div class="small"><%= [order.delivery_upazila, order.delivery_district, order.delivery_division].filter(Boolean).join(', ') %></div></div></div>
+        </div>
+        <% if (items && items.length) { %>
+          <div class="text-start mt-4">
+            <h6 class="fw-bold"><i class="fas fa-list me-2 text-danger"></i><%= _t('ord_items') %></h6>
+            <div class="table-responsive">
+              <table class="table small">
+                <thead>
+                  <tr>
+                    <th><%= _t('common_name') %></th>
+                    <th><%= _t('common_quantity') %></th>
+                    <th><%= _t('common_price') %></th>
+                    <th><%= _t('shop_subtotal') %></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <% items.forEach(it=>{ %>
+                    <tr>
+                      <td><%= it.product_name %></td>
+                      <td><%= it.quantity %></td>
+                      <td>৳<%= it.price %></td>
+                      <td class="fw-bold">৳<%= (it.price*it.quantity).toFixed(2) %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        <% } %>
+        <div class="d-flex gap-2 justify-content-center mt-4">
+          <a href="/shop" class="btn btn-light border rounded-pill"><i class="fas fa-shopping-bag me-1"></i><%= _t('shop_continue') %></a>
+          <a href="/shop/my-orders" class="btn btn-danger rounded-pill"><i class="fas fa-box me-1"></i><%= _t('nav_my_orders') %></a>
+          <% if (currentUser && currentUser.is_admin) { %><a href="/shop/admin/order/<%= order.id %>/invoice" class="btn btn-outline-danger rounded-pill"><i class="fas fa-file-invoice me-1"></i><%= _t('ord_invoice') %></a><% } %>
+        </div>
+        <div class="small text-muted mt-3"><%= _t('ord_rider_note', { id: order.id }) %></div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

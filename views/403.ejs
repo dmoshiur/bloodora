@@ -1,0 +1,10 @@
+<%- include('partials/header') %>
+<%- include('errors/error', {
+  errCode: 403,
+  errIcon: 'fa-lock',
+  errTitle: t('err_403_title'),
+  errBody: t('err_403_body'),
+  errHint: (typeof hint !== 'undefined' && hint) ? hint : '',
+  errRequest: (typeof requestPath !== 'undefined') ? requestPath : ''
+}) %>
+<%- include('partials/footer') %>

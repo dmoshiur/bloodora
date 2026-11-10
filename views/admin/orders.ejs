@@ -1,0 +1,49 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('../partials/header') %>
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
+    <h2 class="fw-bold mb-0"><i class="fas fa-receipt text-danger me-2"></i><%= _t('adm_orders') %></h2>
+    <a href="/admin" class="btn btn-light border btn-sm rounded-pill"><i class="fas fa-arrow-left me-1"></i><%= _t('nav_admin') %></a>
+  </div>
+  <div class="d-flex gap-2 mb-3 flex-wrap">
+    <a href="/shop/admin/orders" class="btn btn-sm <%= !filter?'btn-danger':'btn-outline-danger' %> rounded-pill"><%= _t('common_all') %></a>
+    <a href="/shop/admin/orders?status=pending" class="btn btn-sm <%= filter==='pending'?'btn-warning':'btn-outline-warning' %> rounded-pill"><%= _t('st_pending') %></a>
+    <a href="/shop/admin/orders?status=processing" class="btn btn-sm <%= filter==='processing'?'btn-info':'btn-outline-info' %> rounded-pill"><%= _t('st_processing') %></a>
+    <a href="/shop/admin/orders?status=completed" class="btn btn-sm <%= filter==='completed'?'btn-success':'btn-outline-success' %> rounded-pill"><%= _t('st_completed') %></a>
+  </div>
+  <% if (orders && orders.length){ %>
+    <div class="card border-0 shadow-sm" style="border-radius:18px;">
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th><%= _t('ord_id') %></th><th><%= _t('ord_customer') %></th><th><%= _t('common_total') %></th><th><%= _t('ord_payment') %></th><th><%= _t('common_status') %></th><th><%= _t('common_date') %></th><th><%= _t('common_view') %></th></tr></thead>
+          <tbody>
+            <% orders.forEach(o=>{ %>
+              <tr>
+                <td class="fw-bold">#<%= o.id %></td>
+                <td><%= o.user_name || o.guest_name || _t('common_guest') %></td>
+                <td class="fw-bold" style="color:var(--primary);">৳<%= o.total_amount %></td>
+                <td>
+                  <span class="badge <%= o.payment_status==='confirmed'?'bg-success':'bg-warning text-dark' %>"><%= o.payment_method||'—' %></span>
+                  <div class="small text-muted"><%= o.payment_status === 'confirmed' ? _t('st_confirmed') : _t('st_pending') %></div>
+                </td>
+                <td>
+                  <% if(o.status==='pending'){ %><span class="badge bg-warning text-dark"><%= _t('st_pending') %></span>
+                  <% } else if(o.status==='processing'){ %><span class="badge bg-info"><%= _t('st_processing') %></span>
+                  <% } else if(o.status==='completed'){ %><span class="badge bg-success"><%= _t('st_completed') %></span>
+                  <% } else { %><span class="badge bg-secondary"><%= o.status ? _t('st_' + o.status, {}) || o.status : '—' %></span><% } %>
+                </td>
+                <td class="small text-muted"><%= o.created_at? o.created_at.slice(0,10):'' %></td>
+                <td><a href="/shop/admin/order/<%= o.id %>" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-eye"></i></a></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="card border-0 shadow-sm text-center p-5" style="border-radius:18px;"><i class="fas fa-cart-shopping fa-3x mb-3" style="color:#94a3b8;"></i><h5><%= _t('dash_no_orders') %></h5></div>
+  <% } %>
+</div>
+<%- include('../partials/footer') %>

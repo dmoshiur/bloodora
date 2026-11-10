@@ -1,0 +1,75 @@
+<%
+  // Shared USER dashboard sidebar. Locals: `active` (string), `t`, `currentUser`.
+  const _active = (typeof active !== 'undefined') ? active : '';
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  const _u = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : null;
+  const dlink = (key, href, icon, label, badge, badgeClass) => {
+    const on = _active === key ? ' active' : '';
+    return `<a class="${on}" href="${href}"><i class="fas ${icon}"></i><span>${label}</span>` +
+      (badge ? `<span class="badge ${badgeClass || 'bg-danger'} ms-auto">${badge}</span>` : '') + `</a>`;
+  };
+%>
+<style>
+  .dash-wrapper{ display:flex; min-height:70vh; gap:1.5rem; }
+  .dash-sidebar{ width:264px; min-width:0; max-width:100%; flex-shrink:0; background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); color:#fff; border-radius:20px; padding:18px; position:sticky; top:88px; height:fit-content; }
+  .dash-sidebar a{ color:#cbd5e1; text-decoration:none; display:flex; align-items:center; gap:10px; padding:10px 13px; border-radius:12px; font-weight:600; font-size:.88rem; transition:all .18s; }
+  .dash-sidebar a:hover{ background:rgba(255,255,255,.08); color:#fff; }
+  .dash-sidebar a.active{ background:linear-gradient(135deg,var(--primary),var(--accent)); box-shadow:0 8px 20px color-mix(in srgb, var(--primary) 30%, transparent); color:#fff; }
+  .dash-sidebar .side-label{ font-size:.66rem; text-transform:uppercase; letter-spacing:.16em; color:#64748b; padding:12px 13px 4px; font-weight:700; }
+  .dash-avatar{ width:56px; height:56px; border-radius:50%; object-fit:cover; border:2px solid rgba(255,255,255,.25); }
+  @media(max-width:991px){
+    .dash-sidebar{ width:100%; position:static; }
+    .dash-wrapper{ flex-direction:column; }
+    .dash-nav{ display:flex !important; overflow-x:auto; gap:6px; padding-bottom:4px; }
+    .dash-nav a{ white-space:nowrap; flex-shrink:0; }
+    .dash-sidebar .side-label{ display:none; }
+  }
+</style>
+<aside class="dash-sidebar" aria-label="<%= _t2('dash_title') %>">
+  <% if (_u) { %>
+  <div class="d-flex align-items-center gap-2 py-2 px-1">
+    <% if (_u.image_file && _u.image_file !== 'default.jpg') { %>
+      <img class="dash-avatar" src="/uploads/<%= _u.image_file %>" alt="<%= _u.name %>">
+    <% } else { %>
+      <img class="dash-avatar" src="https://ui-avatars.com/api/?background=e31b23&color=fff&name=<%= encodeURIComponent(_u.name) %>&size=112&bold=true" alt="<%= _u.name %>">
+    <% } %>
+    <div style="min-width:0;">
+      <div class="fw-bold text-truncate" style="font-family:var(--font-display); font-size:1.02rem;"><%= _u.name %></div>
+      <div class="small" style="color:#94a3b8;">
+        <span class="badge bg-danger rounded-pill"><%= _u.blood_group || '—' %></span>
+        <% if (_u.is_verified) { %><span class="badge bg-success rounded-pill"><i class="fas fa-check me-1"></i><%= _t2('st_verified') %></span><% } %>
+      </div>
+    </div>
+  </div>
+  <hr style="border-color:rgba(255,255,255,.08);">
+  <% } %>
+  <nav class="d-grid gap-1 dash-nav">
+    <div class="side-label"><%= _t2('dash_overview') %></div>
+    <%- dlink('overview', '/dashboard', 'fa-gauge-high', _t2('dash_title')) %>
+    <%- dlink('orders', '/dashboard/orders', 'fa-box', _t2('dash_orders')) %>
+    <%- dlink('requests', '/dashboard/requests', 'fa-tint', _t2('dash_requests')) %>
+    <div class="side-label"><%= _t2('foot_contact') %></div>
+    <a href="/messages"><i class="fas fa-envelope"></i><span><%= _t2('msg_title') %></span></a>
+    <a href="/reviews/mine"><i class="fas fa-star"></i><span><%= _t2('nav_my_reviews') %></span></a>
+    <a href="/profile"><i class="fas fa-user"></i><span><%= _t2('nav_my_profile') %></span></a>
+    <a href="/profile/edit"><i class="fas fa-user-pen"></i><span><%= _t2('nav_edit_profile') %></span></a>
+    <div class="side-label"><%= _t2('nav_security') %></div>
+    <%- dlink('security', '/dashboard/security', 'fa-shield-halved', _t2('sec_title')) %>
+  </nav>
+  <hr style="border-color:rgba(255,255,255,.08);">
+  <div class="d-grid gap-2">
+    <form action="/logout" method="POST"><button type="submit" class="btn btn-outline-light btn-sm rounded-pill w-100"><i class="fas fa-sign-out-alt me-2"></i><%= _t2('nav_logout') %></button></form>
+    <button type="button" id="dash-open-support" class="btn btn-light btn-sm rounded-pill" style="justify-content:center;"><i class="fas fa-headset me-2"></i><%= _t2('chat_title') %></button>
+    <a href="/" class="btn btn-outline-light btn-sm rounded-pill" style="justify-content:center; border-color:rgba(255,255,255,.2); color:#fff;"><i class="fas fa-home me-2"></i><%= _t2('err_home') %></a>
+  </div>
+</aside>
+<script>
+  // "Support" opens the real Live Messaging widget (no fake support page).
+  document.addEventListener('click', function(e){
+    if (e.target.closest && e.target.closest('#dash-open-support')) {
+      var fab = document.getElementById('bo-chat-fab');
+      if (fab) { fab.click(); return; }
+      window.location.href = '/contact';
+    }
+  });
+</script>

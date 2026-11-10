@@ -1,0 +1,33 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg overflow-hidden" style="border-radius:22px;">
+        <div style="height:120px; background:linear-gradient(135deg,var(--primary),#ff3340);"></div>
+        <div class="card-body text-center" style="margin-top:-60px;">
+          <% if (user.image_file && user.image_file!=='default.jpg'){ %><img src="/uploads/<%= user.image_file %>" alt="<%= user.name %>" class="rounded-circle" style="width:120px;height:120px;object-fit:cover; border:4px solid #fff; box-shadow:0 10px 30px rgba(15,23,42,.18);"><% } else { %><img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(user.name) %>&background=e31b23&color=fff&bold=true&size=256" alt="<%= user.name %>" class="rounded-circle" style="width:120px;height:120px;object-fit:cover; border:4px solid #fff; box-shadow:0 10px 30px rgba(15,23,42,.18);"><% } %>
+          <h3 class="fw-bold mt-3 mb-1" style="letter-spacing:-.02em;"><%= user.name %> <% if(user.is_verified){ %><span class="badge bg-success rounded-pill"><i class="fas fa-check-circle me-1"></i><%= _t('st_verified') %></span><% } else { %><span class="badge bg-warning text-dark rounded-pill"><%= _t('st_unverified') %></span><% } %></h3>
+          <div class="d-flex justify-content-center gap-2 flex-wrap">
+            <span class="badge bg-danger rounded-pill" style="font-size:.9rem;"><i class="fas fa-tint me-1"></i><%= user.blood_group %></span>
+            <span class="badge bg-light text-dark border rounded-pill"><%= user.role ? _t('auth_role_' + user.role.toLowerCase(), {}) || user.role : _t('auth_role_both') %></span>
+            <span class="badge <%= user.can_donate?'bg-success':'bg-secondary' %> rounded-pill"><%= user.can_donate ? _t('prof_can_donate') : _t('prof_cannot_donate') %></span>
+          </div>
+          <div class="row g-3 text-start mt-4">
+            <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('foot_contact') %></div><div class="fw-bold"><i class="fas fa-phone me-2 text-danger"></i><%= user.phone %></div><div class="small text-muted"><i class="fas fa-envelope me-2 text-danger"></i><%= user.email %></div></div></div>
+            <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('prof_location') %></div><div class="fw-bold"><%= [user.upazila, user.district, user.division].filter(Boolean).join(', ') %></div><div class="small text-muted"><%= user.union_area||'' %> <%= user.address_holding||'' %></div></div></div>
+            <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('prof_age_dob') %></div><div class="fw-bold"><%= user.age||'—' %> <%= _t('don_yrs') %></div><div class="small text-muted"><%= user.date_of_birth||'—' %></div></div></div>
+            <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('dash_member_since') %></div><div class="fw-bold"><%= user.created_at? new Date(user.created_at).toISOString().slice(0,10):'—' %></div><div class="small"><% if(user.is_admin){ %><span class="badge bg-dark rounded-pill"><%= _t('nav_admin') %></span><% } %><% if(user.is_super_admin){ %><span class="badge bg-warning text-dark rounded-pill"><%= _t('adm_super_only') %></span><% } %></div></div></div>
+          </div>
+          <div class="d-flex gap-2 justify-content-center mt-4">
+            <a href="/donors" class="btn btn-light border rounded-pill"><i class="fas fa-arrow-left me-1"></i><%= _t('common_back') %></a>
+            <% if (typeof currentUser !== 'undefined' && currentUser && currentUser.id) { %><a href="/messages/send?to=<%= user.email %>" class="btn btn-danger rounded-pill"><i class="fas fa-paper-plane me-1"></i><%= _t('msg_send_btn') %></a><% } %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,43 @@
+<%- include('../partials/header', { title }) %>
+<div class="container py-4 admin-wrapper">
+  <%- include('_sidebar', { active: 'integrations' }) %>
+  <main class="flex-grow-1" style="min-width:0">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-4">
+      <div><h1 class="h3 mb-1">Integrations & SMS</h1><p class="text-muted mb-0">Configuration and observed delivery status. Credentials stay server-side.</p></div>
+      <span class="badge text-bg-light border">No API keys are displayed</span>
+    </div>
+    <% const data = integrations || {}; const smsData = (sms && sms.configuration) || {}; %>
+    <div class="row g-3 mb-4">
+      <% for (const name of ['database','email','sms','ai','storage']) { const item = data[name] || {}; %>
+        <div class="col-md-6 col-xl-4"><section class="card h-100 border-0 shadow-sm"><div class="card-body">
+          <div class="d-flex justify-content-between align-items-start"><h2 class="h6 text-uppercase"><%= name %></h2><span class="badge <%= item.configured ? 'text-bg-success' : 'text-bg-secondary' %>"><%= item.configured ? 'Configured' : 'Not configured' %></span></div>
+          <p class="mb-1"><strong>Provider:</strong> <%= item.provider || item.mode || '—' %></p>
+          <% if (item.reason) { %><p class="small text-warning mb-1"><%= item.reason %></p><% } %>
+          <% if (name === 'email') { %><p class="small text-muted mb-0">Outbox: <%= item.stats?.pending || 0 %> pending · <%= item.stats?.sent || 0 %> sent · <%= item.stats?.failed || 0 %> failed</p><% } %>
+          <% if (name === 'sms') { %><p class="small text-muted mb-0"><%= item.stats?.sent || 0 %> accepted · <%= item.stats?.failed || 0 %> failed · estimated cost ৳<%= Number(item.stats?.estimated_cost || 0).toFixed(2) %></p><% } %>
+          <% if (name === 'database') { %><a href="/api/health" class="small">Run database health check</a><% } %>
+        </div></section></div>
+      <% } %>
+    </div>
+    <div class="row g-4">
+      <div class="col-lg-5"><section class="card border-0 shadow-sm"><div class="card-body">
+        <h2 class="h5">Real SMS test</h2>
+        <p class="small text-muted">This sends through the configured paid gateway and may consume credits. It is disabled until valid provider credentials are supplied. A provider acceptance is not a handset-delivery guarantee.</p>
+        <form method="POST" action="/admin/sms/test">
+          <label class="form-label" for="sms-test-to">Bangladesh mobile number</label>
+          <div class="input-group"><input class="form-control" id="sms-test-to" name="to" type="tel" placeholder="01XXXXXXXXX" required><button class="btn btn-danger" <%= smsData.configured ? '' : 'disabled' %>>Send test</button></div>
+        </form>
+        <% if (!smsData.configured) { %><div class="alert alert-light border small mt-3 mb-0"><%= smsData.reason || 'SMS is disabled. Core account, donor, shop and email workflows remain available.' %></div><% } %>
+      </div></section></div>
+      <div class="col-lg-7"><section class="card border-0 shadow-sm"><div class="card-body">
+        <h2 class="h5">Recent SMS delivery metadata</h2>
+        <p class="small text-muted">Message bodies and OTP codes are never stored here. Cost is an estimate from SMS_COST_PER_MESSAGE, not a provider balance.</p>
+        <div class="table-responsive"><table class="table table-sm align-middle"><thead><tr><th>Created</th><th>Template</th><th>Provider</th><th>Status</th><th>Result</th></tr></thead><tbody>
+        <% const rows = sms?.recent || []; if (!rows.length) { %><tr><td colspan="5" class="text-muted text-center py-4">No SMS deliveries recorded.</td></tr><% } %>
+        <% for (const row of rows) { %><tr><td><%= row.created_at %></td><td><%= row.template %></td><td><%= row.provider %></td><td><span class="badge <%= row.status === 'sent' ? 'text-bg-success' : row.status === 'failed' ? 'text-bg-danger' : 'text-bg-secondary' %>"><%= row.status %></span></td><td><%= row.provider_message_id || row.last_error || '—' %></td></tr><% } %>
+        </tbody></table></div>
+      </div></section></div>
+    </div>
+  </main>
+</div>
+<%- include('../partials/footer') %>

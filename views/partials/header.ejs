@@ -1,0 +1,404 @@
+<%
+  // ---- local helpers -------------------------------------------------------
+  const _t   = (typeof t === 'function') ? t : (k) => k;
+  const _b   = (typeof siteBranding !== 'undefined' && siteBranding) ? siteBranding : ((typeof branding !== 'undefined' && branding) ? branding : {});
+  const _s   = _b;
+  const _dir = (typeof dir !== 'undefined' && dir) ? dir : 'ltr';
+  const _lang= (typeof lang !== 'undefined' && lang) ? lang : 'en';
+  const _fs  = (typeof fontStyle !== 'undefined' && fontStyle) ? fontStyle : 'calligraphic';
+  const _p   = _b.brand_primary || '#e31b23';
+  const _a   = _b.brand_accent  || '#ff3340';
+  const _name= _b.site_name || 'BloodOra';
+  const resolveAssetUrl = (url, fallback) => {
+    const target = (url && String(url).trim()) || fallback;
+    if (!target) return '';
+    if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('//') || target.startsWith('/')) {
+      return target;
+    }
+    return '/' + target;
+  };
+  const _logo= resolveAssetUrl(_b.logo_file, '/images/logo.png');
+  const _fav = resolveAssetUrl(_b.favicon_file, '/favicon.png');
+  const _tag = _b.site_tagline || '';
+  const _langs = (typeof languages !== 'undefined' && languages) ? languages : [];
+  const _cur   = (typeof currentLanguage !== 'undefined' && currentLanguage) ? currentLanguage : null;
+  const _path  = (typeof currentPath !== 'undefined' && currentPath) ? currentPath : '';
+  const isActive = (p) => (_path === p || (p !== '/' && _path.startsWith(p))) ? ' active' : '';
+  // Bengali numerals when the interface is in Bengali
+  const _num = (n) => {
+    if (_lang !== 'bn') return String(n);
+    const bn = ['০','১','২','৩','৪','৫','৬','৭','৮','৯'];
+    return String(n).replace(/\d/g, d => bn[d]);
+  };
+%><!DOCTYPE html>
+<html lang="<%= _lang %>" dir="<%= _dir %>" data-font="<%= _fs %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= typeof title !== 'undefined' ? title : (_name + ' — ' + (_t('home_hero_title'))) %></title>
+  <meta name="description" content="<%= _b.site_description || _t('site_meta_description') %>">
+  <meta name="theme-color" content="<%= _p %>">
+  <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+  <script>
+    // Add the synchronizer token to same-origin mutating AJAX calls. Ordinary
+    // HTML forms receive a hidden token during SSR instead.
+    (() => {
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (input, init = {}) => {
+        const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
+        const url = new URL(typeof input === 'string' ? input : input.url, location.href);
+        if (!['GET','HEAD','OPTIONS'].includes(method) && url.origin === location.origin) {
+          const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+          const token = document.querySelector('meta[name="csrf-token"]')?.content;
+          if (token) headers.set('X-CSRF-Token', token);
+          init = { ...init, headers };
+        }
+        return nativeFetch(input, init);
+      };
+    })();
+  </script>
+
+  <!-- Identity: both are Admin-manageable from /admin/branding -->
+  <link rel="icon" href="<%= _fav %>" type="image/x-icon">
+  <link rel="icon" href="<%= _logo %>" type="image/png">
+  <link rel="apple-touch-icon" href="<%= _logo %>">
+  <link rel="mask-icon" href="<%= _logo %>" color="<%= _p %>">
+
+  <!-- Typography: calligraphic display faces + per-script body faces -->
+  <link href="/fonts/fonts.css" rel="stylesheet">
+  <% if (_dir === 'rtl') { %><link href="/vendor/bootstrap/bootstrap.rtl.min.css" rel="stylesheet"><% } else { %><link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet"><% } %>
+  <link href="/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+
+  <style>
+    :root{
+      --primary:<%= _p %>; --primary-dark:color-mix(in srgb, <%= _p %> 82%, #000);
+      --accent:<%= _a %>; --primary-soft:color-mix(in srgb, <%= _p %> 8%, #fff);
+      --secondary:#0f172a; --muted:#64748b; --light:#f8fafc; --surface:#ffffff;
+      --border:#e2e8f0; --radius:12px; --radius-lg:18px;
+      --shadow:0 1px 3px rgba(15,23,42,.05), 0 4px 14px rgba(15,23,42,.05);
+      --shadow-lg:0 10px 32px rgba(15,23,42,.10);
+      --ring:0 0 0 3px color-mix(in srgb, <%= _p %> 14%, transparent);
+      /* Calligraphic display stack — the default look of the site */
+      --font-display:'Cormorant Garamond','Noto Serif Bengali','Aref Ruqaa',Georgia,serif;
+      --font-script:'Great Vibes','Cormorant Garamond',cursive;
+      --font-body:'Inter','Hind Siliguri','Amiri',system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif;
+    }
+    html[data-font="modern"]{ --font-display:'Inter','Hind Siliguri','Amiri',system-ui,sans-serif; --font-script:'Inter',sans-serif; }
+    html[data-font="classic"]{ --font-display:Georgia,'Noto Serif Bengali','Amiri',serif; --font-script:'Cormorant Garamond',serif; }
+    html[data-font="serif"]{ --font-display:'Cormorant Garamond','Noto Serif Bengali','Amiri',serif; }
+    /* Bengali interface: swap in a Bengali display face */
+    html[lang="bn"]{ --font-display:'Noto Serif Bengali','Baloo Da 2','Cormorant Garamond',serif; }
+    html[lang="bn"] body{ --font-body:'Hind Siliguri','Inter',system-ui,sans-serif; }
+    /* Arabic interface: Ruq'ah calligraphy for display, Amiri for body, RTL */
+    html[lang="ar"]{ --font-display:'Aref Ruqaa','Amiri','Cormorant Garamond',serif; }
+    html[lang="ar"] body{ --font-body:'Amiri','Hind Siliguri','Inter',serif; font-size:15.5px; }
+    html[lang="ar"] .navbar-brand, html[lang="ar"] h1, html[lang="ar"] h2, html[lang="ar"] h3{ letter-spacing:0 !important; }
+
+    *{ -webkit-font-smoothing:antialiased; -moz-osx-font-smoothing:grayscale; text-rendering:optimizeLegibility; }
+    body{
+      font-family:var(--font-body);
+      background:
+        radial-gradient(1000px 420px at 12% -10%, color-mix(in srgb, <%= _p %> 7%, transparent), transparent 62%),
+        linear-gradient(180deg,#fbfcfe 0%, #f4f6fa 100%);
+      color:var(--secondary);
+      font-size:14.5px; line-height:1.62; overflow-x:hidden;
+    }
+    h1,h2,h3,h4,h5,h6{ font-family:var(--font-display); font-weight:700; letter-spacing:-.012em; }
+    .script-accent{ font-family:var(--font-script); font-weight:400; letter-spacing:.01em; }
+    .display-title{ font-family:var(--font-display); font-size:clamp(26px,3.4vw,38px); line-height:1.12; }
+    .eyebrow{ font-family:var(--font-body); text-transform:uppercase; letter-spacing:.22em; font-size:.66rem; font-weight:700; color:var(--muted); }
+
+    /* ---------- Navbar ---------- */
+    .navbar{
+      background:rgba(255,255,255,.90) !important;
+      backdrop-filter:blur(16px) saturate(180%);
+      -webkit-backdrop-filter:blur(16px) saturate(180%);
+      box-shadow:0 1px 0 rgba(15,23,42,.05);
+      padding:.42rem 0; border-bottom:1px solid rgba(226,232,240,.85);
+    }
+    .navbar-brand{
+      font-family:var(--font-display); font-weight:700; color:var(--primary)!important;
+      font-size:1.42rem; gap:.55rem; letter-spacing:-.01em; line-height:1;
+    }
+    .navbar-brand img{ height:36px; width:auto; object-fit:contain; }
+    .brand-stack{ display:flex; flex-direction:column; line-height:1.05; }
+    .brand-tag{ font-family:var(--font-script); font-size:.82rem; color:var(--muted); font-weight:400; }
+    .nav-link{
+      font-family:var(--font-body); font-weight:500; font-size:.83rem; color:#475569 !important;
+      padding:.42rem .82rem !important; border-radius:999px; transition:all .18s;
+      display:inline-flex; align-items:center; gap:.4rem;
+    }
+    .nav-link:hover{ background:var(--primary-soft); color:var(--primary)!important; }
+    .nav-link.active{ background:var(--primary); color:#fff!important; box-shadow:0 4px 12px color-mix(in srgb, <%= _p %> 26%, transparent); }
+    .navbar-toggler{ border:none; box-shadow:none!important; }
+
+    /* Language switch */
+    .lang-toggle{
+      display:inline-flex; align-items:center; gap:.45rem; border:1.5px solid var(--border);
+      background:#fff; border-radius:999px; padding:.3rem .72rem; font-size:.8rem; font-weight:600;
+      color:#334155; cursor:pointer; transition:all .18s; font-family:var(--font-body);
+    }
+    .lang-toggle:hover{ border-color:var(--primary); color:var(--primary); }
+    .lang-toggle .lang-native{ font-family:var(--font-display); font-size:.95rem; }
+
+    /* ---------- Buttons ---------- */
+    .btn{ border-radius:999px; font-weight:600; letter-spacing:-.01em; padding:.5rem 1.15rem; font-size:.85rem; transition:all .18s; font-family:var(--font-body); }
+    .btn-danger{ background:linear-gradient(135deg,var(--primary),var(--accent)); border:none; box-shadow:0 4px 12px color-mix(in srgb, <%= _p %> 24%, transparent); color:#fff; }
+    .btn-danger:hover{ background:linear-gradient(135deg,var(--primary-dark),var(--primary)); transform:translateY(-1px); box-shadow:0 8px 18px color-mix(in srgb, <%= _p %> 32%, transparent); color:#fff; }
+    .btn-outline-danger{ border:1.5px solid color-mix(in srgb, <%= _p %> 26%, transparent); color:var(--primary); background:#fff; }
+    .btn-outline-danger:hover{ background:var(--primary); border-color:var(--primary); color:#fff; transform:translateY(-1px); }
+    .btn-light{ background:#fff; border:1px solid var(--border); color:var(--secondary); box-shadow:var(--shadow); }
+    .btn-light:hover{ background:#f8fafc; transform:translateY(-1px); }
+
+    /* ---------- Cards ---------- */
+    .card{ border:1px solid rgba(226,232,240,.9); border-radius:var(--radius); background:var(--surface); box-shadow:var(--shadow); overflow:hidden; transition:all .2s; }
+    .card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); border-color:color-mix(in srgb, <%= _p %> 12%, transparent); }
+
+    /* ---------- Hero ---------- */
+    .hero-section{
+      background:
+        radial-gradient(1200px 600px at 8% -20%, rgba(255,255,255,.20), transparent 60%),
+        radial-gradient(900px 500px at 92% 0%, color-mix(in srgb, <%= _a %> 45%, transparent), transparent 60%),
+        linear-gradient(135deg, color-mix(in srgb, <%= _p %> 88%, #000) 0%, <%= _p %> 45%, <%= _a %> 100%);
+      color:#fff; padding:60px 0 46px; position:relative; overflow:hidden; margin-bottom:30px;
+    }
+    .hero-section::after{ content:""; position:absolute; inset:0; background:linear-gradient(180deg, transparent, rgba(0,0,0,.07)); pointer-events:none; }
+    .hero-section h1{ font-family:var(--font-display); font-weight:700; font-size:clamp(28px,3.6vw,42px); letter-spacing:-.02em; line-height:1.08; text-shadow:0 2px 16px rgba(0,0,0,.16); }
+    .hero-section .lead{ font-weight:400; opacity:.95; font-size:1.02rem; }
+    .hero-glass{ background:rgba(255,255,255,.14); backdrop-filter:blur(14px); border:1px solid rgba(255,255,255,.2); }
+
+    /* ---------- Stats ---------- */
+    .stat-card{ background:rgba(255,255,255,.97); border:1px solid rgba(226,232,240,.9); border-radius:var(--radius-lg); padding:18px; text-align:center; box-shadow:var(--shadow); transition:all .2s; }
+    .stat-card:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+    .stat-card h3{ font-family:var(--font-display); color:var(--primary); font-size:1.85rem; font-weight:700; letter-spacing:-.02em; margin-bottom:2px; }
+    .stat-card p{ color:var(--muted); font-weight:500; font-size:.78rem; margin:0; }
+
+    /* ---------- Process ---------- */
+    .process-step{ background:#fff; border-radius:var(--radius-lg); padding:22px; text-align:center; box-shadow:var(--shadow); border:1px solid rgba(226,232,240,.9); height:100%; transition:all .2s; }
+    .process-step:hover{ transform:translateY(-2px); box-shadow:var(--shadow-lg); }
+    .step-number{ background:linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; width:38px; height:38px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; font-weight:700; font-size:.85rem; margin-bottom:10px; box-shadow:0 4px 12px color-mix(in srgb, <%= _p %> 30%, transparent); }
+
+    /* ---------- Footer ---------- */
+    .footer{ background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); color:#cbd5e1; padding:46px 0 22px; margin-top:52px; border-top:1px solid rgba(255,255,255,.06); font-size:.86rem; }
+    .footer a{ color:#94a3b8; text-decoration:none; transition:color .2s; }
+    .footer a:hover{ color:#fff; }
+    .footer h5,.footer h6{ color:#fff; font-family:var(--font-display); font-weight:700; letter-spacing:-.01em; font-size:1.08rem; }
+    .social-icons a{ display:inline-flex; align-items:center; justify-content:center; width:34px; height:34px; border-radius:50%; background:rgba(255,255,255,.06); border:1px solid rgba(255,255,255,.08); margin-<%= _dir==='rtl'?'left':'right' %>:8px; transition:all .2s; }
+    .social-icons a:hover{ background:var(--primary); border-color:var(--primary); color:#fff; transform:translateY(-1px); }
+
+    /* ---------- Forms / tables / badges ---------- */
+    .form-control,.form-select{ border-radius:9px; padding:.5rem .8rem; font-size:.86rem; border:1.5px solid var(--border); background:#fff; font-weight:500; transition:all .18s; font-family:var(--font-body); }
+    .form-control:focus,.form-select:focus{ border-color:var(--primary); box-shadow:var(--ring); outline:none; }
+    .form-label{ font-weight:600; font-size:.8rem; color:#334155; letter-spacing:-.01em; }
+    .badge{ border-radius:999px; padding:.4em .78em; font-weight:600; font-size:.72rem; letter-spacing:.01em; }
+    .alert{ border-radius:12px; border:none; box-shadow:var(--shadow); font-weight:500; font-size:.86rem; }
+    .table{ --bs-table-bg:transparent; font-size:.86rem; }
+    .table thead th{ background:#f8fafc; color:#334155; font-weight:600; font-size:.72rem; letter-spacing:.05em; text-transform:uppercase; border-bottom:1.5px solid var(--border); }
+    .rounded-4{ border-radius:var(--radius)!important; }
+    img{ image-rendering:-webkit-optimize-contrast; }
+    .text-primary{ color:var(--primary)!important; }
+    .bg-primary{ background:var(--primary)!important; }
+
+    /* ---------- Live widgets ---------- */
+    .widget-fab{
+      width:56px;height:56px;border-radius:50%;border:none;color:#fff;display:flex;align-items:center;justify-content:center;
+      font-size:20px;box-shadow:0 10px 28px rgba(15,23,42,.22);transition:all .2s;
+    }
+    .widget-fab:hover{ transform:translateY(-2px) scale(1.04); }
+    .fab-ai{ background:linear-gradient(135deg,#4f46e5,#7c3aed); }
+    .fab-chat{ background:linear-gradient(135deg,var(--primary),var(--accent)); }
+    .widget-panel{
+      position:absolute; bottom:72px; width:370px; max-width:92vw; background:#fff; border:1px solid #e2e8f0;
+      border-radius:20px; box-shadow:0 24px 70px rgba(15,23,42,.22); overflow:hidden; display:flex; flex-direction:column;
+      max-height:min(78vh,620px);
+    }
+    .widget-head{ padding:14px 16px; color:#fff; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+    .widget-head-ai{ background:linear-gradient(135deg,#4f46e5,#7c3aed); }
+    .widget-head-chat{ background:linear-gradient(135deg,var(--primary),var(--accent)); }
+    .widget-body{ flex:1; overflow-y:auto; padding:14px; background:#f8fafc; min-height:250px; }
+    .widget-foot{ padding:11px; border-top:1px solid #e2e8f0; background:#fff; }
+    .chat-bubble{ max-width:86%; margin-bottom:10px; padding:10px 13px; border-radius:16px; font-size:.86rem; line-height:1.5; animation:fadeIn .28s ease; word-wrap:break-word; }
+    @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{opacity:1; transform:none;} }
+    .msg-user{ background:linear-gradient(135deg,var(--primary),var(--accent)); color:#fff; border-bottom-<%= _dir==='rtl'?'left':'right' %>-radius:6px; box-shadow:0 4px 12px color-mix(in srgb, <%= _p %> 22%, transparent); margin-<%= _dir==='rtl'?'right':'left' %>:auto; }
+    .msg-bot{ background:#fff; color:#0f172a; border:1px solid var(--border); border-bottom-<%= _dir==='rtl'?'right':'left' %>-radius:6px; box-shadow:var(--shadow); }
+    .msg-bot a{ color:#4338ca; font-weight:600; }
+    .chat-bubble a{ color:inherit; font-weight:600; text-decoration:underline; }
+    .msg-bot a:hover{ color:#312e81; }
+    .typing-dot{ display:inline-block; width:6px; height:6px; border-radius:50%; background:#94a3b8; margin-<%= _dir==='rtl'?'left':'right' %>:3px; animation:bounce 1.1s infinite; }
+    .typing-dot:nth-child(2){ animation-delay:.15s; } .typing-dot:nth-child(3){ animation-delay:.3s; }
+    @keyframes bounce{ 0%,60%,100%{ transform:translateY(0); opacity:.4; } 30%{ transform:translateY(-4px); opacity:1; } }
+    .chip{ border:1px solid #e2e8f0; background:#fff; border-radius:999px; padding:.28rem .7rem; font-size:.74rem; font-weight:600; color:#475569; cursor:pointer; transition:all .16s; white-space:nowrap; }
+    .chip:hover{ border-color:#6366f1; color:#4f46e5; background:#eef2ff; }
+    .live-dot{ width:8px;height:8px;background:#fff;border-radius:50%;display:inline-block;margin-<%= _dir==='rtl'?'left':'right' %>:6px; animation:pulse 1.2s infinite; }
+    @keyframes pulse{ 0%{opacity:1} 50%{opacity:.35} 100%{opacity:1} }
+    .unread-pill{ position:absolute; top:-3px; <%= _dir==='rtl'?'left':'right' %>:-3px; background:#fbbf24; color:#0f172a; font-size:.62rem; font-weight:800; border-radius:999px; padding:.1rem .38rem; }
+    /* RTL: mirror directional icons so arrows/chevrons point the right way */
+    html[dir="rtl"] .fa-arrow-right, html[dir="rtl"] .fa-arrow-left,
+    html[dir="rtl"] .fa-chevron-right, html[dir="rtl"] .fa-chevron-left,
+    html[dir="rtl"] .fa-angle-right, html[dir="rtl"] .fa-angle-left,
+    html[dir="rtl"] .fa-caret-right, html[dir="rtl"] .fa-caret-left,
+    html[dir="rtl"] .fa-reply, html[dir="rtl"] .fa-sign-out-alt,
+    html[dir="rtl"] .fa-arrow-right-to-bracket, html[dir="rtl"] .fa-arrow-right-from-bracket{ transform:scaleX(-1); }
+    @media(max-width:1199px){
+      #navMain { max-height:calc(100dvh - 64px); overflow-y:auto; }
+      #navMain .dropdown-menu { max-width:100%; }
+    }
+    .account-page { overflow-wrap:anywhere; }
+    .dash-wrapper, .admin-wrapper { min-width:0; }
+    .dash-stat > div, .stat-card > div { min-width:0; overflow-wrap:anywhere; }
+    @media(max-width:575px){
+      .dash-stat, .stat-card { padding:12px !important; gap:8px !important; flex-wrap:wrap; }
+      .card-header { flex-wrap:wrap; gap:8px; }
+    }
+    /* Skip link (a11y) */
+    .bo-skip{ position:absolute; <%= _dir==='rtl'?'right':'left' %>:-9999px; top:0; z-index:2000; background:#fff; color:var(--primary); padding:.6rem 1rem; border-radius:0 0 10px 0; font-weight:700; }
+    .bo-skip:focus{ <%= _dir==='rtl'?'right':'left' %>:0; }
+    :focus-visible{ outline:2px solid var(--primary); outline-offset:2px; }
+    .activity-item{ display:flex; align-items:flex-start; gap:12px; padding:11px 12px; border-radius:14px; background:#fff; border:1px solid #e2e8f0; transition:all .2s; text-decoration:none; color:inherit; }
+    .activity-item:hover{ border-color:color-mix(in srgb, <%= _p %> 30%, transparent); transform:translateY(-1px); box-shadow:var(--shadow); color:inherit; }
+    .activity-icon{ width:38px;height:38px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#fff;font-size:14px; }
+    .tone-success{ background:linear-gradient(135deg,#16a34a,#22c55e); }
+    .tone-danger{ background:linear-gradient(135deg,#dc2626,#f43f5e); }
+    .tone-warning{ background:linear-gradient(135deg,#d97706,#f59e0b); }
+    .tone-info{ background:linear-gradient(135deg,#0284c7,#38bdf8); }
+    .stars{ color:#f59e0b; letter-spacing:1px; }
+    @media (max-width:991px){
+      .navbar-brand img{ height:30px; }
+      .hero-section{ padding:42px 0 32px; }
+      .widget-panel{ width:92vw; }
+    }
+  </style>
+  <% if (typeof extraCss !== 'undefined') { %><%- extraCss %><% } %>
+</head>
+<body>
+  <a class="bo-skip" href="#bo-main"><%= _t('common_skip') %></a>
+  <!-- ================= Navbar ================= -->
+  <nav class="navbar navbar-expand-xl sticky-top" aria-label="<%= _t('nav_home') %>">
+    <div class="container">
+      <!-- The logo artwork already carries the BloodOra wordmark, so the header
+           renders the image alone — a separate name beside it was a duplicate.
+           `_name` stays as the image's alt/title text for screen readers. -->
+      <a class="navbar-brand d-flex align-items-center" href="/" title="<%= _name %>">
+        <img src="<%= _logo %>" alt="<%= _name %>" onerror="this.style.display='none'">
+        <% if (_tag) { %><span class="brand-stack"><span class="brand-tag d-none d-xl-inline"><%= _tag %></span></span><% } %>
+      </a>
+      <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="<%= _t('nav_menu') %>">
+        <span class="navbar-toggler-icon"></span>
+      </button>
+      <div class="collapse navbar-collapse" id="navMain">
+        <ul class="navbar-nav me-auto align-items-xl-center">
+          <li class="nav-item"><a class="nav-link<%= isActive('/') %>" href="/"><i class="fas fa-home"></i><%= _t('nav_home') %></a></li>
+          <li class="nav-item"><a class="nav-link<%= isActive('/donors') %>" href="/donors"><i class="fas fa-users"></i><%= _t('nav_donors') %></a></li>
+          <li class="nav-item"><a class="nav-link<%= isActive('/blood-requests') %>" href="/blood-requests"><i class="fas fa-tint"></i><%= _t('nav_requests') %></a></li>
+          <li class="nav-item"><a class="nav-link<%= isActive('/request-blood') %>" href="/request-blood"><i class="fas fa-plus-circle"></i><%= _t('nav_request') %></a></li>
+          <li class="nav-item"><a class="nav-link<%= isActive('/shop') %>" href="/shop"><i class="fas fa-shopping-bag"></i><%= _t('nav_shop') %></a></li>
+          <li class="nav-item"><a class="nav-link<%= isActive('/reviews') %>" href="/reviews"><i class="fas fa-star"></i><%= _t('nav_reviews') %></a></li>
+          <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle<%= (isActive('/antid')||isActive('/resources')||isActive('/donation-guidelines')||isActive('/faq')||isActive('/contact')) %>" href="#" data-bs-toggle="dropdown"><i class="fas fa-book-medical"></i><%= _t('nav_resources') %></a>
+            <ul class="dropdown-menu shadow border-0 rounded-4 p-2">
+              <li><a class="dropdown-item rounded-3" href="/antid"><i class="fas fa-syringe me-2 text-danger"></i><%= _t('nav_antid') %></a></li>
+              <li><a class="dropdown-item rounded-3" href="/compatibility"><i class="fas fa-vial me-2 text-danger"></i><%= _t('nav_compatibility') %></a></li>
+              <li><a class="dropdown-item rounded-3" href="/resources"><i class="fas fa-graduation-cap me-2 text-danger"></i><%= _t('nav_education') %></a></li>
+              <li><a class="dropdown-item rounded-3" href="/donation-guidelines"><i class="fas fa-clipboard-list me-2 text-danger"></i><%= _t('nav_guidelines') %></a></li>
+              <li><a class="dropdown-item rounded-3" href="/faq"><i class="fas fa-question-circle me-2 text-danger"></i><%= _t('nav_faq') %></a></li>
+              <li><a class="dropdown-item rounded-3" href="/contact"><i class="fas fa-envelope me-2 text-danger"></i><%= _t('nav_contact') %></a></li>
+            </ul>
+          </li>
+        </ul>
+
+        <ul class="navbar-nav align-items-xl-center gap-1">
+          <!-- Language switch: English / বাংলা / العربية -->
+          <li class="nav-item dropdown me-1">
+            <button class="lang-toggle" data-bs-toggle="dropdown" title="<%= _t('nav_language') %>">
+              <i class="fas fa-globe"></i>
+              <span class="lang-native"><%= _cur ? _cur.native : 'English' %></span>
+              <i class="fas fa-caret-down" style="font-size:.7rem; opacity:.6;"></i>
+            </button>
+            <ul class="dropdown-menu dropdown-menu-<%= _dir==='rtl'?'start':'end' %> shadow border-0 rounded-4 p-2" style="min-width:186px;">
+              <% _langs.forEach(function(l){ %>
+                <li>
+                  <a class="dropdown-item rounded-3 d-flex align-items-center justify-content-between <%= l.code===_lang ? 'fw-bold' : '' %>"
+                     href="/set-language/<%= l.code %>?next=<%= encodeURIComponent(_path || '/') %>">
+                    <span><span class="me-2"><%= l.flag %></span><span class="lang-native"><%= l.native %></span></span>
+                    <% if (l.code===_lang) { %><i class="fas fa-check text-danger"></i><% } %>
+                  </a>
+                </li>
+              <% }) %>
+            </ul>
+          </li>
+
+          <li class="nav-item me-2">
+            <a class="nav-link position-relative" href="/shop/cart">
+              <i class="fas fa-shopping-cart"></i><span class="d-none d-xl-inline"><%= _t('nav_cart') %></span>
+              <% const _cc = (typeof cartCount !== 'undefined' && cartCount) ? cartCount : ((typeof sessionCartCount !== 'undefined' && sessionCartCount) ? sessionCartCount : 0); %>
+              <% if (_cc>0) { %><span class="badge bg-danger ms-1"><%= _num(_cc) %></span><% } %>
+            </a>
+          </li>
+
+          <% if (typeof currentUser !== 'undefined' && currentUser) { %>
+            <!-- Real notifications: unread message count from the backend -->
+            <li class="nav-item">
+              <a class="nav-link position-relative" href="/messages" aria-label="<%= _t('notif_title') %>">
+                <i class="fas fa-bell"></i>
+                <span id="bo-unread-pill" class="badge bg-danger ms-1 d-none" aria-live="polite">0</span>
+              </a>
+            </li>
+            <li class="nav-item dropdown">
+              <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" id="account-menu" aria-label="<%= _t('account_menu') %>" data-bs-toggle="dropdown" aria-expanded="false" style="background:#fff; border:1px solid var(--border); border-radius:999px; padding:.35rem .9rem .35rem .45rem !important;">
+                <% if (currentUser.image_file && currentUser.image_file !== 'default.jpg') { %>
+                  <img src="/uploads/<%= currentUser.image_file %>" alt="<%= currentUser.name %>" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                <% } else { %>
+                  <img src="https://ui-avatars.com/api/?background=<%= (_p||'#e31b23').replace('#','') %>&color=fff&name=<%= encodeURIComponent(currentUser.name) %>&size=64&bold=true" alt="<%= currentUser.name %>" style="width:32px;height:32px;border-radius:50%;object-fit:cover;">
+                <% } %>
+                <span class="fw-bold" style="max-width:110px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= currentUser.name.split(' ')[0] %></span>
+              </a>
+              <ul class="dropdown-menu dropdown-menu-end shadow border-0 rounded-4 p-2" style="min-width:230px;">
+                <% if (currentUser.is_admin) { %><li><a class="dropdown-item rounded-3" href="/admin"><i class="fas fa-cog me-2 text-danger"></i><%= _t('adm_dashboard') %></a></li><% } %>
+                <li><a class="dropdown-item rounded-3" href="/dashboard"><i class="fas fa-gauge-high me-2 text-danger"></i><%= _t('nav_dashboard') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/dashboard/orders"><i class="fas fa-box me-2 text-danger"></i><%= _t('nav_my_orders') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/profile"><i class="fas fa-user me-2 text-danger"></i><%= _t('nav_my_profile') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/messages"><i class="fas fa-envelope me-2 text-danger"></i><%= _t('nav_messages') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/reviews/mine"><i class="fas fa-star me-2 text-danger"></i><%= _t('nav_my_reviews') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/dashboard/requests"><i class="fas fa-tint me-2 text-danger"></i><%= _t('nav_my_requests') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/dashboard/security"><i class="fas fa-shield-halved me-2 text-danger"></i><%= _t('nav_security') %></a></li>
+                <li><a class="dropdown-item rounded-3" href="/profile/edit"><i class="fas fa-edit me-2 text-danger"></i><%= _t('nav_edit_profile') %></a></li>
+                <% if (!currentUser.is_verified && currentUser.age && currentUser.age>=18) { %>
+                  <li><hr class="dropdown-divider"></li>
+                  <li>
+                    <form method="POST" action="/donors/apply-for-verification" class="px-2">
+                      <button type="submit" class="btn btn-sm btn-outline-danger w-100 rounded-pill"><i class="fas fa-check-circle me-1"></i><%= _t('nav_apply_verify') %></button>
+                    </form>
+                  </li>
+                <% } %>
+                <% if (typeof session !== 'undefined' && session && session.impersonating) { %>
+                  <li><hr class="dropdown-divider"></li>
+                  <li><a class="dropdown-item rounded-3 text-warning fw-bold" href="/profile/switch-back"><i class="fas fa-undo me-2"></i><%= _t('nav_switch_back') %></a></li>
+                <% } %>
+                <li><hr class="dropdown-divider"></li>
+                <li><form action="/logout" method="POST"><button class="dropdown-item rounded-3" type="submit"><i class="fas fa-sign-out-alt me-2 text-danger"></i><%= _t('nav_logout') %></button></form></li>
+              </ul>
+            </li>
+          <% } else { %>
+            <li class="nav-item"><a class="nav-link" href="/login"><i class="fas fa-sign-in-alt"></i><%= _t('nav_login') %></a></li>
+            <li class="nav-item ms-1"><a class="btn btn-danger btn-sm px-4" href="/register"><%= _t('nav_register') %></a></li>
+          <% } %>
+        </ul>
+      </div>
+    </div>
+  </nav>
+
+  <% if (typeof loadError !== 'undefined' && loadError) { %>
+    <div class="container mt-3"><div class="alert alert-warning" role="alert"><%= _t('common_load_failed') %> <a href="<%= currentPath %>"><%= _t('common_retry') %></a></div></div>
+  <% } %>
+  <!-- ================= Flash messages ================= -->
+  <% if (typeof flash !== 'undefined' && flash) { %>
+    <div class="container mt-3">
+      <div class="alert alert-<%= flash.type==='danger'?'danger':flash.type==='success'?'success':flash.type==='warning'?'warning':'info' %> alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius:14px;">
+        <i class="fas fa-<%= flash.type==='success'?'check-circle':flash.type==='danger'?'exclamation-triangle':flash.type==='warning'?'exclamation-circle':'info-circle' %> me-2"></i>
+        <%= flash.message %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    </div>
+  <% } %>
+
+  <main id="bo-main">

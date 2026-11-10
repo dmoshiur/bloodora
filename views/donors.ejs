@@ -1,0 +1,42 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-4">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="fas fa-users text-danger me-2"></i><%= _t('don_title') %></h2>
+      <p class="text-muted mb-0"><%= _t('don_sub') %></p>
+    </div>
+  </div>
+
+  <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius:18px;">
+    <form method="GET" class="row g-2">
+      <div class="col-md-3"><select name="bg" class="form-select"><option value=""><%= _t('don_all_bg') %></option><% ["A+","A-","B+","B-","O+","O-","AB+","AB-"].forEach(bg=>{ %><option value="<%= bg %>" <%= query && query.bg===bg?'selected':'' %>><%= bg %></option><% }) %></select></div>
+      <div class="col-md-3"><input type="text" name="dist" class="form-control" placeholder="<%= _t('common_district') %>" value="<%= (query && query.dist) || '' %>"></div>
+      <div class="col-md-3"><input type="text" name="upa" class="form-control" placeholder="<%= _t('common_upazila') %>" value="<%= (query && query.upa) || '' %>"></div>
+      <div class="col-md-2"><input type="number" name="age_min" class="form-control" placeholder="<%= _t('don_min_age') %>" value="<%= (query && query.age_min) || '' %>"></div>
+      <div class="col-md-1 d-grid"><button class="btn btn-danger" aria-label="<%= _t('common_search') %>"><i class="fas fa-search"></i></button></div>
+    </form>
+  </div>
+
+  <div class="row g-3">
+    <% if (users && users.length) { %>
+      <% users.forEach(u=>{ %>
+        <div class="col-6 col-md-4 col-lg-3">
+          <div class="card h-100 text-center p-3 border-0 shadow-sm" style="border-radius:18px;">
+            <% if (u.image_file && u.image_file!=='default.jpg'){ %><img src="/uploads/<%= u.image_file %>" alt="<%= u.name %>" class="rounded-circle mx-auto mb-2" style="width:84px;height:84px;object-fit:cover; border:3px solid #fff; box-shadow:0 8px 20px rgba(15,23,42,.12);"><% } else { %><img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(u.name) %>&background=e31b23&color=fff&bold=true&size=128" alt="<%= u.name %>" class="rounded-circle mx-auto mb-2" style="width:84px;height:84px;object-fit:cover;"><% } %>
+            <div class="fw-bold" style="font-size:.95rem;"><%= u.name %></div>
+            <div><span class="badge bg-danger rounded-pill"><%= u.blood_group %></span> <span class="badge bg-light text-dark border rounded-pill"><%= u.district||u.division||'BD' %></span></div>
+            <div class="small text-muted mt-1"><i class="fas fa-map-marker-alt me-1"></i><%= [u.upazila, u.district].filter(Boolean).join(', ') %></div>
+            <div class="small text-muted"><i class="fas fa-birthday-cake me-1"></i><%= u.age||'—' %> <%= _t('don_yrs') %> • <%= u.can_donate ? _t('st_available') : _t('st_unavailable') %></div>
+            <a href="/donors/profile/view/<%= u.id %>" class="btn btn-sm btn-outline-danger rounded-pill mt-2 px-3"><%= _t('don_view_profile') %></a>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12"><div class="alert alert-info text-center border-0 rounded-4"><%= _t('don_empty') %></div></div>
+    <% } %>
+  </div>
+</div>
+<%- include('partials/footer') %>

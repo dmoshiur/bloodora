@@ -1,0 +1,59 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <nav aria-label="breadcrumb"><ol class="breadcrumb"><li class="breadcrumb-item"><a href="/shop" style="color:var(--primary);"><%= _t('nav_shop') %></a></li><li class="breadcrumb-item active"><%= product.name %></li></ol></nav>
+  <div class="row g-4">
+    <div class="col-md-6">
+      <div class="card border-0 shadow-sm overflow-hidden" style="border-radius:18px;">
+        <% if (product.image_file && product.image_file !== 'default_product.jpg') { %>
+          <img src="/uploads/<%= product.image_file %>" class="img-fluid" alt="<%= product.name %>" style="width:100%; max-height:520px; object-fit:cover;">
+        <% } else { %>
+          <div class="d-flex align-items-center justify-content-center" style="height:420px; background:linear-gradient(135deg,#f1f5f9,#e2e8f0);"><i class="fas fa-image fa-4x" style="color:#94a3b8;"></i></div>
+        <% } %>
+      </div>
+    </div>
+    <div class="col-md-6">
+      <span class="badge bg-light text-dark border" style="border-radius:999px;"><%= product.category || _t('shop_cat_general') %></span>
+      <h2 class="fw-bold mt-2" style="letter-spacing:-.02em;"><%= product.name %></h2>
+      <div class="h3 fw-bold my-3" style="color:var(--primary);">৳<%= product.price %> <small class="text-muted fw-normal" style="font-size:.9rem;"><%= _t('shop_incl_vat') %></small></div>
+      <p class="text-muted"><%= product.description %></p>
+      <div class="d-flex align-items-center gap-2 mb-3">
+        <% if (product.stock>0) { %><span class="badge bg-success rounded-pill"><i class="fas fa-check me-1"></i><%= _t('shop_in_stock') %>: <%= product.stock %></span><% } else { %><span class="badge bg-danger rounded-pill"><i class="fas fa-times me-1"></i><%= _t('shop_out') %></span><% } %>
+        <% if (product.is_available) { %><span class="badge bg-primary rounded-pill"><%= _t('st_available') %></span><% } else { %><span class="badge bg-secondary rounded-pill"><%= _t('st_unavailable') %></span><% } %>
+        <span class="badge bg-white text-dark border rounded-pill"><i class="fas fa-truck me-1 text-danger"></i><%= _t('shop_delivery_kalai') %></span>
+      </div>
+
+      <% if (product.stock>0 && product.is_available) { %>
+        <form method="POST" action="/shop/cart/add/<%= product.id %>" class="d-grid gap-2">
+          <button type="submit" class="btn btn-danger btn-lg"><i class="fas fa-cart-plus me-2"></i><%= _t('shop_add_to_cart') %></button>
+        </form>
+        <div class="mt-3 p-3 rounded-4 small" style="background:#f0fdf4; border:1px solid #bbf7d0; color:#14532d;">
+          <i class="fas fa-shield-check me-2"></i><%= _t('shop_genuine_note') %>
+        </div>
+      <% } else { %>
+        <button class="btn btn-secondary btn-lg w-100" disabled><%= _t('shop_sold_out') %></button>
+      <% } %>
+
+      <div class="d-flex gap-2 mt-3">
+        <a href="/shop" class="btn btn-outline-danger flex-fill"><i class="fas fa-arrow-left me-1"></i><%= _t('shop_back_shop') %></a>
+        <a href="/shop/cart" class="btn btn-light border flex-fill"><i class="fas fa-shopping-cart me-1"></i><%= _t('shop_go_cart') %></a>
+      </div>
+
+      <div class="mt-4 p-3 rounded-4" style="background:#fff; border:1px solid #e2e8f0;">
+        <div class="fw-bold mb-2"><i class="fas fa-credit-card me-2 text-danger"></i><%= _t('shop_payment_method') %></div>
+        <div class="d-flex flex-wrap gap-2 small">
+          <span class="badge bg-light text-dark border">bKash</span>
+          <span class="badge bg-light text-dark border">Nagad</span>
+          <span class="badge bg-light text-dark border">Rocket</span>
+          <span class="badge bg-light text-dark border">Upay</span>
+          <span class="badge bg-light text-dark border">Pathao Pay</span>
+          <span class="badge bg-light text-dark border"><%= _t('co_card') %></span>
+          <span class="badge bg-dark"><%= _t('shop_cod') %></span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

@@ -1,0 +1,85 @@
+# Verification record
+
+## Local release candidate — 2026-11-06
+
+| Check | Result |
+| --- | --- |
+| `npm run typecheck` | Passed |
+| `npm run build` | Passed: 21 SSR modules, 62 EJS templates, local assets, one Vercel handler |
+| `npm test` | **747 passed, 0 failed** |
+| Unit/integration | 83 checks |
+| Deployment | 129 checks |
+| Invocation budget | 88 checks |
+| Production-path E2E | 65 checks |
+| Remote-Turso transport | 56 checks |
+| AI | 31 checks |
+| API contract | 126 checks |
+| v3 workflows | 169 checks |
+| `npm run test:browser` | **12 passed, 0 failed** in real Chromium |
+| `npm audit --audit-level=high` | **0 vulnerabilities** |
+
+The Node total is the sum of the suite-reported checks: 83 + 129 + 88 + 65 + 56 + 31 + 126 + 169 = 747. Expected timeout/failure fixtures can log 503/504 errors while the suite passes; those logs are part of negative-path verification. The production/remote harnesses were also verified to leave zero orphaned server processes after completion.
+
+## Browser evidence
+
+The real production-mode HTTPS harness verified:
+
+- anonymous private-route redirects and custom 404;
+- secure Turso-backed login, session rotation behavior, reload/new tabs/history;
+- persistent profile edits and rejection of invalid Bangladesh phone input without persistence;
+- normal-user denial of admin pages and mutations;
+- every connected admin section for admin and super-admin roles;
+- logout revocation and Bangla persistence;
+- safe login return handling;
+- registration through the real service/database;
+- tokenless CSRF rejection, honest disabled-SMS failure, and no exposed OTP;
+- generic password recovery without configured mail;
+- Bangla/English account and admin layouts without horizontal overflow at 375, 768, 1024, and 1440 pixels.
+
+The browser migration initially exposed `CORS_NOT_ALLOWED` on native form POSTs. Root cause was `Referrer-Policy: no-referrer` producing `Origin: null`, not a reason to weaken CORS. The policy is now `same-origin`; opaque origins remain rejected by regression tests.
+
+## Manual local smoke
+
+The restarted development server on port 4000 returned:
+
+- `/health`: 200 liveness;
+- `/api/health`: 200, `database:"connected"`, closed breaker;
+- `/login`: 200 EJS with CSP and `Referrer-Policy: same-origin`;
+- unknown site route: custom HTML 404;
+- unknown API route: JSON 404;
+- branding: local `/images/logo.png` references.
+
+Real-browser admin/integration pages, multipart profile forms, responsive layouts, and persistence were exercised by the browser suite. Remote transport tests verified legacy database upload aliases byte-for-byte.
+
+## Security fixes included in this candidate
+
+- Native-form origin compatibility without accepting `Origin: null`.
+- Profile phone validation using the shared Bangladesh normalizer; invalid input returns 400 and leaves the previous value intact.
+- Strict CSRF/session/RBAC behavior retained across unified SSR and bearer APIs.
+- Nested exhausted deadlines consume abandoned inner rejections instead of crashing the process during SSE/session shutdown.
+- One root `app.ts` Express entrypoint and the shared `src/application.ts` factory prevent duplicate functions; test process groups clean up completely.
+
+## Hosted preview evidence
+
+Commit `6387c4ec50139525547032725e30149c1cca73d7` was deployed to the isolated `bloodora-unified` preview project as `dpl_5VTgWDK6qENMAUM3cQX1Gs8Ycc5x` (`https://bloodora-unified-ofby75vij-armx-ai.vercel.app`). Vercel reported **READY** in `iad1` on Node 22.x. Deployment metadata reports `lambdaRuntimeStats: {"nodejs":1}` and exactly one Lambda output; the configured function is root `app.ts` with 1024 MB, a 10-second maximum, and `views/**` plus `public/**` included.
+
+The preview's HTTP smoke test is still blocked by Vercel Deployment Protection: requesting `/health` redirects to Vercel's login page rather than executing the application. The connected Vercel tools do not expose a protection-bypass code or a control to disable protection, so no hosted application response is claimed as verified.
+
+This isolated preview uses `file:/tmp/bloodora-unified-preview.db`. That database is suitable only for temporary validation: it is ephemeral, can differ between instances, and is not durable staging storage. SMS, email, and Blob providers are disabled/unconfigured in this preview. Existing production projects, domains, aliases, environment variables, and Turso data were not changed or promoted.
+
+## Not externally verified
+
+The following remain release-gating external checks where their providers are required:
+
+- protected-preview application smoke tests (the deployment itself is READY with one Lambda);
+- real Vercel Blob object write/read/replacement/deletion;
+- real Resend and SMTP delivery/fallback;
+- real GreenWeb/SSL Wireless delivery, sender IDs, receipts, and costs;
+- production Turso credentials, region latency, backup/restore, and cutover;
+- external payment settlement (not applicable to automated gateway success: payments are manual-review only).
+
+No real external delivery is inferred from mocks, disabled-provider tests, outbox rows, or provider IDs generated by test doubles.
+
+## Production safety
+
+All local work used local/test databases and test accounts. Existing production Vercel projects, aliases, domains, environment variables, and production Turso were not changed by the local migration and verification work. Initial hosted validation must target preview only.

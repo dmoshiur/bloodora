@@ -1,0 +1,205 @@
+<%
+  const _t   = (typeof t === 'function') ? t : (k) => k;
+  const _dir = (typeof dir !== 'undefined' && dir) ? dir : 'ltr';
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const _ref = (typeof reference !== 'undefined' && reference) ? reference : null;
+  const _bn = (lang === 'bn');
+  const _ar = (lang === 'ar');
+  const GROUPS = ['O−','O+','A−','A+','B−','B+','AB−','AB+'];
+  const canGive = (from, to) => {
+    if (!_ref) return false;
+    const row = _ref.rbc.find(r => r.group === from);
+    if (!row) return false;
+    return row.donatesTo.split(',').map(s => s.trim()).indexOf(to) >= 0;
+  };
+%>
+<%- include('partials/header') %>
+
+<div class="container mt-4 mb-5">
+  <div class="text-center mb-4">
+    <div class="eyebrow mb-2"><%= _t('antid_clinical_ref') %></div>
+    <h1 class="display-title mb-2"><i class="fas fa-vial text-danger me-2"></i><%= _t('nav_compatibility') %></h1>
+    <p class="text-muted mb-0" style="max-width:80ch; margin-inline:auto;">
+      <%= _t('compat_lead') %>
+    </p>
+  </div>
+
+  <% if (typeof loadError !== 'undefined' && loadError) { %>
+    <div class="alert alert-warning border-0 rounded-4 mb-4"><i class="fas fa-triangle-exclamation me-2"></i><%= _t('compat_load_error') %></div>
+  <% } %>
+
+  <% if (_ref) { %>
+  <!-- ---------- Interactive donor → recipient matrix ---------- -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:22px;">
+    <div class="card-body p-4">
+      <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-3">
+        <h2 class="h5 fw-bold mb-0"><i class="fas fa-table-cells me-2 text-danger"></i><%= _t('compat_matrix_title') %></h2>
+        <div class="small text-muted"><%= _t('compat_matrix_sub') %></div>
+      </div>
+      <div class="table-responsive">
+        <table class="table table-bordered align-middle text-center mb-0" style="min-width:640px;">
+          <thead>
+            <tr>
+              <th style="width:110px;"><%= _t('compat_donor_recipient') %></th>
+              <% GROUPS.forEach(function(g){ %><th><span class="badge bg-dark"><%= g %></span></th><% }) %>
+            </tr>
+          </thead>
+          <tbody>
+            <% GROUPS.forEach(function(from){ %>
+              <tr>
+                <td class="fw-bold"><span class="badge bg-danger"><%= from %></span></td>
+                <% GROUPS.forEach(function(to){ const ok = canGive(from, to); %>
+                  <td style="background:<%= ok ? 'rgba(22,163,74,.10)' : 'rgba(220,38,38,.06)' %>;">
+                    <i class="fas fa-<%= ok ? 'check text-success' : 'xmark text-danger' %>" style="opacity:.85;"></i>
+                  </td>
+                <% }) %>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+      <div class="alert alert-info border-0 rounded-4 mt-3 mb-0 small">
+        <i class="fas fa-lightbulb me-1 text-warning"></i>
+        <%= _t('compat_rh_alert') %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Full red-cell table ---------- -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:22px;">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bold mb-3"><i class="fas fa-droplet me-2 text-danger"></i><%= _t('compat_rbc_title') %></h2>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th><%= _t('compat_group') %></th><th><%= _t('compat_donate_to') %></th><th><%= _t('compat_receive_from') %></th><th><%= _t('compat_role_notes') %></th></tr></thead>
+          <tbody>
+            <% _ref.rbc.forEach(function(r){ %>
+              <tr>
+                <td><span class="badge bg-danger" style="font-size:.82rem;"><%= r.group %></span></td>
+                <td class="small"><%= r.donatesTo %></td>
+                <td class="small"><%= r.receivesFrom %></td>
+                <td class="small">
+                  <div><strong><%= r.donorType %></strong></div>
+                  <div class="text-muted"><%= r.recipientType %></div>
+                  <div class="text-muted fst-italic"><%= r.note %></div>
+                </td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <div class="row g-3 mb-4">
+    <!-- Plasma -->
+    <div class="col-lg-6">
+      <div class="card h-100 border-0 shadow-sm" style="border-radius:22px;">
+        <div class="card-body p-4">
+          <h2 class="h6 fw-bold mb-3"><i class="fas fa-flask me-2 text-danger"></i><%= _t('compat_plasma_title') %></h2>
+          <div class="table-responsive">
+            <table class="table table-sm align-middle mb-0">
+              <thead><tr><th><%= _t('compat_donor') %></th><th><%= _t('compat_compatible_with') %></th><th><%= _t('compat_role') %></th></tr></thead>
+              <tbody>
+                <% _ref.plasma.forEach(function(p){ %>
+                  <tr><td class="fw-bold"><%= p.group %></td><td class="small"><%= p.compatible %></td><td class="small text-muted"><%= p.role %></td></tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <% _ref.plasma.forEach(function(p){ %>
+            <p class="small text-muted mt-2 mb-0" style="line-height:1.65;"><strong><%= p.group %>:</strong> <%= p.note %></p>
+          <% }) %>
+        </div>
+      </div>
+    </div>
+
+    <!-- Platelets -->
+    <div class="col-lg-6">
+      <div class="card h-100 border-0 shadow-sm" style="border-radius:22px;">
+        <div class="card-body p-4">
+          <h2 class="h6 fw-bold mb-3"><i class="fas fa-circle-radiation me-2 text-danger"></i><%= _t('compat_platelets_title') %></h2>
+          <div class="d-grid gap-2">
+            <% _ref.platelets.forEach(function(p){ %>
+              <div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                <div class="fw-bold" style="font-size:.92rem;"><%= p.point %></div>
+                <div class="small text-muted"><%= p.detail %></div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Components ---------- -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:22px;">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bold mb-3"><i class="fas fa-boxes-stacked me-2 text-danger"></i><%= _t('compat_components_title') %></h2>
+      <div class="table-responsive">
+        <table class="table align-middle mb-0">
+          <thead><tr><th><%= _t('compat_component') %></th><th><%= _t('compat_storage') %></th><th><%= _t('compat_shelf_life') %></th><th><%= _t('compat_used_for') %></th></tr></thead>
+          <tbody>
+            <% _ref.components.forEach(function(c){ %>
+              <tr>
+                <td class="fw-bold"><%= c.component %></td>
+                <td><span class="badge bg-light text-dark border"><%= c.storage %></span></td>
+                <td class="small"><%= c.shelfLife %></td>
+                <td class="small text-muted"><%= c.used %></td>
+              </tr>
+            <% }) %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Emergencies ---------- -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:22px; border-top:4px solid #dc2626 !important;">
+    <div class="card-body p-4">
+      <h2 class="h5 fw-bold mb-3"><i class="fas fa-truck-medical me-2 text-danger"></i><%= _t('compat_emergencies_title') %></h2>
+      <div class="row g-3">
+        <% _ref.emergencies.forEach(function(e){ %>
+          <div class="col-md-6">
+            <div class="p-3 rounded-4 h-100" style="background:#fff0f0; border:1px solid #fecdd3;">
+              <div class="fw-bold mb-1" style="font-size:.95rem; color:#9f1239;"><%= e.rule %></div>
+              <div class="small text-muted" style="line-height:1.65;"><%= e.action %></div>
+            </div>
+          </div>
+        <% }) %>
+      </div>
+    </div>
+  </div>
+
+  <!-- ---------- Facts + CTA ---------- -->
+  <div class="row g-3">
+    <div class="col-lg-7">
+      <div class="card h-100 border-0 shadow-sm" style="border-radius:22px;">
+        <div class="card-body p-4">
+          <h2 class="h6 fw-bold mb-3"><i class="fas fa-lightbulb me-2 text-warning"></i><%= _t('compat_did_you_know') %></h2>
+          <ul class="mb-0 <%= _dir==='rtl'?'pe-3':'ps-3' %> d-grid gap-2 small" style="line-height:1.7;">
+            <% _ref.facts.forEach(function(f){ %><li><%= f %></li><% }) %>
+          </ul>
+        </div>
+      </div>
+    </div>
+    <div class="col-lg-5">
+      <div class="card h-100 border-0 shadow-sm" style="border-radius:22px; background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;">
+        <div class="card-body p-4">
+          <h2 class="h6 fw-bold mb-2" style="color:#fff;"><%= _t('compat_want_help') %></h2>
+          <p class="small mb-3" style="color:#cbd5e1; line-height:1.7;">
+            <%= _t('compat_help_lead') %>
+          </p>
+          <div class="d-flex gap-2">
+            <a href="/register" class="btn btn-danger btn-sm rounded-pill"><%= _t('nav_register') %></a>
+            <a href="/donors" class="btn btn-outline-light btn-sm rounded-pill"><%= _t('nav_donors') %></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  <% } %>
+</div>
+
+<%- include('partials/footer') %>

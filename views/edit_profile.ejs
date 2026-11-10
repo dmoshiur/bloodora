@@ -1,0 +1,31 @@
+<%- include('partials/header') %>
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg p-4" style="border-radius:22px;">
+        <h3 class="fw-bold mb-4"><i class="fas fa-edit me-2 text-danger"></i><%= t('prof_edit') %></h3>
+        <% if (typeof error !== 'undefined' && error) { %><div class="alert alert-danger" role="alert"><%= error %></div><% } %>
+        <form method="POST" action="/profile/edit" enctype="multipart/form-data">
+          <div class="mb-3 text-center">
+            <% if (user.image_file && user.image_file!=='default.jpg'){ %><img src="/uploads/<%= user.image_file %>" class="rounded-circle mb-2" alt="<%= user.name %>" style="width:92px;height:92px;object-fit:cover;"><% } %>
+            <div><label class="form-label" for="profile-profile_pic"><%= t('auth_profile_pic') %></label><input type="file" id="profile-profile_pic" name="profile_pic" class="form-control" accept="image/*"></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label" for="profile-name"><%= t('auth_full_name') %></label><input type="text" id="profile-name" name="name" class="form-control" value="<%= user.name %>" required></div>
+            <div class="col-md-6 mb-3"><label class="form-label" for="profile-phone"><%= t('common_phone') %></label><input type="text" id="profile-phone" name="phone" class="form-control" value="<%= user.phone %>" required></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label" for="profile-holding"><%= t('auth_holding') %></label><input type="text" id="profile-holding" name="holding" class="form-control" value="<%= user.address_holding||'' %>"></div>
+            <div class="col-md-6 mb-3"><label class="form-label" for="profile-birth_certificate"><%= t('auth_birth_cert') %></label><input type="text" id="profile-birth_certificate" name="birth_certificate" class="form-control" value="<%= user.birth_certificate_number||'' %>"></div>
+          </div>
+          <div class="mb-3"><label class="form-label" for="profile-date_of_birth"><%= t('auth_dob') %></label><input type="date" id="profile-date_of_birth" name="date_of_birth" class="form-control" value="<%= user.date_of_birth? user.date_of_birth.slice(0,10):'' %>"></div>
+          <div class="d-flex gap-2">
+            <a href="/profile" class="btn btn-light border rounded-pill"><%= t('common_cancel') %></a>
+            <button type="submit" class="btn btn-danger rounded-pill px-4"><%= t('common_save') %></button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

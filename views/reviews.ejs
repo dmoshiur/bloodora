@@ -1,0 +1,178 @@
+<%
+  const _t   = (typeof t === 'function') ? t : (k) => k;
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const _num = (n) => { if (lang !== 'bn') return String(n); const b=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n).replace(/\d/g,d=>b[d]); };
+  const _stars = (n) => { const f = Math.max(0, Math.min(5, Number(n) || 0)); return '★'.repeat(Math.round(f)) + '☆'.repeat(5 - Math.round(f)); };
+  const _q = (typeof query !== 'undefined' && query) ? query : {};
+  const _filter = (kind, extra) => '/reviews?' + new URLSearchParams(Object.assign({}, _q, extra || {}, kind ? {kind} : {})).toString();
+  const _avg = (summary && summary.count) ? Number(summary.average).toFixed(2) : '—';
+  const _isLogged = (typeof currentUser !== 'undefined' && currentUser);
+%>
+<%- include('partials/header') %>
+
+<div class="container mt-4 mb-5">
+  <!-- Header -->
+  <div class="text-center mb-4">
+    <div class="eyebrow mb-2"><%= _t('adm_community') %></div>
+    <h1 class="display-title mb-2"><i class="fas fa-star text-warning me-2"></i><%= _t('rev_title') %></h1>
+    <p class="text-muted mb-0"><%= _t('rev_sub') %></p>
+  </div>
+
+  <!-- Summary + write a review -->
+  <div class="row g-3 mb-4">
+    <div class="col-lg-4">
+      <div class="card h-100 border-0 shadow-sm" style="border-radius:20px;">
+        <div class="card-body text-center p-4">
+          <div class="script-accent" style="font-size:3.4rem; line-height:1; color:var(--primary);"><%= _avg %></div>
+          <div class="stars" style="font-size:1.3rem;"><%= _stars(summary.average) %></div>
+          <div class="text-muted small mt-1"><%= _num(summary.count || 0) %> <%= _t('rev_count') %></div>
+          <hr class="my-3">
+          <div class="d-grid gap-1">
+            <% [5,4,3,2,1].forEach(function(s){ const c = (summary.breakdown && summary.breakdown[s]) || 0; const pct = summary.count ? Math.round(c * 100 / summary.count) : 0; %>
+              <a href="<%= _filter(null, {rating: s}) %>" class="d-flex align-items-center gap-2 text-decoration-none" style="color:inherit;">
+                <span class="small text-muted" style="width:26px;"><%= _num(s) %>★</span>
+                <div class="flex-grow-1" style="height:7px; background:#f1f5f9; border-radius:99px; overflow:hidden;">
+                  <div style="height:100%; width:<%= pct %>%; background:linear-gradient(90deg,#f59e0b,#fbbf24);"></div>
+                </div>
+                <span class="small text-muted" style="width:26px; text-align:right;"><%= _num(c) %></span>
+              </a>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-lg-8">
+      <div class="card h-100 border-0 shadow-sm" style="border-radius:20px;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h5 class="fw-bold mb-0"><i class="fas fa-pen-nib me-2 text-danger"></i><%= _t('rev_write') %></h5>
+            <% if (_isLogged) { %>
+              <span class="badge bg-success rounded-pill"><i class="fas fa-circle-check me-1"></i><%= currentUser.name %></span>
+            <% } else { %>
+              <span class="badge bg-light text-dark border rounded-pill"><i class="fas fa-lock me-1"></i><%= _t('rev_login_first') %></span>
+            <% } %>
+          </div>
+
+          <form method="POST" action="/reviews" class="row g-3">
+            <div class="col-md-6">
+              <label class="form-label"><%= _t('rev_heading') %></label>
+              <input name="title" class="form-control" maxlength="120" placeholder="<%= _t('rev_heading_ph') %>">
+            </div>
+            <div class="col-md-6">
+              <label class="form-label"><%= _t('rev_prod_label') %></label>
+              <select name="product_id" class="form-select">
+                <option value=""><%= _t('rev_general_test') %></option>
+                <% (products || []).forEach(function(p){ %>
+                  <option value="<%= p.id %>"><%= p.name %> — ৳<%= p.price %></option>
+                <% }) %>
+              </select>
+              <div class="form-text small"><%= _t('rev_order_req') %></div>
+            </div>
+            <div class="col-12">
+              <label class="form-label"><%= _t('rev_rating') %></label>
+              <div class="d-flex gap-1" id="star-picker">
+                <% [1,2,3,4,5].forEach(function(s){ %>
+                  <button type="button" class="btn btn-light border star-btn" data-star="<%= s %>" style="width:46px; height:42px; padding:0; font-size:1.15rem; color:#f59e0b;">★</button>
+                <% }) %>
+                <input type="hidden" name="rating" id="rating-input" value="5">
+              </div>
+            </div>
+            <div class="col-12">
+              <label class="form-label"><%= _t('rev_body') %></label>
+              <textarea name="body" class="form-control" rows="3" required minlength="10" maxlength="2000" placeholder="<%= _t('rev_body_ph') %>"></textarea>
+            </div>
+            <div class="col-12 d-flex align-items-center justify-content-between flex-wrap gap-2">
+              <div class="small text-muted"><i class="fas fa-shield-halved me-1 text-success"></i><%= _t('rev_pending') %> — <%= _t('rev_pending_note') %></div>
+              <% if (_isLogged) { %>
+                <button class="btn btn-danger px-4"><i class="fas fa-paper-plane me-1"></i><%= _t('common_submit') %></button>
+              <% } else { %>
+                <a href="/login" class="btn btn-danger px-4"><i class="fas fa-sign-in-alt me-1"></i><%= _t('nav_login') %></a>
+              <% } %>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="d-flex flex-wrap gap-2 align-items-center mb-3">
+    <a href="/reviews" class="btn btn-sm <%= !_q.kind || _q.kind==='all' ? 'btn-danger':'btn-outline-danger' %> rounded-pill"><%= _t('rev_all') %></a>
+    <a href="/reviews?kind=product" class="btn btn-sm <%= _q.kind==='product' ? 'btn-danger':'btn-outline-danger' %> rounded-pill"><i class="fas fa-bag-shopping me-1"></i><%= _t('rev_product') %></a>
+    <a href="/reviews?kind=site" class="btn btn-sm <%= _q.kind==='site' ? 'btn-danger':'btn-outline-danger' %> rounded-pill"><i class="fas fa-heart me-1"></i><%= _t('rev_site') %></a>
+    <span class="vr mx-1 d-none d-md-block"></span>
+    <% [5,4,3].forEach(function(s){ %>
+      <a href="/reviews?rating=<%= s %>" class="btn btn-sm <%= String(_q.rating)===String(s) ? 'btn-warning':'btn-light border' %> rounded-pill"><%= _num(s) %>★</a>
+    <% }) %>
+    <span class="ms-auto small text-muted"><%= _num(reviews.length) %> / <%= _num(summary.count || 0) %></span>
+  </div>
+
+  <!-- Review cards -->
+  <div class="row g-3">
+    <% if (reviews.length) { %>
+      <% reviews.forEach(function(r){ %>
+        <div class="col-md-6">
+          <div class="card h-100 border-0 shadow-sm" style="border-radius:20px;<%= r.is_featured ? ' border-start border-4 border-warning' : '' %>">
+            <div class="card-body p-4">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <div class="d-flex align-items-center gap-2">
+                  <% if (r.user_image && r.user_image !== 'default.jpg') { %>
+                    <img src="/uploads/<%= r.user_image %>" alt="<%= r.user_name || 'User' %>" style="width:38px;height:38px;border-radius:50%;object-fit:cover;">
+                  <% } else { %>
+                    <img src="https://ui-avatars.com/api/?background=e31b23&color=fff&size=64&bold=true&name=<%= encodeURIComponent(r.user_name || r.author_name || 'R') %>" alt="<%= r.user_name || 'User' %>" style="width:38px;height:38px;border-radius:50%;">
+                  <% } %>
+                  <div>
+                    <div class="fw-bold" style="font-size:.92rem;"><%= r.user_name || r.author_name || 'Anonymous' %></div>
+                    <div class="small text-muted"><%= r.created_at ? String(r.created_at).slice(0,10) : '' %></div>
+                  </div>
+                </div>
+                <div class="d-flex flex-column align-items-end gap-1">
+                  <span class="stars"><%= _stars(r.rating) %></span>
+                  <% if (r.is_featured) { %><span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i><%= _t('common_featured') %></span><% } %>
+                </div>
+              </div>
+
+              <h6 class="fw-bold mb-2" style="font-family:var(--font-display); font-size:1.12rem;"><%= r.title || _t('rev_title') %></h6>
+              <p class="text-muted small mb-2" style="line-height:1.65;"><%= r.body %></p>
+
+              <div class="d-flex flex-wrap gap-2">
+                <% if (r.kind === 'product') { %>
+                  <a href="/shop/product/<%= r.product_id %>" class="badge text-bg-light border text-decoration-none"><i class="fas fa-bag-shopping me-1 text-danger"></i><%= r.product_name || 'Product' %></a>
+                <% } else { %>
+                  <span class="badge text-bg-light border"><i class="fas fa-heart me-1 text-danger"></i><%= _t('rev_site') %></span>
+                <% } %>
+              </div>
+
+              <% if (r.admin_reply) { %>
+                <div class="mt-3 p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                  <div class="small fw-bold text-danger mb-1"><i class="fas fa-reply me-1"></i><%= _t('rev_official') %></div>
+                  <div class="small text-muted"><%= r.admin_reply %></div>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12"><div class="alert alert-info text-center border-0 shadow-sm rounded-4 py-4">
+        <i class="fas fa-star fa-2x d-block mb-2 text-warning"></i><%= _t('rev_none') %>
+      </div></div>
+    <% } %>
+  </div>
+</div>
+
+<script>
+(function(){
+  var input = document.getElementById('rating-input');
+  var btns = Array.prototype.slice.call(document.querySelectorAll('.star-btn'));
+  function paint(n){ btns.forEach(function(b, i){ b.style.opacity = i < n ? '1' : '.28'; }); }
+  btns.forEach(function(b){
+    b.addEventListener('click', function(){ input.value = b.dataset.star; paint(Number(b.dataset.star)); });
+  });
+  paint(5);
+})();
+</script>
+
+<%- include('partials/footer') %>

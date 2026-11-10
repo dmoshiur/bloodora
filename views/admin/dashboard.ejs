@@ -1,0 +1,231 @@
+<%- include('../partials/header') %>
+<%
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const _num = (n) => { if (lang !== 'bn') return String(n ?? '—'); const b=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n ?? '—').replace(/\d/g,d=>b[d]); };
+  const fmtDate = (v) => { try { return new Date(String(v).includes('T') ? v : String(v).replace(' ','T') + 'Z').toLocaleString(lang === 'bn' ? 'bn-BD' : lang === 'ar' ? 'ar' : 'en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }); } catch(e){ return String(v||'').slice(0,16); } };
+  const stLabel = { pending: _t2('st_pending'), processing: _t2('st_processing'), completed: _t2('st_completed'), cancelled: _t2('st_cancelled') };
+  const stClass = { pending: 'bg-warning text-dark', processing: 'bg-info', completed: 'bg-success', cancelled: 'bg-secondary' };
+  const _ro = (typeof recent_orders !== 'undefined' && recent_orders) ? recent_orders : { ok: false, list: [] };
+  const _ac = (typeof activity !== 'undefined' && activity) ? activity : { ok: false, list: [] };
+  const _su = (typeof support !== 'undefined' && support) ? support : { ok: false, sessions: [], unread: 0 };
+  const _reg = (typeof recent_registrations !== 'undefined' && recent_registrations) ? recent_registrations : [];
+  const panelError = `<div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i>${_t2('common_load_failed')}</div>`;
+%>
+<style>
+  .stat-card{ background:#fff; border-radius:18px; padding:18px; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(15,23,42,.06); display:flex; align-items:center; gap:14px; height:100%; }
+  .stat-icon{ width:48px;height:48px;border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; flex-shrink:0; }
+</style>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0" style="letter-spacing:-.02em;"><i class="fas fa-cog text-danger me-2"></i><%= _t2('adm_dashboard') %></h2>
+      <small class="text-muted"><%= siteName %> — <%= _t2('adm_overview') %></small>
+    </div>
+    <span class="badge bg-dark rounded-pill"><i class="fas fa-shield-halved me-1"></i><%= _t2(currentUser.is_super_admin ? 'account_superadmin' : 'nav_admin') %></span>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'dashboard', stats: stats }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <% if (!overviewOk) { %>
+        <div class="alert alert-warning" role="alert"><%= _t2('common_load_failed') %> <a href="/admin" class="alert-link"><%= _t2('common_retry') %></a></div>
+      <% } %>
+      <!-- Stats: absent API values are unavailable, never fabricated zeroes. -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><a class="stat-card text-decoration-none" style="color:inherit;" href="/admin/users"><div class="stat-icon" style="background:linear-gradient(135deg,var(--primary),#ff3340);"><i class="fas fa-users"></i></div><div><div class="h5 fw-bold mb-0"><%= _num(stats.total_users) %></div><div class="small text-muted"><%= _t2('adm_total_users') %></div></div></a></div>
+        <div class="col-6 col-lg-3"><div class="stat-card"><div class="stat-icon" style="background:linear-gradient(135deg,#16a34a,#22c55e);"><i class="fas fa-hand-holding-heart"></i></div><div><div class="h5 fw-bold mb-0"><%= _num(stats.total_donors) %></div><div class="small text-muted"><%= _t2('adm_verified_donors') %></div></div></div></div>
+        <div class="col-6 col-lg-3"><a class="stat-card text-decoration-none" style="color:inherit;" href="/shop/admin/orders?status=pending"><div class="stat-icon" style="background:linear-gradient(135deg,#0ea5e9,#38bdf8);"><i class="fas fa-shopping-bag"></i></div><div><div class="h5 fw-bold mb-0"><%= _num(stats.total_orders) %></div><div class="small text-muted"><%= _num(stats.pending_orders) %> <%= _t2('st_pending').toLowerCase() %></div></div></a></div>
+        <div class="col-6 col-lg-3"><a class="stat-card text-decoration-none" style="color:inherit;" href="/shop/admin/products"><div class="stat-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="fas fa-box"></i></div><div><div class="h5 fw-bold mb-0"><%= _num(stats.total_products) %></div><div class="small text-muted"><%= _t2('adm_products_count') %></div></div></a></div>
+      </div>
+
+      <!-- Pending actions strip: real counters that need attention -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><a href="/admin/users" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_pending_verifs') %></span><span class="badge bg-warning text-dark rounded-pill"><%= _num(stats.pending_verifications) %></span></div></a></div>
+        <div class="col-6 col-lg-3"><a href="/blood-requests?urgent=true" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_urgent_reqs') %></span><span class="badge bg-danger rounded-pill"><%= _num(stats.urgent_requests) %></span></div></a></div>
+        <div class="col-6 col-lg-3"><a href="/messages/admin/messages" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_unread_messages') %></span><span class="badge bg-danger rounded-pill"><%= _num(admin_messages && admin_messages.ok ? admin_messages.unread : stats.unread_messages) %></span></div></a></div>
+        <div class="col-6 col-lg-3"><a href="/admin/live-chat" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_support_inbox') %></span><span class="badge <%= _su.unread ? 'bg-danger' : 'bg-secondary' %> rounded-pill"><%= _su.ok ? _num(_su.unread) : '—' %></span></div></a></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <!-- Recent orders (real, from /api/admin/orders) -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-cart-shopping me-2 text-danger"></i><%= _t2('adm_recent_orders') %></h6>
+              <a href="/shop/admin/orders" class="btn btn-sm btn-light border rounded-pill"><%= _t2('dash_view_all') %></a>
+            </div>
+            <div class="card-body p-0">
+              <% if (!_ro.ok) { %><div class="p-3"><%- panelError %></div>
+              <% } else if (!_ro.list.length) { %>
+                <div class="text-center text-muted small p-4"><i class="fas fa-cart-shopping fa-2x d-block mb-2" style="color:#cbd5e1;"></i><%= _t2('adm_no_orders') %></div>
+              <% } else { %>
+                <div class="table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead><tr><th><%= _t2('ord_id') %></th><th><%= _t2('common_date') %></th><th><%= _t2('common_total') %></th><th><%= _t2('ord_payment') %></th><th><%= _t2('common_status') %></th></tr></thead>
+                    <tbody>
+                      <% _ro.list.forEach(function(o){ const st=String(o.status||'').toLowerCase(); %>
+                        <tr>
+                          <td><a class="fw-bold text-decoration-none" href="/shop/admin/order/<%= o.id %>" style="color:var(--primary);">#<%= o.id %></a></td>
+                          <td class="small text-muted"><%= fmtDate(o.created_at) %></td>
+                          <td class="fw-bold">৳<%= o.total_amount %></td>
+                          <td><span class="badge bg-light text-dark border rounded-pill"><%= o.payment_method || '—' %></span></td>
+                          <td><span class="badge <%= stClass[st] || 'bg-secondary' %> rounded-pill"><%= stLabel[st] || st %></span></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+                <% if (_ro.revenue != null) { %>
+                <div class="px-3 py-2 small text-muted d-flex justify-content-between border-top">
+                  <span><i class="fas fa-coins me-1"></i><%= _t2('adm_order_value') %>: <strong>৳<%= _ro.revenue %></strong></span>
+                  <span><i class="fas fa-circle-check me-1 text-success"></i><%= _t2('adm_paid_orders') %>: <strong><%= _ro.paid %></strong></span>
+                </div>
+                <% } %>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Recent registrations (real users, newest first) -->
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-user-plus me-2 text-danger"></i><%= _t2('adm_recent_reg') %></h6>
+              <a href="/admin/users" class="btn btn-sm btn-light border rounded-pill"><%= _t2('adm_manage_users') %></a>
+            </div>
+            <div class="card-body p-0">
+              <% if (!overviewOk) { %><div class="p-3"><%- panelError %></div>
+              <% } else if (!_reg.length) { %>
+                <div class="text-center text-muted small p-4"><%= _t2('common_no_data') %></div>
+              <% } else { %>
+                <div class="table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead><tr><th><%= _t2('common_name') %></th><th><%= _t2('common_blood_group') %></th><th><%= _t2('common_date') %></th><th><%= _t2('common_status') %></th></tr></thead>
+                    <tbody>
+                      <% _reg.forEach(function(u){ %>
+                        <tr>
+                          <td>
+                            <div class="fw-bold" style="font-size:.9rem;"><%= u.name %> <% if(u.is_super_admin){ %><span class="badge bg-dark rounded-pill"><%= _t2('account_superadmin') %></span><% } else if(u.is_admin){ %><span class="badge bg-primary rounded-pill"><%= _t2('nav_admin') %></span><% } %></div>
+                            <div class="small text-muted"><%= u.email %></div>
+                          </td>
+                          <td><span class="badge bg-danger rounded-pill"><%= u.blood_group||'—' %></span></td>
+                          <td class="small text-muted"><%= u.created_at ? fmtDate(u.created_at) : '—' %></td>
+                          <td><% if(u.is_verified){ %><span class="badge bg-success rounded-pill"><%= _t2('st_verified') %></span><% } else { %><span class="badge bg-warning text-dark rounded-pill"><%= _t2('st_unverified') %></span><% } %></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <!-- Site notice -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-bullhorn me-2 text-danger"></i><%= _t2('adm_notice') %></h6></div>
+            <div class="card-body">
+              <% if (overviewOk) { %>
+              <form method="POST" action="/admin/notice" class="d-grid gap-2">
+                <label class="visually-hidden" for="notice-content"><%= _t2('adm_notice') %></label>
+                <textarea name="notice_content" id="notice-content" class="form-control" rows="2" placeholder="<%= _t2('adm_notice') %>"><%= current_notice %></textarea>
+                <div class="d-flex gap-2">
+                  <button class="btn btn-danger btn-sm rounded-pill"><%= _t2('adm_update_notice') %></button>
+                  <form method="POST" action="/admin/notice/clear" class="d-inline"><button class="btn btn-light btn-sm border rounded-pill"><%= _t2('adm_clear') %></button></form>
+                </div>
+              </form>
+              <% } else { %><%- panelError %><% } %>
+            </div>
+          </div>
+
+          <!-- Support inbox snapshot (real sessions) -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-headset me-2 text-danger"></i><%= _t2('adm_support_inbox') %></h6>
+              <a href="/admin/live-chat" class="btn btn-sm btn-light border rounded-pill"><%= _t2('dash_view_all') %></a>
+            </div>
+            <div class="card-body">
+              <% if (!_su.ok) { %><%- panelError %>
+              <% } else if (!_su.sessions.length) { %>
+                <div class="text-center text-muted small py-2"><i class="fas fa-comments fa-2x d-block mb-2" style="color:#cbd5e1;"></i><%= _t2('adm_no_support') %></div>
+              <% } else { %>
+                <div class="d-grid gap-2">
+                  <% _su.sessions.forEach(function(s){ %>
+                    <a href="/admin/live-chat" class="activity-item">
+                      <div class="activity-icon tone-info"><i class="fas fa-user"></i></div>
+                      <div style="min-width:0;">
+                        <div class="fw-bold" style="font-size:.88rem;"><%= s.visitor_name || 'Guest' %> <% if (s.online) { %><span class="badge bg-success rounded-pill"><%= _t2('chat_online') %></span><% } %></div>
+                        <div class="small text-muted text-truncate"><%= s.last_message || '' %></div>
+                      </div>
+                      <% if (s.unread_admin) { %><span class="badge bg-danger rounded-pill ms-auto"><%= s.unread_admin %></span><% } %>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- System activity (real events) -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-broadcast-tower me-2 text-danger"></i><%= _t2('adm_recent_activity') %></h6>
+              <a href="/admin/activity" class="btn btn-sm btn-light border rounded-pill"><%= _t2('dash_view_all') %></a>
+            </div>
+            <div class="card-body">
+              <% if (!_ac.ok) { %><%- panelError %>
+              <% } else if (!_ac.list.length) { %>
+                <div class="text-center text-muted small py-2"><%= _t2('adm_no_activity') %></div>
+              <% } else { %>
+                <div class="d-grid gap-2">
+                  <% _ac.list.forEach(function(ev){ %>
+                    <div class="activity-item">
+                      <div class="activity-icon tone-<%= ev.tone || 'info' %>"><i class="fas <%= ev.icon || 'fa-circle-info' %>"></i></div>
+                      <div style="min-width:0;">
+                        <div class="small"><%= ev.message || '' %></div>
+                        <div class="small text-muted"><%= ev.created_at ? fmtDate(ev.created_at) : '' %></div>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <% if(currentUser.is_super_admin){ %>
+            <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+              <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-user-shield me-2 text-danger"></i><%= _t2('adm_create_admin') %></h6></div>
+              <div class="card-body">
+                <form method="POST" action="/admin/create-admin" class="row g-2">
+                  <div class="col-md-6"><label class="visually-hidden" for="ca-name"><%= _t2('common_name') %></label><input name="name" id="ca-name" class="form-control" placeholder="<%= _t2('common_name') %>" required></div>
+                  <div class="col-md-6"><label class="visually-hidden" for="ca-phone"><%= _t2('common_phone') %></label><input name="phone" id="ca-phone" class="form-control" placeholder="<%= _t2('common_phone') %>" required></div>
+                  <div class="col-md-6"><label class="visually-hidden" for="ca-email"><%= _t2('common_email') %></label><input name="email" id="ca-email" type="email" class="form-control" placeholder="<%= _t2('common_email') %>" required></div>
+                  <div class="col-md-6"><label class="visually-hidden" for="ca-pass"><%= _t2('auth_password') %></label><input name="password" id="ca-pass" type="password" class="form-control" placeholder="<%= _t2('sec_min8') %>" required minlength="8"></div>
+                  <div class="col-12"><button class="btn btn-dark w-100 rounded-pill"><%= _t2('adm_create_admin') %></button></div>
+                </form>
+              </div>
+            </div>
+          <% } %>
+
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-bolt me-2 text-warning"></i><%= _t2('adm_quick_actions') %></h6></div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6"><a href="/admin/users" class="btn btn-outline-danger w-100 rounded-4 py-3"><i class="fas fa-users-gear d-block mb-1"></i><%= _t2('adm_manage_users') %></a></div>
+                <div class="col-6"><a href="/shop/admin/product/add" class="btn btn-outline-danger w-100 rounded-4 py-3"><i class="fas fa-plus d-block mb-1"></i><%= _t2('adm_products') %></a></div>
+                <div class="col-6"><a href="/shop/admin/orders" class="btn btn-outline-dark w-100 rounded-4 py-3"><i class="fas fa-receipt d-block mb-1"></i><%= _t2('adm_orders') %></a></div>
+                <div class="col-6"><a href="/admin/reviews" class="btn btn-outline-dark w-100 rounded-4 py-3"><i class="fas fa-star d-block mb-1"></i><%= _t2('adm_reviews') %></a></div>
+                <div class="col-6"><a href="/admin/settings" class="btn btn-light border w-100 rounded-4 py-3"><i class="fas fa-gear d-block mb-1"></i><%= _t2('adm_settings') %></a></div>
+                <div class="col-6"><a href="/donors" class="btn btn-light border w-100 rounded-4 py-3"><i class="fas fa-users d-block mb-1"></i><%= _t2('nav_donors') %></a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

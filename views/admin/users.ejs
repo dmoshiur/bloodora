@@ -1,0 +1,267 @@
+<%- include('../partials/header') %>
+<%
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const _num = (n) => { if (lang !== 'bn') return String(n); const b=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n).replace(/\d/g,d=>b[d]); };
+  const fmtDate = (v) => { try { return new Date(String(v).includes('T') ? v : String(v).replace(' ','T') + 'Z').toLocaleDateString(); } catch(e){ return String(v||'').slice(0,10); } };
+  const isSuper = !!(typeof currentUser !== 'undefined' && currentUser && currentUser.is_super_admin);
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-users-gear text-danger me-2"></i><%= _t2('adm_users') %> <span class="badge bg-secondary rounded-pill align-middle"><%= _num(all_users.length) %></span></h2>
+      <small class="text-muted"><%= _t2('adm_users_sub') %></small>
+    </div>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'users', stats: stats }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <% if (!isSuper) { %>
+        <div class="alert alert-info border-0 small rounded-4"><i class="fas fa-circle-info me-2"></i><%= _t2('adm_role_info') %></div>
+      <% } %>
+
+      <div class="card border-0 shadow-sm" style="border-radius:18px;">
+        <div class="card-header bg-white border-0 pt-3">
+          <div class="row g-2 align-items-center">
+            <div class="col-md-5">
+              <label class="visually-hidden" for="userSearch"><%= _t2('common_search') %></label>
+              <input type="text" id="userSearch" class="form-control" placeholder="<%= _t2('adm_search_users') %>" style="border-radius:999px;">
+            </div>
+            <div class="col-md-3">
+              <label class="visually-hidden" for="roleFilter"><%= _t2('common_role') %></label>
+              <select id="roleFilter" class="form-select">
+                <option value=""><%= _t2('adm_all_roles') %></option>
+                <option value="super">Super Admin</option>
+                <option value="admin">Admin</option>
+                <option value="user">User</option>
+              </select>
+            </div>
+            <div class="col-md-3">
+              <label class="visually-hidden" for="statusFilter"><%= _t2('common_status') %></label>
+              <select id="statusFilter" class="form-select">
+                <option value=""><%= _t2('adm_all_statuses') %></option>
+                <option value="verified"><%= _t2('st_verified') %></option>
+                <option value="unverified"><%= _t2('st_unverified') %></option>
+                <option value="available"><%= _t2('st_available') %></option>
+              </select>
+            </div>
+            <div class="col-md-1 text-end small text-muted" id="userCount"></div>
+          </div>
+        </div>
+        <div class="card-body p-0">
+          <div class="table-responsive">
+            <table class="table align-middle mb-0" id="usersTable">
+              <thead><tr>
+                <th><%= _t2('common_name') %></th>
+                <th><%= _t2('common_blood_group') %></th>
+                <th><%= _t2('prof_location') %></th>
+                <th><%= _t2('common_date') %></th>
+                <th><%= _t2('common_status') %></th>
+                <th><%= _t2('common_actions') %></th>
+              </tr></thead>
+              <tbody>
+                <% all_users.forEach(function(u){ %>
+                  <tr data-search="<%= (u.name + ' ' + u.email + ' ' + (u.phone||'') + ' ' + (u.blood_group||'')).toLowerCase() %>"
+                      data-role="<%= u.is_super_admin ? 'super' : u.is_admin ? 'admin' : 'user' %>"
+                      data-verified="<%= u.is_verified ? '1' : '0' %>"
+                      data-candonate="<%= u.can_donate ? '1' : '0' %>">
+                    <td>
+                      <div class="d-flex align-items-center gap-2">
+                        <% if(u.image_file && u.image_file!=='default.jpg'){ %><img src="/uploads/<%= u.image_file %>" alt="" style="width:38px;height:38px;border-radius:50%;object-fit:cover;"><% } else { %><img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(u.name) %>&background=random&size=64" alt="" style="width:38px;height:38px;border-radius:50%;"><% } %>
+                        <div style="min-width:0;">
+                          <div class="fw-bold text-truncate" style="font-size:.9rem;"><%= u.name %> <% if(u.is_super_admin){ %><span class="badge bg-dark rounded-pill">Super</span><% } else if(u.is_admin){ %><span class="badge bg-primary rounded-pill">Admin</span><% } %></div>
+                          <div class="small text-muted text-truncate"><%= u.email %> • <%= u.phone %></div>
+                        </div>
+                      </div>
+                    </td>
+                    <td><span class="badge bg-danger rounded-pill"><%= u.blood_group||'—' %></span><div class="small text-muted"><%= u.role||'Both' %></div></td>
+                    <td class="small"><%= [u.district, u.upazila].filter(Boolean).join(', ')||'—' %><div class="text-muted"><%= u.division||'' %></div></td>
+                    <td class="small text-muted"><%= u.created_at ? fmtDate(u.created_at) : '—' %></td>
+                    <td>
+                      <% if(u.is_verified){ %><span class="badge bg-success rounded-pill"><%= _t2('st_verified') %></span><% } else { %><span class="badge bg-warning text-dark rounded-pill"><%= _t2('st_unverified') %></span><% } %>
+                      <div class="small mt-1"><% if(u.can_donate){ %><span class="badge bg-light text-success border"><%= _t2('st_available') %></span><% } else { %><span class="badge bg-light text-secondary border"><%= _t2('st_unavailable') %></span><% } %></div>
+                    </td>
+                    <td>
+                      <div class="d-flex flex-wrap gap-1">
+                        <% if(!u.is_verified && u.age>=18){ %><form method="POST" action="/admin/verify-donor/<%= u.id %>"><button class="btn btn-sm btn-success rounded-pill" title="<%= _t2('adm_verify') %>"><i class="fas fa-check"></i></button></form><% } %>
+                        <% if (isSuper) { %>
+                          <button class="btn btn-sm btn-outline-dark rounded-pill" onclick="openEdit(<%= u.id %>)" title="<%= _t2('common_edit') %>"><i class="fas fa-edit"></i></button>
+                          <% if(!u.is_super_admin && u.id!==currentUser.id){ %>
+                            <% if(!u.is_admin){ %><form method="POST" action="/admin/promote/<%= u.id %>" class="d-inline"><button class="btn btn-sm btn-primary rounded-pill" title="<%= _t2('adm_promote') %>"><i class="fas fa-arrow-up"></i></button></form><% } else { %><form method="POST" action="/admin/demote/<%= u.id %>" class="d-inline"><button class="btn btn-sm btn-warning rounded-pill" title="<%= _t2('adm_demote') %>"><i class="fas fa-arrow-down"></i></button></form><% } %>
+                            <form method="POST" action="/admin/impersonate/<%= u.id %>" class="d-inline"><button class="btn btn-sm btn-dark rounded-pill" title="<%= _t2('adm_impersonate') %>"><i class="fas fa-mask"></i></button></form>
+                            <form method="POST" action="/admin/delete/<%= u.id %>" class="d-inline" onsubmit="return confirm('<%= _t2('adm_confirm_delete') %>')"><button class="btn btn-sm btn-danger rounded-pill" title="<%= _t2('adm_delete_user') %>"><i class="fas fa-trash"></i></button></form>
+                          <% } %>
+                        <% } %>
+                        <a href="/donors/profile/view/<%= u.id %>" class="btn btn-sm btn-light border rounded-pill" title="<%= _t2('common_view') %>"><i class="fas fa-eye"></i></a>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+              </tbody>
+            </table>
+          </div>
+          <div id="usersEmpty" class="text-center text-muted small p-4 d-none"><i class="fas fa-user-slash fa-2x d-block mb-2" style="color:#cbd5e1;"></i><%= _t2('common_no_data') %></div>
+        </div>
+        <div class="card-footer bg-white d-flex justify-content-between align-items-center flex-wrap gap-2">
+          <div class="small text-muted"><%= _t2('common_showing') %> <span id="rangeLabel">—</span></div>
+          <nav aria-label="<%= _t2('common_page') %>">
+            <ul class="pagination pagination-sm mb-0" id="userPager"></ul>
+          </nav>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- Edit modal: values ALWAYS come from the backend details endpoint, so what
+     you see is exactly what the database holds (no stale "saved" checkboxes). -->
+<div class="modal fade" id="editModal" tabindex="-1" aria-labelledby="editModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content" style="border-radius:18px;">
+      <form id="editForm" method="POST">
+        <div class="modal-header" style="background:linear-gradient(135deg,var(--primary),#ff3340); color:#fff; border-radius:18px 18px 0 0;"><h5 class="modal-title fw-bold" id="editModalLabel"><%= _t2('adm_edit_user') %></h5><button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="<%= _t2('common_close') %>"></button></div>
+        <div class="modal-body row g-2">
+          <div id="editError" class="col-12 d-none"><div class="alert alert-danger small rounded-3 mb-0"></div></div>
+          <div id="editLoading" class="col-12 d-none"><div class="text-center text-muted py-3"><span class="spinner-border spinner-border-sm me-2"></span><%= _t2('common_loading') %></div></div>
+          <div class="col-12"><label class="form-label" for="e_name"><%= _t2('common_name') %></label><input name="name" id="e_name" class="form-control" required></div>
+          <div class="col-md-6"><label class="form-label" for="e_email"><%= _t2('common_email') %></label><input name="email" id="e_email" class="form-control" required></div>
+          <div class="col-md-6"><label class="form-label" for="e_phone"><%= _t2('common_phone') %></label><input name="phone" id="e_phone" class="form-control" required></div>
+          <div class="col-md-4"><label class="form-label" for="e_blood"><%= _t2('common_blood_group') %></label><select name="blood_group" id="e_blood" class="form-select"><% ["A+","A-","B+","B-","O+","O-","AB+","AB-"].forEach(bg=>{ %><option><%= bg %></option><% }) %></select></div>
+          <div class="col-md-4"><label class="form-label" for="e_district"><%= _t2('common_district') %></label><input name="district" id="e_district" class="form-control"></div>
+          <div class="col-md-4"><label class="form-label" for="e_upazila"><%= _t2('common_upazila') %></label><input name="upazila" id="e_upazila" class="form-control"></div>
+          <div class="col-12"><label class="form-label" for="e_holding"><%= _t2('auth_holding') %></label><input name="address_holding" id="e_holding" class="form-control"></div>
+          <div class="col-12"><label class="form-label" for="e_password"><%= _t2('adm_new_password_keep') %></label><input name="new_password" id="e_password" type="password" class="form-control" placeholder="Min 8 chars" autocomplete="new-password"></div>
+          <div class="col-4"><div class="form-check"><input type="checkbox" name="is_verified" id="e_verified" class="form-check-input"><label class="form-check-label" for="e_verified"><%= _t2('st_verified') %></label></div></div>
+          <div class="col-4"><div class="form-check"><input type="checkbox" name="is_admin" id="e_admin" class="form-check-input"><label class="form-check-label" for="e_admin">Admin</label></div></div>
+          <div class="col-4"><div class="form-check"><input type="checkbox" name="can_donate" id="e_can" class="form-check-input"><label class="form-check-label" for="e_can"><%= _t2('st_available') %></label></div></div>
+        </div>
+        <div class="modal-footer"><button type="button" class="btn btn-light border rounded-pill" data-bs-dismiss="modal"><%= _t2('common_cancel') %></button><button type="submit" class="btn btn-danger rounded-pill"><%= _t2('common_save') %></button></div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  // ---- search + filters + pagination over the REAL all_users payload ----
+  var PAGE = 20, page = 1;
+  var rows = Array.prototype.slice.call(document.querySelectorAll('#usersTable tbody tr'));
+  var q = '', role = '', status = '';
+
+  function apply(){
+    var visible = rows.filter(function(tr){
+      if (q && tr.dataset.search.indexOf(q) < 0) return false;
+      if (role && tr.dataset.role !== role) return false;
+      if (status === 'verified' && tr.dataset.verified !== '1') return false;
+      if (status === 'unverified' && tr.dataset.verified !== '0') return false;
+      if (status === 'available' && tr.dataset.candonate !== '1') return false;
+      return true;
+    });
+    var pages = Math.max(1, Math.ceil(visible.length / PAGE));
+    if (page > pages) page = pages;
+    var start = (page - 1) * PAGE, end = start + PAGE;
+    rows.forEach(function(tr){ tr.classList.add('d-none'); });
+    visible.slice(start, end).forEach(function(tr){ tr.classList.remove('d-none'); });
+    document.getElementById('usersEmpty').classList.toggle('d-none', visible.length > 0);
+    document.getElementById('userCount').textContent = visible.length;
+    document.getElementById('rangeLabel').textContent = visible.length
+      ? (start + 1) + '–' + Math.min(end, visible.length) + ' / ' + visible.length
+      : '0';
+    renderPager(pages);
+  }
+  function renderPager(pages){
+    var ul = document.getElementById('userPager');
+    ul.innerHTML = '';
+    if (pages <= 1) return;
+    function li(label, target, disabled, active){
+      var node = document.createElement('li');
+      node.className = 'page-item' + (disabled ? ' disabled' : '') + (active ? ' active' : '');
+      var a = document.createElement('a');
+      a.className = 'page-link'; a.href = '#'; a.textContent = label;
+      a.onclick = function(e){ e.preventDefault(); if (!disabled) { page = target; apply(); } };
+      node.appendChild(a); ul.appendChild(node);
+    }
+    li('‹', page - 1, page === 1, false);
+    for (var i = 1; i <= pages; i++) {
+      if (pages > 7 && i > 2 && i < pages - 1 && Math.abs(i - page) > 1) {
+        if (i === 3) li('…', i, true, false);
+        continue;
+      }
+      li(String(i), i, false, i === page);
+    }
+    li('›', page + 1, page === pages, false);
+  }
+  document.getElementById('userSearch').addEventListener('input', function(e){ q = e.target.value.toLowerCase(); page = 1; apply(); });
+  document.getElementById('roleFilter').addEventListener('change', function(e){ role = e.target.value; page = 1; apply(); });
+  document.getElementById('statusFilter').addEventListener('change', function(e){ status = e.target.value; page = 1; apply(); });
+  apply();
+
+  // ---- edit modal: backend details are the single source of truth ----
+  window.openEdit = function(id){
+    var form = document.getElementById('editForm');
+    var errBox = document.getElementById('editError');
+    var loadBox = document.getElementById('editLoading');
+    errBox.classList.add('d-none');
+    loadBox.classList.remove('d-none');
+    form.action = '/admin/user/update/' + id;
+    var modal = new bootstrap.Modal(document.getElementById('editModal'));
+    modal.show();
+    fetch('/admin/user/details/' + id, { headers: { 'X-Requested-With': 'XMLHttpRequest' } })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+      .then(function(res){
+        loadBox.classList.add('d-none');
+        if (!res.ok || res.d.error) {
+          errBox.querySelector('.alert').textContent = (res.d && res.d.error) || 'Error';
+          return;
+        }
+        var u = res.d;
+        // Fill EVERY field from the backend row — checkboxes included — so the
+        // form always shows the permissions the database actually holds.
+        document.getElementById('e_name').value = u.name || '';
+        document.getElementById('e_email').value = u.email || '';
+        document.getElementById('e_phone').value = u.phone || '';
+        document.getElementById('e_blood').value = u.blood_group || 'O+';
+        document.getElementById('e_district').value = u.district || '';
+        document.getElementById('e_upazila').value = u.upazila || '';
+        document.getElementById('e_holding').value = u.address_holding || '';
+        document.getElementById('e_password').value = '';
+        document.getElementById('e_verified').checked = !!u.is_verified;
+        document.getElementById('e_admin').checked = !!u.is_admin;
+        document.getElementById('e_can').checked = !!u.can_donate;
+      })
+      .catch(function(e){
+        loadBox.classList.add('d-none');
+        errBox.querySelector('.alert').textContent = 'Network error';
+      });
+  };
+
+  // Show server errors from the save (403 / validation) inside the modal.
+  document.getElementById('editForm').addEventListener('submit', function(e){
+    e.preventDefault();
+    var form = e.target;
+    var errBox = document.getElementById('editError');
+    fetch(form.action, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded', 'X-Requested-With': 'XMLHttpRequest' },
+      body: new URLSearchParams(new FormData(form)).toString()
+    })
+      .then(function(r){ return r.json().then(function(d){ return { ok: r.ok, d: d }; }); })
+      .then(function(res){
+        if (res.ok && res.d.success) { location.reload(); }
+        else {
+          errBox.querySelector('.alert').textContent = (res.d && res.d.error) || 'Failed';
+          errBox.classList.remove('d-none');
+        }
+      })
+      .catch(function(){
+        errBox.querySelector('.alert').textContent = 'Network error';
+        errBox.classList.remove('d-none');
+      });
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

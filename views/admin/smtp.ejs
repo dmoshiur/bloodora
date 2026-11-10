@@ -1,0 +1,173 @@
+<%- include('../partials/header') %>
+<%
+  const _s = (typeof settings !== 'undefined' && settings) ? settings : {};
+  const _logs = (typeof logs !== 'undefined' && logs) ? logs : [];
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const PRESETS = [
+    ['Gmail / Google Workspace', 'smtp.gmail.com', 587, 0, 'Use an App Password (Google → Security → 2-Step Verification → App passwords), not your normal password.'],
+    ['Outlook / Microsoft 365', 'smtp.office365.com', 587, 0, 'Enable SMTP AUTH for the mailbox in the Microsoft 365 admin centre.'],
+    ['Brevo (Sendinblue)', 'smtp-relay.brevo.com', 587, 0, 'Free 300 emails/day. Username is your Brevo login email; the password is the SMTP key.'],
+    ['Mailtrap', 'live.smtp.mailtrap.io', 587, 0, 'Good for testing before going live.'],
+    ['Hostinger', 'smtp.hostinger.com', 465, 1, 'Create a mailbox under Emails → Email Accounts first.'],
+    ['Custom / other', '', 587, 0, 'Enter your provider’s SMTP host, port and credentials.'],
+  ];
+%>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-envelope-open-text text-danger me-2"></i>SMTP &amp; Email</h2>
+      <small class="text-muted">Order receipts, support alerts and contact-form notifications are sent through this server.</small>
+    </div>
+    <span class="badge <%= _s.smtp_enabled ? 'bg-success' : 'bg-secondary' %> rounded-pill">
+      <i class="fas fa-<%= _s.smtp_enabled ? 'circle-check' : 'circle-pause' %> me-1"></i><%= _s.smtp_enabled ? 'Enabled' : 'Disabled' %>
+    </span>
+  </div>
+
+  <div class="admin-wrapper">
+    <%- include('_sidebar', { active: 'smtp', stats: {} }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-3">
+        <div class="col-lg-8">
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <form method="POST" action="/admin/smtp" class="row g-3" id="smtp-form">
+                <div class="col-12">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="smtp_enabled" id="smtp_enabled" <%= _s.smtp_enabled ? 'checked' : '' %>>
+                    <label class="form-check-label fw-bold" for="smtp_enabled">Enable email sending</label>
+                  </div>
+                  <div class="small text-muted">When off, every send is skipped and logged as disabled — the site keeps working normally.</div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Quick preset</label>
+                  <select class="form-select" id="preset">
+                    <option value="">Choose a provider…</option>
+                    <% PRESETS.forEach(function(p, i){ %><option value="<%= i %>"><%= p[0] %><%= p[1] ? ' — ' + p[1] : '' %></option><% }) %>
+                  </select>
+                  <div class="form-text" id="preset-note">Selecting a preset fills the host, port and TLS fields.</div>
+                </div>
+
+                <div class="col-md-8"><label class="form-label">SMTP host</label><input name="smtp_host" id="f_host" class="form-control" value="<%= _s.smtp_host %>" placeholder="smtp.gmail.com"></div>
+                <div class="col-md-4"><label class="form-label">Port</label><input name="smtp_port" id="f_port" type="number" class="form-control" value="<%= _s.smtp_port || 587 %>"></div>
+
+                <div class="col-md-6"><label class="form-label">Username</label><input name="smtp_user" class="form-control" value="<%= _s.smtp_user %>" autocomplete="off"></div>
+                <div class="col-md-6">
+                  <label class="form-label">Password / API key</label>
+                  <div class="input-group">
+                    <input name="smtp_pass" id="f_pass" type="password" class="form-control" value="<%= _s.smtp_pass %>" autocomplete="new-password">
+                    <button class="btn btn-light border" type="button" onclick="var p=document.getElementById('f_pass'); p.type = p.type==='password'?'text':'password';"><i class="fas fa-eye"></i></button>
+                  </div>
+                  <div class="form-text">Leave as-is to keep the stored password. Clear the field to remove it.</div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Connection security</label>
+                  <select name="smtp_secure" class="form-select">
+                    <option value="0" <%= !_s.smtp_secure ? 'selected' : '' %>>STARTTLS / opportunistic (ports 25, 587)</option>
+                    <option value="1" <%= _s.smtp_secure ? 'selected' : '' %>>Implicit TLS / SSL (port 465)</option>
+                  </select>
+                </div>
+                <div class="col-md-6">
+                  <div class="form-check form-switch mt-4">
+                    <input class="form-check-input" type="checkbox" id="secure_toggle" <%= _s.smtp_secure ? 'checked' : '' %>>
+                    <label class="form-check-label" for="secure_toggle">Use implicit TLS (port 465)</label>
+                  </div>
+                </div>
+
+                <div class="col-12"><hr><h6 class="fw-bold mb-2"><i class="fas fa-signature me-2 text-danger"></i>From address</h6></div>
+                <div class="col-md-5"><label class="form-label">From name</label><input name="smtp_from_name" class="form-control" value="<%= _s.smtp_from_name %>"></div>
+                <div class="col-md-7"><label class="form-label">From email</label><input name="smtp_from_email" type="email" class="form-control" value="<%= _s.smtp_from_email %>" placeholder="no-reply@yourdomain.com"></div>
+
+                <div class="col-12 d-flex gap-2 flex-wrap">
+                  <button type="submit" class="btn btn-danger rounded-pill px-4"><i class="fas fa-save me-1"></i>Save SMTP settings</button>
+                  <a href="/admin" class="btn btn-light border rounded-pill">Back</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4">
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-2"><i class="fas fa-paper-plane me-2 text-danger"></i>Send a test email</h6>
+              <p class="small text-muted">Runs a real <code>transport.verify()</code> then sends a message, and reports the exact server error if it fails.</p>
+              <form method="POST" action="/admin/smtp/test" class="d-grid gap-2">
+                <input name="to" type="email" class="form-control" placeholder="recipient@example.com" value="<%= _s.smtp_from_email %>">
+                <button class="btn btn-dark rounded-pill"><i class="fas fa-vial-circle-check me-1"></i>Send test</button>
+              </form>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-2"><i class="fas fa-bolt me-2 text-danger"></i>What sends mail</h6>
+              <ul class="small text-muted mb-0 ps-3 d-grid gap-1">
+                <li>Order confirmation receipts</li>
+                <li>Live Messaging alerts to the admin team</li>
+                <li>Contact form notifications</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Outgoing mail log -->
+      <div class="card border-0 shadow-sm mt-3" style="border-radius:20px;">
+        <div class="card-body p-4">
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h6 class="fw-bold mb-0"><i class="fas fa-clock-rotate-left me-2 text-danger"></i>Outgoing email log</h6>
+            <span class="badge bg-light text-dark border rounded-pill"><%= _logs.length %> entries</span>
+          </div>
+          <% if (_logs.length) { %>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead><tr><th>When</th><th>To</th><th>Subject</th><th>Status</th><th>Error</th></tr></thead>
+                <tbody>
+                  <% _logs.slice(0,40).forEach(function(l){ %>
+                    <tr>
+                      <td class="small text-nowrap"><%= String(l.created_at||'').slice(0,19).replace('T',' ') %></td>
+                      <td class="small"><%= l.to_email %></td>
+                      <td class="small"><%= l.subject %></td>
+                      <td><span class="badge <%= l.status==='sent' ? 'bg-success' : 'bg-danger' %>"><%= l.status %></span></td>
+                      <td class="small text-danger"><%= l.error || '' %></td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="alert alert-light border text-center small mb-0 rounded-3">No emails sent yet.</div>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  var PRESETS = <%- JSON.stringify(PRESETS) %>;
+  var sel = document.getElementById('preset');
+  sel.addEventListener('change', function(){
+    if (sel.value === '') return;
+    var p = PRESETS[Number(sel.value)];
+    if (p[1]) document.getElementById('f_host').value = p[1];
+    document.getElementById('f_port').value = p[2];
+    document.querySelector('[name="smtp_secure"]').value = String(p[3]);
+    document.getElementById('secure_toggle').checked = !!p[3];
+    document.getElementById('preset-note').textContent = p[4];
+  });
+  document.getElementById('secure_toggle').addEventListener('change', function(e){
+    var on = e.target.checked;
+    document.querySelector('[name="smtp_secure"]').value = on ? '1' : '0';
+    document.getElementById('f_port').value = on ? 465 : 587;
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,139 @@
+<%
+  const _t   = (typeof t === 'function') ? t : (k) => k;
+  const _q   = (typeof query !== 'undefined' && query) ? query : {};
+  const _cats= (typeof categories !== 'undefined' && categories) ? categories : [];
+  const _rs  = (typeof resources !== 'undefined' && resources) ? resources : [];
+  const CAT_ICON = { 'Donation':'fa-hand-holding-heart', 'Education':'fa-graduation-cap', 'First-Aid':'fa-kit-medical', 'Health':'fa-heart-pulse' };
+  const CAT_COLOR= { 'Donation':'#dc2626', 'Education':'#0284c7', 'First-Aid':'#d97706', 'Health':'#16a34a' };
+  // The stored category is the canonical English key (it drives the URL filter
+  // and the maps above); the visitor sees the translated label instead.
+  const CAT_KEY  = { 'Donation':'res_cat_donation', 'Education':'res_cat_education', 'First-Aid':'res_cat_first_aid', 'Health':'res_cat_health' };
+  const catLabel = (c) => CAT_KEY[c] ? _t(CAT_KEY[c]) : (c ? c : _t('res_cat_general'));
+  const _mins = (v) => String(v == null || v === '' ? '3' : v).replace(/\s*mins?\s*$/i, '');
+%>
+<%- include('partials/header') %>
+
+<div class="container mt-4 mb-5">
+  <div class="text-center mb-4">
+    <div class="eyebrow mb-2"><%= _t('res_library') %></div>
+    <h1 class="display-title mb-2"><i class="fas fa-graduation-cap text-danger me-2"></i><%= _t('nav_education') %></h1>
+    <p class="text-muted mb-0" style="max-width:82ch; margin-inline:auto;">
+      <%= _t('res_lead') %>
+    </p>
+  </div>
+
+  <% if (typeof loadError !== 'undefined' && loadError) { %>
+    <div class="alert alert-warning border-0 rounded-4 mb-4"><i class="fas fa-triangle-exclamation me-2"></i><%= _t('res_load_error') %></div>
+  <% } %>
+
+  <!-- Category filters + search -->
+  <div class="card border-0 shadow-sm mb-4" style="border-radius:20px;">
+    <div class="card-body p-3">
+      <form method="GET" class="row g-2 align-items-center">
+        <div class="col-md-4">
+          <select name="category" class="form-select" onchange="this.form.submit()">
+            <option value=""><%= _t('res_all_cats') %></option>
+            <% _cats.forEach(function(c){ %>
+              <option value="<%= c %>" <%= _q.category===c ? 'selected' : '' %>><%= catLabel(c) %></option>
+            <% }) %>
+          </select>
+        </div>
+        <div class="col-md-6">
+          <div class="input-group">
+            <span class="input-group-text bg-white"><i class="fas fa-search text-muted"></i></span>
+            <input type="text" name="q" class="form-control" value="<%= _q.q || '' %>" placeholder="<%= _t('res_search_ph') %>">
+          </div>
+        </div>
+        <div class="col-md-2 d-grid"><button class="btn btn-danger"><i class="fas fa-filter me-1"></i><%= _t('common_search') %></button></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div class="d-flex flex-wrap gap-2">
+      <a href="/resources" class="btn btn-sm <%= !_q.category ? 'btn-danger':'btn-outline-danger' %> rounded-pill"><%= _t('common_all') %></a>
+      <% _cats.forEach(function(c){ %>
+        <a href="/resources?category=<%= encodeURIComponent(c) %>" class="btn btn-sm <%= _q.category===c ? 'btn-danger':'btn-outline-danger' %> rounded-pill">
+          <i class="fas <%= CAT_ICON[c] || 'fa-book' %> me-1"></i><%= catLabel(c) %>
+        </a>
+      <% }) %>
+    </div>
+    <span class="small text-muted"><%= _rs.length %> <%= _t('res_articles_count') %></span>
+  </div>
+
+  <div class="row g-3">
+    <% if (_rs.length) { %>
+      <% _rs.forEach(function(r){ %>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4 d-flex flex-column">
+              <div class="d-flex align-items-center justify-content-between mb-2">
+                <span class="badge" style="background:color-mix(in srgb, <%= CAT_COLOR[r.category] || '#64748b' %> 12%, #fff); color:<%= CAT_COLOR[r.category] || '#64748b' %>; border:1px solid color-mix(in srgb, <%= CAT_COLOR[r.category] || '#64748b' %> 28%, transparent);">
+                  <i class="fas <%= CAT_ICON[r.category] || 'fa-book' %> me-1"></i><%= catLabel(r.category) %>
+                </span>
+                <% if (r.is_featured) { %><span class="badge bg-warning text-dark"><i class="fas fa-crown me-1"></i><%= _t('common_featured') %></span><% } %>
+              </div>
+
+              <h5 class="fw-bold mb-2" style="font-family:var(--font-display); font-size:1.18rem; line-height:1.3;"><%= r.title %></h5>
+
+              <% if (r.summary) { %><p class="small text-muted mb-2 fst-italic" style="line-height:1.6;"><%= r.summary %></p><% } %>
+
+              <p class="small mb-3" style="color:#475569; line-height:1.72; display:-webkit-box; -webkit-line-clamp:6; -webkit-box-orient:vertical; overflow:hidden;"><%= r.content %></p>
+
+              <div class="mt-auto">
+                <div class="d-flex align-items-center justify-content-between small text-muted mb-2">
+                  <span><i class="fas fa-clock me-1"></i><%= _mins(r.read_time) %> <%= _t('common_minutes') %></span>
+                  <% if (r.source === 'database') { %><span class="badge bg-light text-dark border" style="font-size:.62rem;"><%= _t('res_admin_badge') %></span><% } %>
+                </div>
+                <button class="btn btn-sm btn-outline-danger w-100" type="button" data-bs-toggle="collapse" data-bs-target="#res-<%= String(r.id).replace(/[^a-z0-9]/gi,'') %>">
+                  <i class="fas fa-book-open me-1"></i><%= _t('common_read_more') %>
+                </button>
+                <div class="collapse mt-2" id="res-<%= String(r.id).replace(/[^a-z0-9]/gi,'') %>">
+                  <div class="p-3 rounded-4 small" style="background:#f8fafc; border:1px solid #e2e8f0; line-height:1.78; color:#334155;"><%= r.content %></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12">
+        <div class="alert alert-info text-center border-0 shadow-sm rounded-4 py-4">
+          <i class="fas fa-folder-open fa-2x d-block mb-2 text-muted"></i>
+          <%= _t('res_no_match') %>
+          <a href="/resources" class="alert-link ms-1"><%= _t('common_all') %></a>
+        </div>
+      </div>
+    <% } %>
+  </div>
+
+  <!-- Related -->
+  <div class="row g-3 mt-4">
+    <div class="col-12">
+      <div class="card border-0 shadow-sm" style="border-radius:22px; background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;">
+        <div class="card-body p-4">
+          <h2 class="h6 fw-bold mb-3" style="color:#fff;"><i class="fas fa-link me-2"></i><%= _t('res_related_title') %></h2>
+          <div class="row g-2">
+            <% [
+              ['/compatibility','fa-vial', _t('nav_compatibility')],
+              ['/antid','fa-syringe', _t('nav_antid')],
+              ['/donation-guidelines','fa-clipboard-list', _t('nav_guidelines')],
+              ['/faq','fa-circle-question', _t('nav_faq')],
+              ['/reviews','fa-star', _t('rev_title')],
+              ['/donors','fa-users', _t('nav_donors')]
+            ].forEach(function(l){ %>
+              <div class="col-6 col-md-4 col-lg-2">
+                <a href="<%= l[0] %>" class="d-flex flex-column align-items-center gap-2 p-3 rounded-4 text-decoration-none text-center h-100" style="background:rgba(255,255,255,.07); border:1px solid rgba(255,255,255,.12); color:#e2e8f0;">
+                  <i class="fas <%= l[1] %>" style="font-size:1.2rem; color:#fda4af;"></i>
+                  <span class="small fw-bold"><%= l[2] %></span>
+                </a>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<%- include('partials/footer') %>

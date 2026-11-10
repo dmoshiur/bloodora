@@ -1,0 +1,10 @@
+<%- include('partials/header') %>
+<%- include('errors/error', {
+  errCode: 500,
+  errIcon: 'fa-triangle-exclamation',
+  errTitle: t('err_500_title'),
+  errBody: t('err_500_body'),
+  errDetail: (typeof detail !== 'undefined' && detail) ? detail : '',
+  errRequest: (typeof requestPath !== 'undefined') ? requestPath : ''
+}) %>
+<%- include('partials/footer') %>

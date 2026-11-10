@@ -1,0 +1,57 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3 mb-3">
+    <div>
+      <h2 class="fw-bold mb-1"><i class="fas fa-tint text-danger me-2"></i><%= _t('req_title') %></h2>
+      <p class="text-muted mb-0"><%= _t('req_sub') %></p>
+    </div>
+    <a href="/request-blood" class="btn btn-danger"><i class="fas fa-plus-circle me-2"></i><%= _t('req_new') %></a>
+  </div>
+
+  <div class="card border-0 shadow-sm p-3 mb-4" style="border-radius:18px;">
+    <form method="GET" class="row g-2">
+      <div class="col-md-3"><select name="bg" class="form-select"><option value=""><%= _t('req_any_bg') %></option><% ["A+","A-","B+","B-","O+","O-","AB+","AB-"].forEach(bg=>{ %><option value="<%= bg %>" <%= (query && query.bg===bg)?'selected':'' %>><%= bg %></option><% }) %></select></div>
+      <div class="col-md-3"><input name="division" class="form-control" placeholder="<%= _t('common_division') %>" value="<%= query.division||'' %>"></div>
+      <div class="col-md-3"><input name="dist" class="form-control" placeholder="<%= _t('common_district') %>" value="<%= query.dist||'' %>"></div>
+      <div class="col-md-2"><select name="urgent" class="form-select"><option value=""><%= _t('common_all') %></option><option value="true" <%= query.urgent==='true'?'selected':'' %>><%= _t('req_urgent_only') %></option></select></div>
+      <div class="col-md-1 d-grid"><button class="btn btn-danger" aria-label="<%= _t('common_search') %>"><i class="fas fa-search"></i></button></div>
+    </form>
+  </div>
+
+  <% if (requests && requests.length){ %>
+    <div class="row g-3">
+      <% requests.forEach(r=>{ %>
+        <div class="col-md-6 col-lg-4">
+          <div class="card h-100 border-0 shadow-sm" style="border-radius:18px; <%= r.is_urgent?'border-top:4px solid var(--primary);':'' %>">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-center mb-2">
+                <span class="badge bg-danger rounded-pill" style="font-size:.9rem;"><%= r.blood_group %> • <%= r.quantity || _t('req_1unit') %></span>
+                <% if(r.is_urgent){ %><span class="badge bg-warning text-dark rounded-pill"><i class="fas fa-bolt me-1"></i><%= _t('st_urgent') %></span><% } %>
+              </div>
+              <h6 class="fw-bold mb-1"><%= r.patient_name %> <small class="text-muted">(<%= r.patient_relation ? _t('req_' + r.patient_relation.toLowerCase(), {}) || r.patient_relation : _t('req_self') %>)</small></h6>
+              <div class="small text-muted d-grid gap-1">
+                <div><i class="fas fa-hospital me-2 text-danger"></i><%= r.hospital_name %></div>
+                <div><i class="fas fa-map-marker-alt me-2 text-danger"></i><%= [r.location_upazila, r.location_district, r.location_division].filter(Boolean).join(', ') %></div>
+                <div><i class="fas fa-clock me-2 text-danger"></i><%= _t('req_needed') %>: <%= new Date(r.needed_by).toLocaleString() %></div>
+                <div><i class="fas fa-phone me-2 text-danger"></i><%= r.contact_person %> • <%= r.contact_phone %></div>
+              </div>
+              <% if(r.additional_info){ %><div class="mt-2 p-2 rounded-3 small" style="background:#f8fafc; border:1px solid #e2e8f0;"><%= r.additional_info %></div><% } %>
+            </div>
+            <div class="card-footer bg-white border-0 d-flex gap-2">
+              <a href="/blood-request/<%= r.id %>" class="btn btn-danger btn-sm flex-fill rounded-pill"><%= _t('req_view') %></a>
+              <% if (typeof currentUser !== 'undefined' && currentUser){ %>
+                <form method="POST" action="/blood-request/<%= r.id %>/fulfill" class="flex-fill"><button class="btn btn-outline-danger btn-sm w-100 rounded-pill"><i class="fas fa-check me-1"></i><%= _t('req_fulfill') %></button></form>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      <% }) %>
+    </div>
+  <% } else { %>
+    <div class="card border-0 shadow-sm text-center p-5" style="border-radius:18px;"><i class="fas fa-tint-slash fa-2x mb-3" style="color:#94a3b8;"></i><h5><%= _t('req_empty_title') %></h5><p class="text-muted"><%= _t('req_empty_sub') %></p><a href="/request-blood" class="btn btn-danger rounded-pill"><%= _t('req_new') %></a></div>
+  <% } %>
+</div>
+<%- include('partials/footer') %>
