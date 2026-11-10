@@ -59,11 +59,19 @@ Real-browser admin/integration pages, multipart profile forms, responsive layout
 - Nested exhausted deadlines consume abandoned inner rejections instead of crashing the process during SSE/session shutdown.
 - One root `app.ts` Express entrypoint and the shared `src/application.ts` factory prevent duplicate functions; test process groups clean up completely.
 
+## Hosted preview evidence
+
+Commit `6387c4ec50139525547032725e30149c1cca73d7` was deployed to the isolated `bloodora-unified` preview project as `dpl_5VTgWDK6qENMAUM3cQX1Gs8Ycc5x` (`https://bloodora-unified-ofby75vij-armx-ai.vercel.app`). Vercel reported **READY** in `iad1` on Node 22.x. Deployment metadata reports `lambdaRuntimeStats: {"nodejs":1}` and exactly one Lambda output; the configured function is root `app.ts` with 1024 MB, a 10-second maximum, and `views/**` plus `public/**` included.
+
+The preview's HTTP smoke test is still blocked by Vercel Deployment Protection: requesting `/health` redirects to Vercel's login page rather than executing the application. The connected Vercel tools do not expose a protection-bypass code or a control to disable protection, so no hosted application response is claimed as verified.
+
+This isolated preview uses `file:/tmp/bloodora-unified-preview.db`. That database is suitable only for temporary validation: it is ephemeral, can differ between instances, and is not durable staging storage. SMS, email, and Blob providers are disabled/unconfigured in this preview. Existing production projects, domains, aliases, environment variables, and Turso data were not changed or promoted.
+
 ## Not externally verified
 
 The following remain release-gating external checks where their providers are required:
 
-- Vercel preview deployment and protected-preview smoke tests;
+- protected-preview application smoke tests (the deployment itself is READY with one Lambda);
 - real Vercel Blob object write/read/replacement/deletion;
 - real Resend and SMTP delivery/fallback;
 - real GreenWeb/SSL Wireless delivery, sender IDs, receipts, and costs;
