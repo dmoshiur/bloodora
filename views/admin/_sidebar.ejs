@@ -1,0 +1,67 @@
+<%
+  // Shared admin sidebar. Locals: `active` (string), `stats` (optional).
+  const _active = (typeof active !== 'undefined') ? active : '';
+  const _st = (typeof stats !== 'undefined' && stats) ? stats : {};
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  const _p  = (typeof currentPath !== 'undefined') ? currentPath : '';
+  const link = (key, href, icon, label, badge, badgeClass) => {
+    const on = _active === key || (_active === '' && href === '/admin') ? ' active' : '';
+    return `<a class="${on}" href="${href}"><i class="fas ${icon}"></i><span>${label}</span>` +
+      (badge ? `<span class="badge ${badgeClass || 'bg-danger'} ms-auto">${badge}</span>` : '') + `</a>`;
+  };
+%>
+<style>
+  .admin-wrapper{ display:flex; min-height:70vh; gap:1.5rem; }
+  .sidebar{ width:264px; min-width:0; max-width:100%; flex-shrink:0; background:linear-gradient(180deg,#0f172a 0%, #0b1220 100%); color:#fff; border-radius:20px; padding:18px; position:sticky; top:88px; height:fit-content; }
+  .sidebar a{ color:#cbd5e1; text-decoration:none; display:flex; align-items:center; gap:10px; padding:10px 13px; border-radius:12px; font-weight:600; font-size:.88rem; transition:all .18s; }
+  .sidebar a.btn-light{ color:#0f172a; }
+  .sidebar a:hover{ background:rgba(255,255,255,.08); color:#fff; }
+  .sidebar a.active{ background:linear-gradient(135deg,var(--primary),var(--accent)); box-shadow:0 8px 20px rgba(227,27,35,.3); color:#fff; }
+  .sidebar .side-label{ font-size:.66rem; text-transform:uppercase; letter-spacing:.16em; color:#64748b; padding:12px 13px 4px; font-weight:700; }
+  @media(max-width:991px){
+    .sidebar{ width:100%; position:static; }
+    .admin-wrapper{ flex-direction:column; }
+    .sidebar nav{ display:flex !important; overflow-x:auto; gap:6px; padding-bottom:4px; }
+    .sidebar nav a{ white-space:nowrap; flex-shrink:0; }
+    .sidebar .side-label{ display:none; }
+  }
+</style>
+<aside class="sidebar" aria-label="<%= _t2('nav_admin') %>">
+  <div class="text-center py-2">
+    <div class="fw-bold" style="font-family:var(--font-display); font-size:1.15rem;"><i class="fas fa-tint text-danger me-2"></i><%= (typeof siteName!=='undefined')?siteName:'BloodOra' %> <%= _t2('nav_admin') %></div>
+    <small style="color:#94a3b8;"><%= (typeof currentUser!=='undefined'&&currentUser)?currentUser.name:'' %></small>
+  </div>
+  <hr style="border-color:rgba(255,255,255,.08);">
+  <nav class="d-grid gap-1">
+    <div class="side-label"><%= _t2('adm_overview') %></div>
+    <%- link('dashboard', '/admin', 'fa-gauge', _t2('adm_dashboard'), _st.pending_orders, 'bg-warning text-dark') %>
+    <%- link('users', '/admin/users', 'fa-users-gear', _t2('adm_users'), _st.total_users, 'bg-secondary') %>
+    <%- link('activity', '/admin/activity', 'fa-broadcast-tower', _t2('adm_activity')) %>
+
+    <div class="side-label"><%= _t2('adm_shop') %></div>
+    <%- link('products', '/shop/admin/products', 'fa-box', _t2('adm_products'), _st.total_products, 'bg-secondary') %>
+    <%- link('orders', '/shop/admin/orders', 'fa-cart-shopping', _t2('adm_orders'), _st.pending_orders, 'bg-warning text-dark') %>
+
+    <div class="side-label"><%= _t2('adm_community') %></div>
+    <%- link('reviews', '/admin/reviews', 'fa-star', _t2('adm_reviews')) %>
+    <%- link('livechat', '/admin/live-chat', 'fa-comments', _t2('adm_livechat')) %>
+    <%- link('messages', '/messages/admin/messages', 'fa-envelope', _t2('adm_messages'), _st.unread_messages, 'bg-danger') %>
+    <%- link('request-blood', '/request-blood', 'fa-plus-circle', _t2('nav_request')) %>
+    <%- link('profile', '/profile', 'fa-user', _t2('nav_my_profile')) %>
+    <%- link('requests', '/blood-requests', 'fa-tint', _t2('adm_requests'), _st.urgent_requests, 'bg-danger') %>
+
+    <div class="side-label"><%= _t2('adm_site') %></div>
+    <%- link('content', '/admin/content', 'fa-newspaper', _t2('adm_content')) %>
+    <%- link('branding', '/admin/branding', 'fa-palette', _t2('adm_branding')) %>
+    <%- link('smtp', '/admin/smtp', 'fa-envelope-open-text', _t2('adm_smtp')) %>
+    <%- link('integrations', '/admin/integrations', 'fa-plug-circle-check', 'Integrations & SMS') %>
+    <%- link('ai', '/admin/ai', 'fa-robot', _t2('adm_ai')) %>
+    <%- link('settings', '/admin/settings', 'fa-gear', _t2('adm_settings')) %>
+  </nav>
+  <hr style="border-color:rgba(255,255,255,.08);">
+  <div class="d-grid gap-2">
+    <form action="/logout" method="POST"><button type="submit" class="btn btn-outline-light btn-sm rounded-pill w-100"><i class="fas fa-sign-out-alt me-2"></i><%= _t2('nav_logout') %></button></form>
+    <a href="/" class="btn btn-light btn-sm rounded-pill" style="justify-content:center;"><i class="fas fa-home me-2"></i><%= _t2('adm_back_site') %></a>
+    <a href="/admin/backup-database" class="btn btn-outline-light btn-sm rounded-pill" style="justify-content:center; border-color:rgba(255,255,255,.2); color:#fff;"><i class="fas fa-download me-2"></i><%= _t2('adm_backup') %></a>
+  </div>
+</aside>

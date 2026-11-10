@@ -1,0 +1,175 @@
+<%- include('../partials/header') %>
+<%
+  const _s = (typeof settings !== 'undefined' && settings) ? settings : {};
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const FONTS = [
+    ['calligraphic', 'Calligraphic', 'Cormorant Garamond + Great Vibes — elegant display type with a script tagline'],
+    ['serif', 'Serif', 'Cormorant Garamond headings with the same body face'],
+    ['modern', 'Modern', 'Inter throughout — geometric and neutral'],
+    ['classic', 'Classic', 'Georgia headings, traditional and conservative'],
+  ];
+%>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-palette text-danger me-2"></i>Branding &amp; Identity</h2>
+      <small class="text-muted">Logo, favicon, site name, tagline, brand colours and typography — applied across every page instantly.</small>
+    </div>
+    <span class="badge bg-dark rounded-pill"><i class="fas fa-wand-magic-sparkles me-1"></i>Live preview below</span>
+  </div>
+
+  <div class="admin-wrapper">
+    <%- include('_sidebar', { active: 'branding', stats: {} }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <form method="POST" action="/admin/branding" enctype="multipart/form-data" class="row g-3">
+                <div class="col-12">
+                  <h6 class="fw-bold mb-2"><i class="fas fa-image me-2 text-danger"></i>Logo &amp; Favicon</h6>
+                  <p class="small text-muted mb-3">The logo appears in the navbar and footer. The favicon is the browser-tab icon. Both are stored by the backend and served at <code>/logo.png</code> and <code>/favicon.ico</code>.</p>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Site logo <span class="text-muted small">(PNG / SVG / JPG — a transparent square works best)</span></label>
+                  <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="form-control">
+                  <div class="mt-2 p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <img id="logo-preview" src="/<%= _s.logo_file || 'logo.png' %>" style="max-height:64px; max-width:100%;" onerror="this.style.opacity=.25">
+                    <div class="small text-muted mt-1">Current: <code><%= _s.logo_file || 'logo.png' %></code></div>
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Favicon <span class="text-muted small">(square, 32–512px)</span></label>
+                  <input type="file" name="favicon" accept="image/png,image/x-icon,image/svg+xml,image/jpeg" class="form-control">
+                  <div class="mt-2 p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <img id="fav-preview" src="/<%= _s.favicon_file || 'favicon.ico' %>" style="width:48px; height:48px; object-fit:contain;" onerror="this.style.opacity=.25">
+                    <div class="small text-muted mt-1">Current: <code><%= _s.favicon_file || 'favicon.ico' %></code></div>
+                  </div>
+                </div>
+
+                <div class="col-12"><hr><h6 class="fw-bold mb-2"><i class="fas fa-signature me-2 text-danger"></i>Identity</h6></div>
+                <div class="col-md-6"><label class="form-label">Site name</label><input name="site_name" class="form-control" value="<%= _s.site_name %>" required></div>
+                <div class="col-md-6"><label class="form-label">Tagline <span class="text-muted small">(shown under the logo, in the footer, in the browser title)</span></label><input name="site_tagline" class="form-control" value="<%= _s.site_tagline %>"></div>
+                <div class="col-12"><label class="form-label">Description <span class="text-muted small">(meta description + footer)</span></label><textarea name="site_description" class="form-control" rows="2"><%= _s.site_description %></textarea></div>
+
+                <div class="col-12"><hr><h6 class="fw-bold mb-2"><i class="fas fa-droplet me-2 text-danger"></i>Brand colours</h6></div>
+                <div class="col-md-6">
+                  <label class="form-label">Primary <span class="text-muted small">(#RRGGBB)</span></label>
+                  <div class="input-group">
+                    <input type="color" class="form-control p-1" style="max-width:64px;" id="cp1" value="<%= _s.brand_primary || '#e31b23' %>">
+                    <input name="brand_primary" class="form-control" id="brand_primary" value="<%= _s.brand_primary || '#e31b23' %>" pattern="^#[0-9a-fA-F]{6}$">
+                  </div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Accent <span class="text-muted small">(gradient end)</span></label>
+                  <div class="input-group">
+                    <input type="color" class="form-control p-1" style="max-width:64px;" id="cp2" value="<%= _s.brand_accent || '#ff3340' %>">
+                    <input name="brand_accent" class="form-control" id="brand_accent" value="<%= _s.brand_accent || '#ff3340' %>" pattern="^#[0-9a-fA-F]{6}$">
+                  </div>
+                </div>
+
+                <div class="col-12"><hr><h6 class="fw-bold mb-2"><i class="fas fa-font me-2 text-danger"></i>Typography</h6></div>
+                <div class="col-12">
+                  <div class="row g-2">
+                    <% FONTS.forEach(function(f){ %>
+                      <div class="col-md-6">
+                        <label class="d-flex gap-2 p-3 rounded-4 h-100" style="border:1.5px solid <%= (_s.brand_font_style||'calligraphic')===f[0] ? 'var(--primary)' : '#e2e8f0' %>; background:#fff; cursor:pointer;">
+                          <input class="form-check-input mt-1" type="radio" name="brand_font_style" value="<%= f[0] %>" <%= (_s.brand_font_style||'calligraphic')===f[0] ? 'checked' : '' %>>
+                          <span>
+                            <span class="fw-bold d-block" style="font-family:<%= f[0]==='modern' ? 'Inter,sans-serif' : f[0]==='classic' ? 'Georgia,serif' : "'Cormorant Garamond',serif" %>; font-size:1.15rem;"><%= f[1] %></span>
+                            <span class="small text-muted"><%= f[2] %></span>
+                          </span>
+                        </label>
+                      </div>
+                    <% }) %>
+                  </div>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                  <a href="/admin" class="btn btn-light border rounded-pill">Back</a>
+                  <button type="submit" class="btn btn-danger rounded-pill px-4"><i class="fas fa-save me-1"></i>Save Branding</button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-3"><i class="fas fa-eye me-2 text-danger"></i>How it will look</h6>
+              <div class="rounded-4 p-3 mb-3" style="background:#fff; border:1px solid #e2e8f0;">
+                <div class="d-flex align-items-center gap-2 pb-2" style="border-bottom:1px solid #e2e8f0;">
+                  <img id="nav-logo" src="/<%= _s.logo_file || 'logo.png' %>" style="height:36px;" onerror="this.style.opacity=.2">
+                  <div>
+                    <div class="fw-bold" style="font-family:var(--font-display); font-size:1.3rem; color:var(--primary);" id="pv-name"><%= _s.site_name %></div>
+                    <div class="script-accent" style="font-size:.9rem; color:#64748b;" id="pv-tag"><%= _s.site_tagline %></div>
+                  </div>
+                </div>
+                <div class="mt-3 rounded-4 p-3 text-center" id="pv-hero" style="background:linear-gradient(135deg,<%= _s.brand_primary||'#e31b23' %>,<%= _s.brand_accent||'#ff3340' %>); color:#fff;">
+                  <div style="font-family:var(--font-display); font-size:1.5rem; font-weight:700;">Hero headline</div>
+                  <div class="small" style="opacity:.92;">Buttons and highlights use your primary colour</div>
+                  <div class="mt-2"><span class="btn btn-light btn-sm rounded-pill">Primary action</span></div>
+                </div>
+              </div>
+
+              <div class="alert alert-info border-0 rounded-4 small mb-0">
+                <i class="fas fa-circle-info me-1"></i>
+                Colours are injected as CSS variables on every page, so the navbar, buttons, hero, badges, error pages and both help widgets all follow them.
+              </div>
+
+              <hr class="my-3">
+              <h6 class="fw-bold mb-2"><i class="fas fa-list-check me-2 text-danger"></i>Also managed here</h6>
+              <ul class="small text-muted mb-0 ps-3 d-grid gap-1">
+                <li><a href="/admin/settings">Site Settings</a> — contact details, socials, payment merchant numbers, default language</li>
+                <li><a href="/admin/content">Content Manager</a> — Anti-D entries and educational resources</li>
+                <li><a href="/admin/smtp">SMTP &amp; Email</a> — outgoing mail server</li>
+                <li><a href="/admin/ai">AI Assistant</a> — Groq model and persona</li>
+              </ul>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  function bind(pickerId, inputId){
+    var p = document.getElementById(pickerId), i = document.getElementById(inputId);
+    if (!p || !i) return;
+    p.addEventListener('input', function(){ i.value = p.value; updatePreview(); });
+    i.addEventListener('input', function(){ if (/^#[0-9a-fA-F]{6}$/.test(i.value)) { p.value = i.value; updatePreview(); } });
+  }
+  function updatePreview(){
+    var a = document.getElementById('brand_primary').value || '#e31b23';
+    var b = document.getElementById('brand_accent').value || '#ff3340';
+    var hero = document.getElementById('pv-hero');
+    if (hero) hero.style.background = 'linear-gradient(135deg,' + a + ',' + b + ')';
+    document.documentElement.style.setProperty('--primary', a);
+    document.documentElement.style.setProperty('--accent', b);
+  }
+  bind('cp1','brand_primary'); bind('cp2','brand_accent');
+  // Live text preview
+  var nameInp = document.querySelector('[name="site_name"]');
+  var tagInp  = document.querySelector('[name="site_tagline"]');
+  if (nameInp) nameInp.addEventListener('input', function(){ document.getElementById('pv-name').textContent = nameInp.value; });
+  if (tagInp)  tagInp.addEventListener('input',  function(){ document.getElementById('pv-tag').textContent  = tagInp.value; });
+  // Image previews
+  document.querySelector('[name="logo"]').addEventListener('change', function(e){
+    var f = e.target.files[0]; if (f) document.getElementById('logo-preview').src = URL.createObjectURL(f);
+    if (f) document.getElementById('nav-logo').src = URL.createObjectURL(f);
+  });
+  document.querySelector('[name="favicon"]').addEventListener('change', function(e){
+    var f = e.target.files[0]; if (f) document.getElementById('fav-preview').src = URL.createObjectURL(f);
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

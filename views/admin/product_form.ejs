@@ -1,0 +1,42 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('../partials/header') %>
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg" style="border-radius:22px;">
+        <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+          <h4 class="fw-bold mb-0"><i class="fas fa-<%= product?'edit':'plus' %> me-2 text-danger"></i><%= product ? _t('adm_edit_product') : _t('adm_add_product') %></h4>
+          <a href="/shop/admin/products" class="btn btn-light border btn-sm rounded-pill"><i class="fas fa-arrow-left me-1"></i><%= _t('common_back') %></a>
+        </div>
+        <div class="card-body px-4">
+          <form method="POST" enctype="multipart/form-data" class="row g-3">
+            <div class="col-12"><label class="form-label"><%= _t('prod_name') %> *</label><input type="text" name="name" class="form-control" value="<%= product?product.name:'' %>" required></div>
+            <div class="col-12"><label class="form-label"><%= _t('prod_description') %> *</label><textarea name="description" class="form-control" rows="3" required><%= product?product.description:'' %></textarea></div>
+            <div class="col-md-6"><label class="form-label"><%= _t('prod_price') %> (৳) *</label><input type="number" step="0.01" name="price" class="form-control" value="<%= product?product.price:'' %>" required></div>
+            <div class="col-md-6"><label class="form-label"><%= _t('prod_stock') %> *</label><input type="number" name="stock" class="form-control" value="<%= product?product.stock:0 %>" required></div>
+            <div class="col-md-6"><label class="form-label"><%= _t('prod_category') %> *</label>
+              <select name="category" class="form-select" required>
+                <option value=""><%= _t('common_select') %></option>
+                <% ["Medicine","Healthcare","Supplements","Equipment","Other"].forEach(cat=>{ %>
+                  <option value="<%= cat %>" <%= (product && product.category===cat)?'selected':'' %>><%= _t('shop_cat_' + cat.toLowerCase(), {}) || cat %></option>
+                <% }) %>
+              </select>
+            </div>
+            <div class="col-md-6"><label class="form-label"><%= _t('prod_image') %></label>
+              <% if(product && product.image_file){ %><div class="mb-2"><img src="/uploads/<%= product.image_file %>" alt="<%= product.name %>" style="width:84px;height:84px;object-fit:cover; border-radius:12px; border:1px solid #e2e8f0;"></div><% } %>
+              <input type="file" name="image" class="form-control" accept="image/*"><small class="text-muted"><%= _t('adm_leave_blank_img') %></small>
+            </div>
+            <div class="col-12"><div class="form-check"><input type="checkbox" name="is_available" id="avail" class="form-check-input" <%= (!product || product.is_available)?'checked':'' %>><label class="form-check-label" for="avail"><%= _t('prod_available_for_sale') %></label></div></div>
+            <div class="col-12 d-flex gap-2">
+              <a href="/shop/admin/products" class="btn btn-light border rounded-pill"><%= _t('common_cancel') %></a>
+              <button type="submit" class="btn btn-<%= product?'success':'danger' %> rounded-pill px-4"><%= product ? _t('adm_update_product') : _t('adm_add_product') %></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

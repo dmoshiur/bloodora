@@ -1,0 +1,27 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('../partials/header') %>
+<div class="container mt-4">
+  <h2 class="fw-bold mb-3"><i class="fas fa-envelope text-danger me-2"></i><%= _t('adm_messages') %> <% if(unread){ %><span class="badge bg-danger"><%= unread %> <%= _t('msg_unread') %></span><% } %></h2>
+  <div class="card border-0 shadow-sm" style="border-radius:18px;">
+    <div class="list-group list-group-flush">
+      <% if (messages && messages.length){ %>
+        <% messages.forEach(m=>{ %>
+          <div class="list-group-item d-flex justify-content-between align-items-center">
+            <div>
+              <div class="fw-bold" style="font-size:.95rem;"><%= m.subject %> <% if(!m.is_read){ %><span class="badge bg-danger ms-2">●</span><% } %></div>
+              <div class="small text-muted"><%= _t('msg_from') %>: <%= m.sender_name||('User #'+m.sender_id) %> • <%= new Date(m.created_at).toLocaleString() %></div>
+              <div class="small text-muted" style="max-width:60ch; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><%= m.content.slice(0,120) %></div>
+            </div>
+            <div class="d-flex gap-1">
+              <a href="/messages/read/<%= m.id %>" class="btn btn-sm btn-outline-dark rounded-pill" title="<%= _t('common_view') %>"><i class="fas fa-eye"></i></a>
+              <a href="/messages/admin/message/reply/<%= m.id %>" class="btn btn-sm btn-danger rounded-pill" title="<%= _t('msg_reply') %>"><i class="fas fa-reply"></i></a>
+            </div>
+          </div>
+        <% }) %>
+      <% } else { %><div class="p-5 text-center text-muted"><%= _t('msg_empty') %></div><% } %>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,12 @@
+<%- include('../partials/header') %>
+<div class="container my-4">
+  <h2 class="fw-bold mb-3"><%= title %></h2>
+  <div class="admin-wrapper">
+    <%- include('_sidebar', { active: '' }) %>
+    <div class="flex-grow-1" style="min-width:0;">
+      <div class="alert alert-warning" role="alert"><%= t('common_load_failed') %></div>
+      <a class="btn btn-danger rounded-pill" href="<%= currentPath %>"><%= t('common_retry') %></a>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

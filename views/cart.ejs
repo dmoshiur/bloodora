@@ -1,0 +1,54 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <h2 class="fw-bold mb-4"><i class="fas fa-shopping-cart text-danger me-2"></i><%= _t('shop_cart_title') %></h2>
+  <% if (cart_items && cart_items.length) { %>
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <div class="card border-0 shadow-sm" style="border-radius:18px;">
+          <div class="card-body p-0">
+            <% cart_items.forEach(item=>{ %>
+              <div class="d-flex gap-3 p-3 border-bottom align-items-center">
+                <% if (item.product.image_file && item.product.image_file !== 'default_product.jpg') { %>
+                  <img src="/uploads/<%= item.product.image_file %>" alt="<%= item.product.name %>" class="rounded-3" style="width:84px;height:84px;object-fit:cover;border:1px solid #e2e8f0;" onerror="this.src='https://via.placeholder.com/84'">
+                <% } else { %>
+                  <div class="d-flex align-items-center justify-content-center rounded-3" style="width:84px;height:84px;background:#f1f5f9;border:1px solid #e2e8f0;"><i class="fas fa-box text-muted"></i></div>
+                <% } %>
+                <div class="flex-grow-1">
+                  <div class="fw-bold" style="font-size:.95rem;"><%= item.product.name %></div>
+                  <div class="small text-muted">৳<%= item.product.price %> × <%= item.quantity %></div>
+                  <div class="small fw-bold" style="color:var(--primary);"><%= _t('shop_subtotal') %>: ৳<%= item.subtotal %></div>
+                </div>
+                <div style="min-width:150px;">
+                  <form action="/shop/cart/update/<%= item.product.id %>" method="POST" class="d-flex gap-1">
+                    <input type="number" name="quantity" value="<%= item.quantity %>" min="1" max="<%= item.product.stock %>" class="form-control form-control-sm" style="border-radius:12px;">
+                    <button class="btn btn-sm btn-outline-danger" aria-label="<%= _t('common_save') %>" style="border-radius:12px;"><i class="fas fa-check"></i></button>
+                  </form>
+                  <form action="/shop/cart/remove/<%= item.product.id %>" method="POST" class="mt-2"><button class="btn btn-sm btn-light border w-100 rounded-pill"><i class="fas fa-trash me-1 text-danger"></i><%= _t('common_delete') %></button></form>
+                </div>
+              </div>
+            <% }) %>
+          </div>
+        </div>
+      </div>
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm sticky-top" style="border-radius:18px; top:84px;">
+          <div class="card-body p-4">
+            <h5 class="fw-bold"><i class="fas fa-receipt me-2 text-danger"></i><%= _t('common_total') %></h5>
+            <div class="d-flex justify-content-between"><span><%= _t('common_quantity') %></span><strong><%= cart_items.length %></strong></div>
+            <div class="d-flex justify-content-between"><span><%= _t('shop_subtotal') %></span><strong>৳<%= total %></strong></div>
+            <hr>
+            <div class="d-flex justify-content-between"><span><%= _t('common_total') %></span><strong class="h5" style="color:var(--primary);">৳<%= total %></strong></div>
+            <a href="/shop/checkout" class="btn btn-danger w-100 btn-lg mt-3"><%= _t('shop_checkout') %></a>
+            <a href="/shop" class="btn btn-light border w-100 mt-2 rounded-pill"><%= _t('shop_continue') %></a>
+          </div>
+        </div>
+      </div>
+    </div>
+  <% } else { %>
+    <div class="card border-0 shadow-sm text-center p-5" style="border-radius:18px;"><i class="fas fa-cart-shopping fa-3x mb-3" style="color:#94a3b8;"></i><h4><%= _t('shop_cart_empty') %></h4><a href="/shop" class="btn btn-danger rounded-pill mt-2"><%= _t('ord_go_shop') %></a></div>
+  <% } %>
+</div>
+<%- include('partials/footer') %>

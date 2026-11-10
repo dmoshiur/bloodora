@@ -1,0 +1,83 @@
+<%- include('../partials/header') %>
+<%
+  const _ev = (typeof events !== 'undefined' && events) ? events : [];
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+%>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-broadcast-tower text-danger me-2"></i>Live Activity</h2>
+      <small class="text-muted">The real event log that powers the homepage feed — nothing here is simulated.</small>
+    </div>
+    <a href="/" target="_blank" class="btn btn-sm btn-light border rounded-pill"><i class="fas fa-external-link me-1"></i>View homepage feed</a>
+  </div>
+
+  <div class="admin-wrapper">
+    <%- include('_sidebar', { active: 'activity', stats: {} }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-header bg-white border-0 pt-4 px-4 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-list-ul me-2 text-danger"></i>Event log</h6>
+              <span class="badge bg-light text-dark border rounded-pill"><%= _ev.length %> events</span>
+            </div>
+            <div class="card-body p-4">
+              <% if (_ev.length) { %>
+                <div class="d-grid gap-2">
+                  <% _ev.forEach(function(e){ %>
+                    <div class="d-flex align-items-start gap-3 p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                      <span class="badge bg-dark rounded-pill text-nowrap" style="font-size:.66rem;"><%= e.kind %></span>
+                      <div style="min-width:0;">
+                        <div class="fw-bold small"><%= e.title %></div>
+                        <% if (e.detail) { %><div class="small text-muted"><%= e.detail %></div><% } %>
+                        <div class="small text-muted" style="font-size:.72rem;"><%= String(e.created_at||'').slice(0,19).replace('T',' ') %><% if (e.link) { %> · <a href="<%= e.link %>"><%= e.link %></a><% } %></div>
+                      </div>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="alert alert-info border-0 rounded-4 small mb-0">
+                  <i class="fas fa-circle-info me-1"></i>
+                  The log is empty, so the homepage rebuilds its feed directly from real database rows (verified donors, blood requests, orders and published reviews). Events start accumulating as soon as those actions happen.
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-header bg-white border-0 pt-4 px-4"><h6 class="fw-bold mb-0"><i class="fas fa-bullhorn me-2 text-danger"></i>Announce to the feed</h6></div>
+            <div class="card-body p-4">
+              <form method="POST" action="/admin/activity/announce" class="row g-2">
+                <div class="col-12"><input name="title" class="form-control" placeholder="Headline, e.g. Free blood-group screening camp on Friday" required></div>
+                <div class="col-12"><input name="detail" class="form-control" placeholder="Detail line, e.g. Kalai Upazila Health Complex, 9am–2pm"></div>
+                <div class="col-12"><input name="link" class="form-control" placeholder="Link (optional), e.g. /blood-requests"></div>
+                <div class="col-12"><button class="btn btn-danger rounded-pill"><i class="fas fa-tower-broadcast me-1"></i>Push to Live Activity</button></div>
+              </form>
+              <p class="small text-muted mt-3 mb-0">The announcement is pushed to every visitor's homepage feed in real time over server-sent events.</p>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mt-3" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-2"><i class="fas fa-diagram-project me-2 text-danger"></i>How it works</h6>
+              <ol class="small text-muted mb-0 ps-3 d-grid gap-1" style="line-height:1.7;">
+                <li>A real action writes a row to <code>activity_events</code>.</li>
+                <li>Every open homepage receives it instantly via <code>/api/meta/activity/stream</code>.</li>
+                <li>If server-sent events are unavailable, the browser falls back to polling <code>/api/activity</code> every 12 seconds.</li>
+                <li>On a fresh database the feed is reconstructed from genuine rows, never invented.</li>
+              </ol>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

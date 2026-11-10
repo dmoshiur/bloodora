@@ -1,0 +1,62 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+  const _b = (typeof branding !== 'undefined' && branding) ? branding : {};
+  const resolveAssetUrl = (url, fallback) => {
+    const target = (url && String(url).trim()) || fallback;
+    if (!target) return '';
+    if (target.startsWith('http://') || target.startsWith('https://') || target.startsWith('//') || target.startsWith('/')) {
+      return target;
+    }
+    return '/' + target;
+  };
+  const _logo = resolveAssetUrl(_b.logo_file, '/images/logo.png');
+%>
+<%- include('../partials/header') %>
+<div class="container mt-4">
+  <div class="card border-0 shadow-lg" style="border-radius:22px; overflow:hidden;">
+    <div class="p-4" style="background:linear-gradient(135deg,#0f172a,#1e293b); color:#fff;">
+      <div class="d-flex justify-content-between align-items-center">
+        <div class="d-flex align-items-center gap-3">
+          <img src="<%= _logo %>" alt="BloodOra" style="height:44px; background:#fff; border-radius:12px; padding:6px;" onerror="this.style.display='none'">
+          <div>
+            <h4 class="fw-bold mb-0" style="letter-spacing:-.02em;"><%= _t('adm_invoice_title') %></h4>
+            <small style="opacity:.8;">Kalai, Joypurhat • <%= order.created_at? order.created_at.slice(0,10):'' %> • <%= _t('ord_id') %> #<%= order.id %></small>
+          </div>
+        </div>
+        <div class="text-end">
+          <div class="badge bg-white text-dark rounded-pill"><%= _t('adm_paid_status', { status: order.payment_status }) %></div>
+          <div class="small mt-1" style="opacity:.8;"><%= _t('common_status') %>: <%= order.status %></div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body p-4">
+      <div class="row g-4">
+        <div class="col-md-6"><h6 class="fw-bold"><%= _t('adm_bill_to') %></h6><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold"><%= customer_name %></div><div class="small text-muted"><%= customer_phone %> • <%= customer_email %></div><div class="small mt-2"><%= order.delivery_address %><br><%= [order.delivery_upazila, order.delivery_district, order.delivery_division].filter(Boolean).join(', ') %></div></div></div>
+        <div class="col-md-6"><h6 class="fw-bold"><%= _t('adm_payment_info') %></h6><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small"><%= _t('shop_payment_method') %>: <strong><%= order.payment_method %></strong></div><div class="small"><%= _t('co_trxid') %>: <strong><%= order.transaction_id||'—' %></strong></div><div class="small"><%= _t('common_date') %>: <%= order.created_at? new Date(order.created_at).toLocaleString():'' %></div><div class="small"><%= _t('shop_delivery_title') %>: <span class="badge bg-success">৳<%= order.delivery_charge %> (Kalai)</span></div></div></div>
+      </div>
+
+      <div class="table-responsive mt-4">
+        <table class="table">
+          <thead><tr><th>#</th><th><%= _t('common_name') %></th><th class="text-end"><%= _t('common_price') %></th><th class="text-center"><%= _t('common_quantity') %></th><th class="text-end"><%= _t('shop_subtotal') %></th></tr></thead>
+          <tbody>
+            <% items.forEach((it,i)=>{ %>
+              <tr><td><%= i+1 %></td><td class="fw-bold"><%= it.product_name %></td><td class="text-end">৳<%= it.price %></td><td class="text-center"><%= it.quantity %></td><td class="text-end fw-bold">৳<%= (it.price*it.quantity).toFixed(2) %></td></tr>
+            <% }) %>
+          </tbody>
+          <tfoot>
+            <tr><td colspan="4" class="text-end"><%= _t('shop_subtotal') %></td><td class="text-end fw-bold">৳<%= (order.subtotal_amount || 0).toFixed(2) %></td></tr>
+            <tr><td colspan="4" class="text-end"><%= _t('co_delivery_charge') %></td><td class="text-end fw-bold" style="color:#16a34a;">৳<%= (order.delivery_charge || 0).toFixed(2) %></td></tr>
+            <tr style="background:#f8fafc;"><td colspan="4" class="text-end fw-bold"><%= _t('common_total') %></td><td class="text-end fw-bold h5 mb-0" style="color:var(--primary);">৳<%= (order.total_amount || 0).toFixed(2) %></td></tr>
+          </tfoot>
+        </table>
+      </div>
+
+      <div class="d-flex gap-2 mt-3">
+        <button onclick="window.print()" class="btn btn-dark rounded-pill"><i class="fas fa-print me-1"></i><%= _t('common_print') %></button>
+        <a href="/shop/admin/order/<%= order.id %>" class="btn btn-light border rounded-pill"><%= _t('common_back') %></a>
+      </div>
+      <div class="small text-muted mt-3 text-center"><%= _t('adm_invoice_thank', { upa: order.delivery_upazila || 'Kalai' }) %></div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

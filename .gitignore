@@ -1,0 +1,21 @@
+node_modules/
+dist/
+/data/
+# Scratch space for `npm run make-defaults` (repo root ONLY). This pattern must
+# stay anchored with the leading slash: an unanchored `uploads/` also ignores
+# `src/uploads/`, so src/uploads/uploads.ts never reaches git and every fresh
+# clone (Vercel) fails `npm run build` with TS2307.
+/uploads/*
+!/uploads/.gitkeep
+.env
+.env.local
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+.DS_Store
+npm-debug.log*
+tsconfig.tsbuildinfo
+.tmp/
+test-results/
+playwright-report/

@@ -1,0 +1,84 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container py-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-9">
+      <div class="card border-0 shadow-lg p-4 p-lg-5" style="border-radius:22px;">
+        <h2 class="fw-bold text-center mb-1" style="color:var(--primary);"><i class="fas fa-plus-circle me-2"></i><%= _t('req_form_title') %></h2>
+        <p class="text-center text-muted"><%= _t('req_form_sub') %></p>
+        <form method="POST" action="/request-blood" class="mt-3">
+          <h5 class="fw-bold border-bottom pb-2 mb-3"><i class="fas fa-user-injured me-2 text-danger"></i><%= _t('req_patient_info') %></h5>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('req_patient_name') %> *</label><input type="text" name="patient_name" class="form-control" required placeholder="<%= _t('auth_full_name') %>"></div>
+            <div class="col-md-3 mb-3"><label class="form-label"><%= _t('common_blood_group') %> *</label><select name="blood_group" class="form-select" required><option value=""><%= _t('auth_select') %></option><% ["A+","A-","B+","B-","O+","O-","AB+","AB-"].forEach(bg=>{ %><option><%= bg %></option><% }) %></select></div>
+            <div class="col-md-3 mb-3"><label class="form-label"><%= _t('req_quantity') %></label><input type="text" name="quantity" class="form-control" value="<%= _t('req_1unit') %>" placeholder="<%= _t('req_1unit') %>"></div>
+          </div>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('req_relation') %></label><select name="patient_relation" class="form-select"><option value="Self"><%= _t('req_self') %></option><option value="Family"><%= _t('req_family') %></option><option value="Friend"><%= _t('req_friend') %></option><option value="Other"><%= _t('req_other') %></option></select></div>
+            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('req_needed_by') %> *</label><input type="datetime-local" name="needed_by" class="form-control" required></div>
+          </div>
+
+          <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4"><i class="fas fa-hospital me-2 text-danger"></i><%= _t('req_hospital') %></h5>
+          <div class="row">
+            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('req_hospital_name') %> *</label><input type="text" name="hospital_name" class="form-control" required></div>
+            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('req_hospital_addr') %> *</label><input type="text" name="hospital_address" class="form-control" required></div>
+          </div>
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label"><%= _t('req_contact_person') %> *</label><input type="text" name="contact_person" class="form-control" required></div>
+            <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_phone') %> *</label><input type="tel" name="contact_phone" class="form-control" required placeholder="017XXXXXXXX"></div>
+            <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_email') %> <span class="text-muted small">(<%= _t('common_optional') %>)</span></label><input type="email" name="contact_email" class="form-control" placeholder="user@example.com"></div>
+          </div>
+
+          <h5 class="fw-bold border-bottom pb-2 mb-3 mt-4"><i class="fas fa-map-marker-alt me-2 text-danger"></i><%= _t('prof_location') %></h5>
+          <div class="row">
+            <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_division') %> *</label><select name="division" id="division" class="form-select" required><option value=""><%= _t('auth_select') %></option></select></div>
+            <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_district') %> *</label><select name="district" id="district" class="form-select" required disabled><option value=""><%= _t('auth_select') %></option></select></div>
+            <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_upazila') %> *</label><select name="upazila" id="upazila" class="form-select" required disabled><option value=""><%= _t('auth_select') %></option></select></div>
+          </div>
+
+          <div class="form-check p-3 rounded-4 mb-3" style="background:#fff7ed; border:1px solid #ffedd5;">
+            <input class="form-check-input" type="checkbox" name="is_urgent" value="1" id="is_urgent" onchange="document.getElementById('urgent_reason_wrap').classList.toggle('d-none', !this.checked)">
+            <label class="form-check-label fw-bold" for="is_urgent"><i class="fas fa-bolt text-danger me-2"></i><%= _t('req_mark_urgent') %></label>
+          </div>
+          <div id="urgent_reason_wrap" class="mb-3 d-none"><label class="form-label"><%= _t('req_urgent_reason') %></label><textarea name="urgent_reason" class="form-control" rows="2"></textarea></div>
+          <div class="mb-3"><label class="form-label"><%= _t('req_additional') %></label><textarea name="additional_info" class="form-control" rows="3"></textarea></div>
+
+          <div class="d-grid"><button type="submit" class="btn btn-danger btn-lg rounded-pill"><i class="fas fa-paper-plane me-2"></i><%= _t('req_submit') %></button></div>
+          <div class="text-center mt-3"><a href="/blood-requests" class="small text-decoration-none"><i class="fas fa-arrow-left me-1"></i><%= _t('req_view_existing') %></a></div>
+        </form>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var SEL_D='<option value=""><%= _t('auth_select') %></option>';
+  var SEL_U='<option value=""><%= _t('auth_select') %></option>';
+  const bdData = {
+    "Barishal":{"Barguna":["Amtali","Bamna","Barguna Sadar","Betagi","Patharghata","Taltali"],"Barishal":["Agailjhara","Babuganj","Bakerganj","Banaripara","Barishal Sadar","Gournadi","Hizla","Mehendiganj","Muladi","Wazirpur"],"Bhola":["Bhola Sadar","Burhanuddin","Char Fasson","Daulatkhan","Lalmohan","Manpura","Tazumuddin"],"Jhalokati":["Jhalokati Sadar","Kathalia","Nalchity","Rajapur"],"Patuakhali":["Bauphal","Dashmina","Dumki","Galachipa","Kalapara","Mirzaganj","Patuakhali Sadar","Rangabali"],"Pirojpur":["Bhandaria","Kawkhali","Mathbaria","Nazirpur","Nesarabad","Pirojpur Sadar"]},
+    "Chattogram":{"Bandarban":["Ali Kadam","Bandarban Sadar","Lama","Naikhongchhari","Rowangchhari","Ruma","Thanchi"],"Brahmanbaria":["Akhaura","Ashuganj","Bancharampur","Bijoynagar","Brahmanbaria Sadar","Kasba","Nabinagar","Nasirnagar","Sarail"],"Chandpur":["Chandpur Sadar","Faridganj","Haimchar","Haziganj","Kachua","Matlab Dakshin","Matlab Uttar","Shahrasti"],"Chattogram":["Anwara","Banshkhali","Boalkhali","Chandanaish","Fatikchhari","Hathazari","Lohagara","Mirsharai","Patiya","Rangunia","Raozan","Sandwip","Satkania","Sitakunda"],"Comilla":["Barura","Brahmanpara","Burichang","Chandina","Chauddagram","Comilla Sadar","Comilla Sadar Dakshin","Daudkandi","Debidwar","Homna","Laksam","Titas"],"Cox's Bazar":["Chakaria","Cox's Bazar Sadar","Kutubdia","Maheshkhali","Pekua","Ramu","Teknaf","Ukhia"],"Feni":["Chhagalnaiya","Daganbhuiyan","Feni Sadar","Fulgazi","Parshuram","Sonagazi"],"Khagrachhari":["Dighinala","Khagrachhari Sadar","Lakshmichhari","Mahalchhari","Manikchhari","Matiranga","Panchhari","Ramgarh"],"Lakshmipur":["Kamalnagar","Lakshmipur Sadar","Raipur","Ramganj","Ramgati"],"Noakhali":["Begumganj","Chatkhil","Companiganj","Hatiya","Noakhali Sadar","Senbagh","Sonaimuri","Subarnachar"],"Rangamati":["Baghaichhari","Barkal","Belaichhari","Juraichhari","Kaptai","Kawkhali","Langadu","Naniyachar","Rajasthali","Rangamati Sadar"]},
+    "Dhaka":{"Dhaka":["Dhamrai","Dohar","Keraniganj","Nawabganj","Savar"],"Faridpur":["Alfadanga","Bhanga","Boalmari","Char Bhadrasan","Faridpur Sadar","Madhukhali","Nagarkanda","Sadarpur","Saltha"],"Gazipur":["Gazipur Sadar","Kaliakair","Kaliganj","Kapasia","Sreepur"],"Gopalganj":["Gopalganj Sadar","Kashiani","Kotalipara","Muksudpur","Tungipara"],"Kishoreganj":["Austagram","Bajitpur","Bhairab","Hossainpur","Itna","Karimganj","Katiadi","Kishoreganj Sadar","Kuliarchar","Mithamain","Nikli","Pakundia","Tarail"],"Madaripur":["Kalkini","Madaripur Sadar","Rajoir","Shibchar"],"Manikganj":["Daulatpur","Ghior","Harirampur","Manikganj Sadar","Saturia","Shivalaya","Singair"],"Munshiganj":["Gazaria","Lohajang","Munshiganj Sadar","Serajdikhan","Sreenagar","Tongibari"],"Narayanganj":["Araihazar","Bandar","Narayanganj Sadar","Rupganj","Sonargaon"],"Narsingdi":["Belabo","Monohardi","Narsingdi Sadar","Palash","Raipura","Shibpur"],"Rajbari":["Baliakandi","Goalandaghat","Kalukhali","Pangsha","Rajbari Sadar"],"Shariatpur":["Bhedarganj","Damudya","Gosairhat","Naria","Shariatpur Sadar","Zajira"],"Tangail":["Basail","Bhuapur","Delduar","Ghatail","Gopalpur","Kalihati","Madhupur","Mirzapur","Nagarpur","Sakhipur","Tangail Sadar"]},
+    "Khulna":{"Bagerhat":["Bagerhat Sadar","Chitalmari","Fakirhat","Kachua","Mollahat","Mongla","Morrelganj","Rampal","Sarankhola"],"Chuadanga":["Alamdanga","Chuadanga Sadar","Damurhuda","Jibannagar"],"Jessore":["Abhaynagar","Bagherpara","Chaugachha","Jhikargachha","Keshabpur","Jessore Sadar","Manirampur","Sharsha"],"Jhenaidah":["Harinakunda","Jhenaidah Sadar","Kaliganj","Kotchandpur","Maheshpur","Shailkupa"],"Khulna":["Batiaghata","Dacope","Dighalia","Dumuria","Koyra","Paikgachha","Phultala","Rupsa","Terokhada"],"Kushtia":["Bheramara","Daulatpur","Khoksa","Kumarkhali","Kushtia Sadar","Mirpur"],"Magura":["Magura Sadar","Mohammadpur","Shalikha","Sreepur"],"Meherpur":["Gangni","Meherpur Sadar","Mujibnagar"],"Narail":["Kalia","Lohagara","Narail Sadar"],"Satkhira":["Assasuni","Debhata","Kalaroa","Kaliganj","Satkhira Sadar","Shyamnagar","Tala"]},
+    "Rajshahi":{"Bogura":["Adamdighi","Bogura Sadar","Dhunat","Dupchanchia","Gabtali","Kahaloo","Nandigram","Sariakandi","Shajahanpur","Sherpur","Shibganj","Sonatala"],"Chapainawabganj":["Bholahat","Gomastapur","Nachole","Nawabganj Sadar","Shibganj"],"Joypurhat":["Akkelpur","Joypurhat Sadar","Kalai","Khetlal","Panchbibi"],"Naogaon":["Atrai","Badalgachhi","Dhamoirhat","Manda","Mahadevpur","Naogaon Sadar","Niamatpur","Patnitala","Porsha","Raninagar","Sapahar"],"Natore":["Bagatipara","Baraigram","Gurudaspur","Lalpur","Natore Sadar","Singra"],"Pabna":["Atgharia","Bera","Bhangura","Chatmohar","Faridpur","Ishwardi","Pabna Sadar","Santhia","Sujanagar"],"Rajshahi":["Bagha","Bagmara","Charghat","Durgapur","Godagari","Mohanpur","Paba","Puthia","Rajshahi Sadar","Tanore"],"Sirajganj":["Belkuchi","Chauhali","Kamarkhanda","Kazipur","Raiganj","Shahjadpur","Sirajganj Sadar","Tarash","Ullahpara"]},
+    "Rangpur":{"Dinajpur":["Birampur","Birganj","Biral","Bochaganj","Chirirbandar","Dinajpur Sadar","Fulbari","Ghoraghat","Hakimpur","Kaharole","Khansama","Nawabganj","Parbatipur"],"Gaibandha":["Fulchhari","Gaibandha Sadar","Gobindaganj","Palashbari","Sadullapur","Saghata","Sundarganj"],"Kurigram":["Bhurungamari","Char Rajibpur","Chilmari","Kurigram Sadar","Nageshwari","Phulbari","Rajarhat","Raomari","Ulipur"],"Lalmonirhat":["Aditmari","Hatibandha","Kaliganj","Lalmonirhat Sadar","Patgram"],"Nilphamari":["Dimla","Domar","Jaldhaka","Kishoreganj","Nilphamari Sadar","Saidpur"],"Panchagarh":["Atwari","Boda","Debiganj","Panchagarh Sadar","Tetulia"],"Rangpur":["Badarganj","Gangachara","Kaunia","Mithapukur","Pirgachha","Pirganj","Rangpur Sadar","Taraganj"],"Thakurgaon":["Baliadangi","Haripur","Pirganj","Ranisankail","Thakurgaon Sadar"]},
+    "Sylhet":{"Habiganj":["Ajmiriganj","Bahubal","Baniachong","Chunarughat","Habiganj Sadar","Lakhai","Madhabpur","Nabiganj","Shayestaganj"],"Moulvibazar":["Barlekha","Juri","Kamalganj","Kulaura","Moulvibazar Sadar","Rajnagar","Sreemangal"],"Sunamganj":["Bishwamvarpur","Chhatak","Derai","Dharmapasha","Dowarabazar","Jagannathpur","Jamalganj","Sulla","Sunamganj Sadar","Tahirpur"],"Sylhet":["Balaganj","Beanibazar","Bishwanath","Companiganj","Fenchuganj","Golapganj","Gowainghat","Jaintiapur","Kanaighat","Sylhet Sadar","Zakiganj"]},
+    "Mymensingh":{"Jamalpur":["Baksiganj","Dewanganj","Islampur","Jamalpur Sadar","Madarganj","Melandaha","Sarishabari"],"Mymensingh":["Bhaluka","Dhobaura","Fulbaria","Gaffargaon","Gauripur","Haluaghat","Ishwarganj","Mymensingh Sadar","Muktagachha","Nandail","Phulpur","Trishal"],"Netrokona":["Atpara","Barhatta","Durgapur","Khaliajuri","Kalmakanda","Madan","Mohanganj","Netrokona Sadar","Purbadhala"],"Sherpur":["Jhenaigati","Nakla","Nalitabari","Sherpur Sadar","Sreebardi"]}
+  };
+  document.addEventListener('DOMContentLoaded', ()=>{
+    const divSel=document.getElementById('division'), distSel=document.getElementById('district'), upaSel=document.getElementById('upazila');
+    Object.keys(bdData).forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; divSel.appendChild(o); });
+    divSel.addEventListener('change', function(){
+      const districts=bdData[this.value]||{}; distSel.innerHTML=SEL_D; upaSel.innerHTML=SEL_U; upaSel.disabled=true;
+      Object.keys(districts).forEach(dist=>{ const o=document.createElement('option'); o.value=dist; o.textContent=dist; distSel.appendChild(o); });
+      distSel.disabled=false;
+    });
+    distSel.addEventListener('change', function(){
+      const divVal=divSel.value; const upazilas=(bdData[divVal]&&bdData[divVal][this.value])||[]; upaSel.innerHTML=SEL_U;
+      upazilas.forEach(u=>{ const o=document.createElement('option'); o.value=u; o.textContent=u; upaSel.appendChild(o); });
+      upaSel.disabled=false;
+    });
+  });
+</script>
+<%- include('partials/footer') %>

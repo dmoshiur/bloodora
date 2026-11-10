@@ -1,0 +1,126 @@
+<%- include('../partials/header') %>
+<%
+  const _antid = (typeof antid !== 'undefined' && antid) ? antid : [];
+  const _res   = (typeof resources !== 'undefined' && resources) ? resources : [];
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+%>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-newspaper text-danger me-2"></i>Content Manager</h2>
+      <small class="text-muted">Anti-D reference entries and educational resources — published straight to the public pages.</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="/antid" target="_blank" class="btn btn-sm btn-light border rounded-pill"><i class="fas fa-external-link me-1"></i>View /antid</a>
+      <a href="/resources" target="_blank" class="btn btn-sm btn-light border rounded-pill"><i class="fas fa-external-link me-1"></i>View /resources</a>
+    </div>
+  </div>
+
+  <div class="admin-wrapper">
+    <%- include('_sidebar', { active: 'content', stats: {} }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="alert alert-info border-0 rounded-4 small">
+        <i class="fas fa-circle-info me-1"></i>
+        Both pages always render the complete built-in clinical reference and article library. Entries you add here are <strong>merged on top</strong>, so deleting everything here can never leave a public page empty.
+      </div>
+
+      <!-- Anti-D -->
+      <div class="card border-0 shadow-sm mb-3" style="border-radius:20px;">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+          <h6 class="fw-bold mb-0"><i class="fas fa-syringe me-2 text-danger"></i>Anti-D entries</h6>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="/admin/content/antid" class="row g-2 mb-3">
+            <div class="col-md-4"><input name="title" class="form-control" placeholder="Title (e.g. Routine antenatal prophylaxis)" required></div>
+            <div class="col-md-4"><input name="timing" class="form-control" placeholder="Timing (e.g. 28 weeks)"></div>
+            <div class="col-md-4"><input name="dosage" class="form-control" placeholder="Dosage (e.g. 1500 IU IM)"></div>
+            <div class="col-12"><textarea name="description" class="form-control" rows="2" placeholder="Description" required></textarea></div>
+            <div class="col-12"><button class="btn btn-danger btn-sm rounded-pill px-4"><i class="fas fa-plus me-1"></i>Add entry</button></div>
+          </form>
+
+          <% if (_antid.length) { %>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead><tr><th>Title</th><th>Timing</th><th>Dosage</th><th style="width:90px;"></th></tr></thead>
+                <tbody>
+                  <% _antid.forEach(function(a){ %>
+                    <tr>
+                      <td>
+                        <div class="fw-bold"><%= a.title %></div>
+                        <div class="small text-muted" style="max-width:44ch;"><%= String(a.description||'').slice(0,120) %><%= String(a.description||'').length>120?'…':'' %></div>
+                      </td>
+                      <td class="small"><span class="badge bg-light text-dark border"><%= a.timing %></span></td>
+                      <td class="small"><span class="badge bg-danger"><%= a.dosage %></span></td>
+                      <td>
+                        <form method="POST" action="/admin/content/antid/<%= a.id %>/delete" onsubmit="return confirm('Delete this Anti-D entry?')">
+                          <button class="btn btn-sm btn-light border text-danger rounded-pill"><i class="fas fa-trash"></i></button>
+                        </form>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } else { %>
+            <div class="alert alert-light border text-center small mb-0 rounded-3">No admin entries yet — the built-in reference is still published.</div>
+          <% } %>
+        </div>
+      </div>
+
+      <!-- Resources -->
+      <div class="card border-0 shadow-sm" style="border-radius:20px;">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+          <h6 class="fw-bold mb-0"><i class="fas fa-graduation-cap me-2 text-danger"></i>Educational resources</h6>
+        </div>
+        <div class="card-body p-4">
+          <form method="POST" action="/admin/content/resources" class="row g-2 mb-3">
+            <div class="col-md-5"><input name="title" class="form-control" placeholder="Article title" required></div>
+            <div class="col-md-3">
+              <select name="category" class="form-select">
+                <% ['Donation','Education','First-Aid','Health'].forEach(function(c){ %><option value="<%= c %>"><%= c %></option><% }) %>
+              </select>
+            </div>
+            <div class="col-md-2"><input name="read_time" class="form-control" placeholder="4 min"></div>
+            <div class="col-md-2">
+              <div class="form-check mt-2"><input class="form-check-input" type="checkbox" name="is_featured" value="1" id="res_feat"><label class="form-check-label small" for="res_feat">Featured</label></div>
+            </div>
+            <div class="col-12"><input name="summary" class="form-control" placeholder="One-line summary shown on the card"></div>
+            <div class="col-12"><textarea name="content" class="form-control" rows="4" placeholder="Full article body" required></textarea></div>
+            <div class="col-12"><button class="btn btn-danger btn-sm rounded-pill px-4"><i class="fas fa-plus me-1"></i>Publish resource</button></div>
+          </form>
+
+          <% if (_res.length) { %>
+            <div class="row g-2">
+              <% _res.forEach(function(r){ %>
+                <div class="col-md-6">
+                  <div class="p-3 rounded-4 h-100" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                    <div class="d-flex justify-content-between align-items-start gap-2">
+                      <div>
+                        <div class="fw-bold"><%= r.title %></div>
+                        <div class="small text-muted"><%= r.category %><%= r.read_time ? ' · ' + r.read_time : '' %></div>
+                      </div>
+                      <div class="d-flex gap-1">
+                        <% if (r.is_featured) { %><span class="badge bg-warning text-dark">Featured</span><% } %>
+                        <form method="POST" action="/admin/content/resources/<%= r.id %>/delete" onsubmit="return confirm('Delete this resource?')">
+                          <button class="btn btn-sm btn-light border text-danger rounded-pill"><i class="fas fa-trash"></i></button>
+                        </form>
+                      </div>
+                    </div>
+                    <p class="small text-muted mb-0 mt-2" style="display:-webkit-box; -webkit-line-clamp:3; -webkit-box-orient:vertical; overflow:hidden;"><%= r.content %></p>
+                  </div>
+                </div>
+              <% }) %>
+            </div>
+          <% } else { %>
+            <div class="alert alert-light border text-center small mb-0 rounded-3">No admin resources yet.</div>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

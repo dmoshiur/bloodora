@@ -1,0 +1,9 @@
+<%- include('partials/header') %>
+<%- include('errors/error', {
+  errCode: 404,
+  errIcon: 'fa-magnifying-glass',
+  errTitle: t('err_404_title'),
+  errBody: t('err_404_body'),
+  errRequest: (typeof requestPath !== 'undefined') ? requestPath : ''
+}) %>
+<%- include('partials/footer') %>

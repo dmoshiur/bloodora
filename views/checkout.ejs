@@ -1,0 +1,191 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <h2 class="fw-bold mb-3" style="letter-spacing:-.02em;"><i class="fas fa-credit-card text-danger me-2"></i><%= _t('shop_checkout') %></h2>
+  <form method="POST" action="/shop/checkout">
+    <div class="row g-4">
+      <div class="col-lg-8">
+        <!-- Delivery Address -->
+        <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+          <div class="card-header bg-white border-0 pt-4 px-4"><h5 class="fw-bold mb-0"><i class="fas fa-truck me-2 text-danger"></i><%= _t('shop_delivery_addr') %></h5><small class="text-muted"><%= _t('shop_delivery_note') %></small></div>
+          <div class="card-body px-4">
+            <div class="row">
+              <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_division') %> *</label>
+                <select name="division" class="form-select" required><option value=""><%= _t('co_sel_div') %></option><option selected>Rajshahi</option><option>Dhaka</option><option>Chattogram</option><option>Khulna</option><option>Barishal</option><option>Rangpur</option><option>Sylhet</option><option>Mymensingh</option></select>
+              </div>
+              <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_district') %> *</label>
+                <select name="district" class="form-select" required><option value=""><%= _t('co_sel_dist') %></option><option selected>Joypurhat</option><option>Bogura</option><option>Rajshahi</option><option>Dhaka</option></select>
+              </div>
+              <div class="col-md-4 mb-3"><label class="form-label"><%= _t('common_upazila') %> *</label>
+                <select name="upazila" id="upazila" class="form-select" required>
+                  <option value=""><%= _t('co_sel_upa') %></option>
+                  <option value="Kalai" <%= (typeof user_address !== 'undefined' && user_address.upazila==='Kalai')?'selected':'' %>><%= _t('co_kalai_available') %></option>
+                  <option value="Joypurhat Sadar">Joypurhat Sadar - <%= _t('co_no_delivery') %></option>
+                  <option value="Akkelpur">Akkelpur - <%= _t('co_no_delivery') %></option>
+                  <option value="Khetlal">Khetlal - <%= _t('co_no_delivery') %></option>
+                  <option value="Panchbibi">Panchbibi - <%= _t('co_no_delivery') %></option>
+                  <option value="Other"><%= _t('req_other') %> - <%= _t('co_no_delivery') %></option>
+                </select>
+                <small class="text-danger d-none" id="deliveryWarning"><%= _t('co_delivery_warning') %></small>
+              </div>
+            </div>
+            <div class="mb-3"><label class="form-label"><%= _t('co_detailed_addr') %> *</label><textarea name="delivery_address" class="form-control" rows="2" placeholder="<%= _t('co_addr_ph') %>" required><%= (typeof user_address !== 'undefined' && user_address.address) ? user_address.address : '' %></textarea></div>
+          </div>
+        </div>
+
+        <!-- Payment -->
+        <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+          <div class="card-header bg-white border-0 pt-4 px-4"><h5 class="fw-bold mb-0"><i class="fas fa-money-bill-wave me-2 text-success"></i><%= _t('shop_payment_method') %></h5></div>
+          <div class="card-body px-4">
+            <!-- bKash -->
+            <div class="p-3 rounded-4 mb-3" style="border:1.5px solid #e2e8f0;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="bKash" id="bkash" checked>
+                <label class="form-check-label fw-bold" for="bkash"><i class="fas fa-mobile-screen me-2 text-danger"></i>bKash</label>
+                <span class="badge bg-light text-dark border ms-2"><%= _t('co_send_money') %> <%= gateway_numbers.bkash %></span>
+              </div>
+              <div id="bkash-details" class="mt-3">
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small"><%= _t('co_bkash_no') %></label><input type="text" name="bkash_number" class="form-control" placeholder="017XXXXXXXX" value="<%= user_payment_methods.bkash||'' %>"></div>
+                  <div class="col-md-6"><label class="form-label small"><%= _t('co_trxid') %></label><input type="text" name="transaction_id" class="form-control" placeholder="<%= _t('co_trxid_ph') %>"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Nagad -->
+            <div class="p-3 rounded-4 mb-3" style="border:1.5px solid #e2e8f0;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="Nagad" id="nagad">
+                <label class="form-check-label fw-bold" for="nagad"><i class="fas fa-mobile-screen me-2" style="color:#e11d48;"></i>Nagad</label>
+                <span class="badge bg-light text-dark border ms-2"><%= _t('co_send_money') %> <%= gateway_numbers.nagad %></span>
+              </div>
+              <div id="nagad-details" class="mt-3 d-none">
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small"><%= _t('co_nagad_no') %></label><input type="text" name="nagad_number" class="form-control" placeholder="018XXXXXXXX" value="<%= user_payment_methods.nagad||'' %>"></div>
+                  <div class="col-md-6"><label class="form-label small"><%= _t('co_trxid') %></label><input type="text" name="nagad_txid" class="form-control" placeholder="<%= _t('co_trxid_ph') %>"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Upay -->
+            <div class="p-3 rounded-4 mb-3" style="border:1.5px solid #e2e8f0;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="Upay" id="upay">
+                <label class="form-check-label fw-bold" for="upay"><i class="fas fa-mobile-screen me-2" style="color:#f59e0b;"></i>Upay</label>
+                <span class="badge bg-light text-dark border ms-2"><%= gateway_numbers.upay %></span>
+              </div>
+              <div id="upay-details" class="mt-3 d-none">
+                <input type="text" name="upay_number" class="form-control" placeholder="<%= _t('co_upay_no') %>" value="<%= user_payment_methods.upay||'' %>">
+              </div>
+            </div>
+
+            <!-- Rocket -->
+            <div class="p-3 rounded-4 mb-3" style="border:1.5px solid #e2e8f0;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="Rocket" id="rocket">
+                <label class="form-check-label fw-bold" for="rocket"><i class="fas fa-mobile-screen me-2" style="color:#7c3aed;"></i>Rocket</label>
+                <span class="badge bg-light text-dark border ms-2"><%= gateway_numbers.rocket %></span>
+              </div>
+              <div id="rocket-details" class="mt-3 d-none">
+                <input type="text" name="rocket_number" class="form-control" placeholder="<%= _t('co_rocket_no') %>" value="<%= user_payment_methods.rocket||'' %>">
+              </div>
+            </div>
+
+            <!-- Pathao -->
+            <div class="p-3 rounded-4 mb-3" style="border:1.5px solid #e2e8f0;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="Pathao" id="pathao">
+                <label class="form-check-label fw-bold" for="pathao"><i class="fas fa-motorcycle me-2" style="color:#0ea5e9;"></i>Pathao Pay</label>
+                <span class="badge bg-light text-dark border ms-2"><%= gateway_numbers.pathao %></span>
+              </div>
+              <div id="pathao-details" class="mt-3 d-none">
+                <input type="text" name="pathao_number" class="form-control" placeholder="<%= _t('co_pathao_no') %>" value="<%= user_payment_methods.pathao||'' %>">
+              </div>
+            </div>
+
+            <!-- Card -->
+            <div class="p-3 rounded-4 mb-3" style="border:1.5px solid #e2e8f0;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="Card" id="card">
+                <label class="form-check-label fw-bold" for="card"><i class="fas fa-credit-card me-2"></i><%= _t('co_card') %></label>
+                <% if (user_payment_methods.card_last_four) { %><span class="badge bg-light text-dark border ms-2"><%= _t('co_saved_card') %> **** <%= user_payment_methods.card_last_four %> (<%= user_payment_methods.card_type||'Card' %>)</span><% } %>
+              </div>
+              <div id="card-details" class="mt-3 d-none">
+                <div class="row g-2">
+                  <div class="col-md-6"><input type="text" name="card_type" class="form-control" placeholder="<%= _t('co_card_type') %>" value="<%= user_payment_methods.card_type||'' %>"></div>
+                  <div class="col-md-6"><input type="text" name="card_number" class="form-control" placeholder="<%= _t('co_card_no') %>"></div>
+                </div>
+              </div>
+            </div>
+
+            <!-- COD -->
+            <div class="p-3 rounded-4" style="border:1.5px solid #e2e8f0; background:#f0fdf4;">
+              <div class="form-check">
+                <input class="form-check-input" type="radio" name="payment_method" value="Cash on Delivery" id="cod">
+                <label class="form-check-label fw-bold" for="cod"><i class="fas fa-money-bill me-2 text-success"></i><%= _t('shop_cod') %></label>
+                <span class="badge bg-success ms-2"><%= _t('co_cod_rec') %></span>
+              </div>
+              <small class="text-muted d-block mt-2"><%= _t('co_cod_desc') %></small>
+            </div>
+
+            <div class="alert alert-warning border-0 mt-3" style="border-radius:14px; background:#fffbeb; color:#92400e;">
+              <i class="fas fa-circle-info me-2"></i><%= _t('co_payment_note') %>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="col-lg-4">
+        <div class="card border-0 shadow-sm sticky-top" style="border-radius:18px; top:84px;">
+          <div class="card-header bg-white border-0 pt-4 px-4"><h5 class="fw-bold mb-0"><i class="fas fa-receipt me-2 text-danger"></i><%= _t('shop_order_summary') %></h5></div>
+          <div class="card-body px-4">
+            <% cart_items.forEach(item=>{ %>
+              <div class="d-flex justify-content-between small mb-2"><span><%= item.product.name %> × <%= item.quantity %></span><span class="fw-bold">৳<%= item.subtotal.toFixed(2) %></span></div>
+            <% }) %>
+            <hr>
+            <div class="d-flex justify-content-between mb-2"><span class="text-muted"><%= _t('shop_subtotal') %></span><span class="fw-bold">৳<%= subtotal.toFixed(2) %></span></div>
+            <div class="d-flex justify-content-between mb-2" style="color:#16a34a;"><span><%= _t('co_delivery_charge') %></span><span class="fw-bold">৳10.00</span></div>
+            <div class="d-flex justify-content-between align-items-center mb-3"><span class="h6 fw-bold mb-0"><%= _t('common_total') %></span><span class="h4 fw-bold mb-0" style="color:var(--primary);">৳<%= (subtotal+10).toFixed(2) %></span></div>
+            <small class="text-muted d-block mb-3 text-center"><i class="fas fa-truck me-1"></i><%= _t('co_delivery_flat') %></small>
+            <button type="submit" class="btn btn-danger w-100 btn-lg"><i class="fas fa-check-circle me-2"></i><%= _t('co_confirm_order') %></button>
+            <a href="/shop/cart" class="btn btn-light border w-100 mt-2 rounded-pill"><i class="fas fa-arrow-left me-2"></i><%= _t('co_back_cart') %></a>
+            <div class="small text-center mt-3 text-muted"><i class="fas fa-shield-halved me-1"></i><%= _t('co_invoice_note') %></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </form>
+</div>
+
+<script>
+  const radios=document.querySelectorAll('input[name="payment_method"]');
+  function updateDetails(){
+    document.querySelectorAll('[id$="-details"]').forEach(el=>el.classList.add('d-none'));
+    const checked=document.querySelector('input[name="payment_method"]:checked');
+    if(!checked) return;
+    const v=checked.value;
+    let id=null;
+    if(v.toLowerCase().includes('bkash')) id='bkash-details';
+    else if(v.toLowerCase().includes('nagad')) id='nagad-details';
+    else if(v.toLowerCase().includes('upay')) id='upay-details';
+    else if(v.toLowerCase().includes('rocket')) id='rocket-details';
+    else if(v.toLowerCase().includes('pathao')) id='pathao-details';
+    else if(v.toLowerCase().includes('card')) id='card-details';
+    if(id){ const el=document.getElementById(id); if(el) el.classList.remove('d-none'); }
+  }
+  radios.forEach(r=>r.addEventListener('change', updateDetails));
+  updateDetails();
+
+  const upa=document.getElementById('upazila'), warn=document.getElementById('deliveryWarning');
+  if(upa && warn){
+    upa.addEventListener('change', ()=>{
+      const v=upa.value.toLowerCase();
+      if(v.includes('kalai') || v.includes('কলাই')){ warn.classList.add('d-none'); }
+      else { warn.classList.remove('d-none'); }
+    });
+  }
+</script>
+
+<%- include('partials/footer') %>

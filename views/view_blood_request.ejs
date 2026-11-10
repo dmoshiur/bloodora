@@ -1,0 +1,49 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('partials/header') %>
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg overflow-hidden" style="border-radius:22px;">
+        <div class="p-4" style="background:<%= request.is_urgent?'linear-gradient(135deg,#e31b23,#ff3340)':'linear-gradient(135deg,#0f172a,#1e293b)' %>; color:#fff;">
+          <div class="d-flex justify-content-between align-items-center">
+            <div>
+              <div class="badge bg-white <%= request.is_urgent?'text-danger':'text-dark' %> rounded-pill"><%= request.blood_group %> • <%= request.quantity %></div>
+              <h3 class="fw-bold mt-2 mb-1"><%= request.patient_name %> <small style="opacity:.8; font-size:.9rem;">(<%= request.patient_relation ? _t('req_' + request.patient_relation.toLowerCase(), {}) || request.patient_relation : _t('req_self') %>)</small></h3>
+              <div class="small" style="opacity:.9;"><i class="fas fa-hospital me-2"></i><%= request.hospital_name %> • <%= [request.location_upazila, request.location_district, request.location_division].filter(Boolean).join(', ') %></div>
+            </div>
+            <div class="text-end">
+              <% if(request.is_urgent){ %><span class="badge bg-warning text-dark rounded-pill"><i class="fas fa-bolt me-1"></i><%= _t('st_urgent') %></span><% } %>
+              <div class="small mt-2" style="opacity:.85;"><%= _t('req_needed') %>: <%= new Date(request.needed_by).toLocaleString() %></div>
+              <div class="small" style="opacity:.85;"><%= _t('common_status') %>: <strong><%= request.is_fulfilled ? _t('st_fulfilled') : _t('st_' + String(request.status).toLowerCase(), {}) || request.status %></strong></div>
+            </div>
+          </div>
+        </div>
+        <div class="card-body p-4">
+          <div class="row g-3">
+            <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('req_contact_person') %></div><div class="fw-bold"><%= request.contact_person %></div><div class="small"><i class="fas fa-phone me-1 text-danger"></i><%= request.contact_phone %></div><div class="small"><i class="fas fa-envelope me-1 text-danger"></i><%= request.contact_email||'—' %></div></div></div>
+            <div class="col-md-6"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('req_hospital') %></div><div class="fw-bold"><%= request.hospital_name %></div><div class="small text-muted"><%= request.hospital_address %></div></div></div>
+            <div class="col-12"><div class="p-3 rounded-4" style="background:#fffbeb; border:1px solid #fde68a;"><div class="small text-muted"><%= _t('prof_location') %></div><div class="fw-bold"><%= [request.location_upazila, request.location_district, request.location_division].filter(Boolean).join(', ') %></div><div class="small"><%= _t('req_requested_by') %> <%= request.requester_name||'Guest' %> • <%= new Date(request.created_at).toLocaleString() %></div></div></div>
+            <% if(request.urgent_reason){ %><div class="col-12"><div class="p-3 rounded-4" style="background:#fff0f0; border:1px solid #fecdd3;"><div class="small fw-bold text-danger"><i class="fas fa-exclamation-triangle me-2"></i><%= _t('req_urgent_reason') %></div><div><%= request.urgent_reason %></div></div></div><% } %>
+            <% if(request.additional_info){ %><div class="col-12"><div class="p-3 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="small text-muted"><%= _t('req_additional') %></div><div><%= request.additional_info %></div></div></div><% } %>
+          </div>
+
+          <div class="d-flex flex-wrap gap-2 mt-4">
+            <a href="/blood-requests" class="btn btn-light border rounded-pill"><i class="fas fa-arrow-left me-1"></i><%= _t('common_back') %></a>
+            <% if (typeof currentUser !== 'undefined' && currentUser && !request.is_fulfilled){ %>
+              <form method="POST" action="/blood-request/<%= request.id %>/fulfill"><button class="btn btn-success rounded-pill"><i class="fas fa-check me-1"></i><%= _t('req_mark_fulfilled') %></button></form>
+              <form method="POST" action="/blood-request/<%= request.id %>/cancel"><button class="btn btn-outline-danger rounded-pill"><i class="fas fa-times me-1"></i><%= _t('req_cancel') %></button></form>
+            <% } else if(request.is_fulfilled){ %>
+              <span class="badge bg-success rounded-pill p-2 px-3"><i class="fas fa-check-circle me-1"></i><%= _t('st_fulfilled') %> <%= request.fulfilled_at? '• '+ new Date(request.fulfilled_at).toLocaleDateString():'' %></span>
+            <% } %>
+          </div>
+          <div class="alert alert-info border-0 mt-4" style="border-radius:14px; background:#f0f9ff; color:#0c4a6e;">
+            <i class="fas fa-shield-halved me-2"></i><%= _t('req_disclaimer') %>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('partials/footer') %>

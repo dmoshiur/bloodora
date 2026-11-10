@@ -1,0 +1,194 @@
+<%- include('../partials/header') %>
+<%
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const _num = (n) => { if (lang !== 'bn') return String(n); const b=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n).replace(/\d/g,d=>b[d]); };
+  const stLabel = { pending: _t2('st_pending'), processing: _t2('st_processing'), completed: _t2('st_completed'), cancelled: _t2('st_cancelled') };
+  const stClass = { pending: 'bg-warning text-dark', processing: 'bg-info', completed: 'bg-success', cancelled: 'bg-secondary' };
+  const fmtDate = (v) => { try { return new Date(String(v).includes('T') ? v : String(v).replace(' ','T') + 'Z').toLocaleDateString(lang === 'bn' ? 'bn-BD' : lang === 'ar' ? 'ar' : 'en-GB'); } catch(e){ return String(v||'').slice(0,10); } };
+  const sectionError = (msg) => `<div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i>${msg || ''} <a href="javascript:location.reload()" class="fw-bold">${_t2('common_retry')}</a></div>`;
+%>
+<style>
+  .dash-stat{ background:#fff; border-radius:18px; padding:18px; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(15,23,42,.06); display:flex; align-items:center; gap:14px; height:100%; }
+  .dash-stat-icon{ width:48px;height:48px;border-radius:12px; display:flex; align-items:center; justify-content:center; color:#fff; font-size:18px; flex-shrink:0; }
+</style>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0" style="letter-spacing:-.02em;"><i class="fas fa-gauge-high text-danger me-2"></i><%= _t2('dash_welcome', { name: user.name.split(' ')[0] }) %></h2>
+      <small class="text-muted"><%= _t2('dash_sub') %></small>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a href="/request-blood" class="btn btn-danger btn-sm rounded-pill"><i class="fas fa-plus-circle me-1"></i><%= _t2('nav_request') %></a>
+      <a href="/shop" class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-shopping-bag me-1"></i><%= _t2('nav_shop') %></a>
+    </div>
+  </div>
+
+  <div class="dash-wrapper gap-4">
+    <%- include('_sidebar', { active: active }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <!-- Real stats row: every number is computed from backend data -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3">
+          <div class="dash-stat"><div class="dash-stat-icon" style="background:linear-gradient(135deg,var(--primary),#ff3340);"><i class="fas fa-box"></i></div>
+            <div><div class="h5 fw-bold mb-0"><%= orders.ok ? _num(orders.stats.total) : '—' %></div><div class="small text-muted"><%= _t2('dash_total_orders') %></div></div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="dash-stat"><div class="dash-stat-icon" style="background:linear-gradient(135deg,#f59e0b,#fbbf24);"><i class="fas fa-hourglass-half"></i></div>
+            <div><div class="h5 fw-bold mb-0"><%= orders.ok ? _num(orders.stats.pending) : '—' %></div><div class="small text-muted"><%= _t2('dash_pending_orders') %></div></div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <div class="dash-stat"><div class="dash-stat-icon" style="background:linear-gradient(135deg,#dc2626,#f43f5e);"><i class="fas fa-tint"></i></div>
+            <div><div class="h5 fw-bold mb-0"><%= requests.ok ? _num(requests.active) : '—' %></div><div class="small text-muted"><%= _t2('dash_active_requests') %></div></div></div>
+        </div>
+        <div class="col-6 col-lg-3">
+          <a class="dash-stat text-decoration-none" style="color:inherit;" href="/messages"><div class="dash-stat-icon" style="background:linear-gradient(135deg,#0284c7,#38bdf8);"><i class="fas fa-envelope"></i></div>
+            <div><div class="h5 fw-bold mb-0"><%= messages.ok ? _num(messages.unread) : '—' %></div><div class="small text-muted"><%= _t2('dash_unread_messages') %></div></div></a>
+        </div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <!-- Recent orders -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-box me-2 text-danger"></i><%= _t2('dash_recent_orders') %></h6>
+              <a href="/dashboard/orders" class="btn btn-sm btn-light border rounded-pill"><%= _t2('dash_view_all') %></a>
+            </div>
+            <div class="card-body p-0">
+              <% if (!orders.ok) { %>
+                <div class="p-3"><%- sectionError(_t2('common_load_failed')) %></div>
+              <% } else if (!orders.list.length) { %>
+                <div class="text-center text-muted small p-4"><i class="fas fa-box-open fa-2x d-block mb-2" style="color:#cbd5e1;"></i><%= _t2('dash_no_orders') %><div class="mt-2"><a href="/shop" class="btn btn-sm btn-danger rounded-pill"><%= _t2('ord_go_shop') %></a></div></div>
+              <% } else { %>
+                <div class="table-responsive">
+                  <table class="table align-middle mb-0">
+                    <thead><tr><th><%= _t2('ord_id') %></th><th><%= _t2('common_date') %></th><th><%= _t2('common_total') %></th><th><%= _t2('common_status') %></th><th></th></tr></thead>
+                    <tbody>
+                      <% orders.list.forEach(function(o){ const st=String(o.status||'').toLowerCase(); %>
+                        <tr>
+                          <td class="fw-bold">#<%= o.id %></td>
+                          <td class="small text-muted"><%= fmtDate(o.created_at) %></td>
+                          <td class="fw-bold" style="color:var(--primary);">৳<%= o.total_amount %></td>
+                          <td><span class="badge <%= stClass[st] || 'bg-secondary' %> rounded-pill"><%= stLabel[st] || st %></span></td>
+                          <td><a href="/shop/order/success/<%= o.id %>" class="btn btn-sm btn-outline-danger rounded-pill"><i class="fas fa-eye"></i></a></td>
+                        </tr>
+                      <% }) %>
+                    </tbody>
+                  </table>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Recent blood requests -->
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-tint me-2 text-danger"></i><%= _t2('dash_recent_requests') %></h6>
+              <a href="/dashboard/requests" class="btn btn-sm btn-light border rounded-pill"><%= _t2('dash_view_all') %></a>
+            </div>
+            <div class="card-body">
+              <% if (!requests.ok) { %>
+                <%- sectionError(_t2('common_load_failed')) %>
+              <% } else if (!requests.list.length) { %>
+                <div class="text-center text-muted small py-3"><i class="fas fa-tint-slash fa-2x d-block mb-2" style="color:#cbd5e1;"></i><%= _t2('dash_no_requests') %><div class="mt-2"><a href="/request-blood" class="btn btn-sm btn-danger rounded-pill"><%= _t2('req_create_first') %></a></div></div>
+              <% } else { %>
+                <div class="d-grid gap-2">
+                  <% requests.list.forEach(function(r){ %>
+                    <a href="/blood-request/<%= r.id %>" class="activity-item">
+                      <div class="activity-icon tone-danger"><i class="fas fa-tint"></i></div>
+                      <div style="min-width:0;">
+                        <div class="fw-bold" style="font-size:.9rem;"><%= r.blood_group %> • <%= r.patient_name %> <% if (r.is_urgent) { %><span class="badge bg-danger rounded-pill ms-1"><%= _t2('st_urgent') %></span><% } %></div>
+                        <div class="small text-muted text-truncate"><i class="fas fa-hospital me-1"></i><%= r.hospital_name %> • <%= fmtDate(r.created_at) %></div>
+                      </div>
+                      <span class="badge <%= r.is_fulfilled ? 'bg-success' : r.is_cancelled ? 'bg-secondary' : 'bg-warning text-dark' %> rounded-pill ms-auto"><%= r.is_fulfilled ? _t2('st_fulfilled') : r.is_cancelled ? _t2('st_cancelled') : _t2('st_active') %></span>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <!-- Account status (real flags from the session user) -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-id-card me-2 text-danger"></i><%= _t2('dash_account_status') %></h6></div>
+            <div class="card-body">
+              <div class="d-flex flex-wrap gap-2 mb-3">
+                <span class="badge <%= user.is_verified ? 'bg-success' : 'bg-warning text-dark' %> rounded-pill"><i class="fas <%= user.is_verified ? 'fa-circle-check' : 'fa-clock' %> me-1"></i><%= user.is_verified ? _t2('st_verified') : _t2('st_unverified') %></span>
+                <span class="badge <%= user.can_donate ? 'bg-success' : 'bg-secondary' %> rounded-pill"><i class="fas fa-hand-holding-heart me-1"></i><%= user.can_donate ? _t2('st_available') : _t2('st_unavailable') %></span>
+                <span class="badge bg-danger rounded-pill"><%= user.blood_group || '—' %></span>
+                <% if (user.created_at) { %><span class="badge bg-light text-dark border rounded-pill"><%= _t2('dash_member_since') %> <%= fmtDate(user.created_at) %></span><% } %>
+              </div>
+              <% if (!user.is_verified && user.age >= 18) { %>
+                <form method="POST" action="/donors/apply-for-verification">
+                  <button class="btn btn-warning btn-sm rounded-pill w-100 mb-2"><i class="fas fa-check-circle me-1"></i><%= _t2('dash_apply_verify') %></button>
+                </form>
+                <div class="small text-muted"><%= _t2('dash_verify_note') %></div>
+              <% } %>
+              <form method="POST" action="/donors/toggle_status" class="mt-2">
+                <button class="btn btn-outline-danger btn-sm rounded-pill w-100"><i class="fas fa-toggle-on me-1"></i><%= _t2('dash_toggle') %> (<%= user.can_donate ? _t2('st_available') : _t2('st_unavailable') %>)</button>
+              </form>
+              <a href="/dashboard/security" class="btn btn-light border btn-sm rounded-pill w-100 mt-2"><i class="fas fa-shield-halved me-1"></i><%= _t2('sec_title') %></a>
+            </div>
+          </div>
+
+          <!-- Only supported donation data: last donation and eligibility. -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><%= _t2('dash_donation') %></h6></div>
+            <div class="card-body">
+              <div class="small text-muted"><%= _t2('prof_last_donation') %></div>
+              <div class="fw-bold"><%= user.last_donation ? fmtDate(user.last_donation) : _t2('dash_no_donation') %></div>
+              <a href="/profile" class="btn btn-sm btn-outline-danger rounded-pill mt-2"><%= _t2('nav_my_profile') %></a>
+            </div>
+          </div>
+          <!-- Unread messages -->
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-envelope me-2 text-danger"></i><%= _t2('dash_messages') %></h6>
+              <a href="/messages" class="btn btn-sm btn-light border rounded-pill"><%= _t2('dash_view_all') %></a>
+            </div>
+            <div class="card-body">
+              <% if (!messages.ok) { %>
+                <%- sectionError(_t2('common_load_failed')) %>
+              <% } else if (!messages.recent.length) { %>
+                <div class="text-center text-muted small py-2"><i class="fas fa-inbox fa-2x d-block mb-2" style="color:#cbd5e1;"></i><%= _t2('dash_no_messages') %></div>
+              <% } else { %>
+                <div class="d-grid gap-2">
+                  <% messages.recent.forEach(function(m){ %>
+                    <a href="/messages/read/<%= m.id %>" class="activity-item">
+                      <div class="activity-icon tone-info"><i class="fas fa-envelope"></i></div>
+                      <div style="min-width:0;">
+                        <div class="fw-bold text-truncate" style="font-size:.88rem;"><%= m.subject || _t2('msg_title') %><% if (!m.is_read) { %> <span class="badge bg-danger rounded-pill">●</span><% } %></div>
+                        <div class="small text-muted text-truncate"><%= m.sender_name || '' %> • <%= fmtDate(m.created_at || m.sent_at) %></div>
+                      </div>
+                    </a>
+                  <% }) %>
+                </div>
+              <% } %>
+            </div>
+          </div>
+
+          <!-- Quick actions -->
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-bolt me-2 text-warning"></i><%= _t2('dash_quick_actions') %></h6></div>
+            <div class="card-body">
+              <div class="row g-2">
+                <div class="col-6"><a href="/request-blood" class="btn btn-outline-danger w-100 rounded-4 py-3"><i class="fas fa-plus-circle d-block mb-1"></i><%= _t2('nav_request') %></a></div>
+                <div class="col-6"><a href="/donors" class="btn btn-outline-dark w-100 rounded-4 py-3"><i class="fas fa-users d-block mb-1"></i><%= _t2('nav_donors') %></a></div>
+                <div class="col-6"><a href="/messages/send" class="btn btn-light border w-100 rounded-4 py-3"><i class="fas fa-paper-plane d-block mb-1"></i><%= _t2('msg_new') %></a></div>
+                <div class="col-6"><a href="/profile/edit" class="btn btn-light border w-100 rounded-4 py-3"><i class="fas fa-user-pen d-block mb-1"></i><%= _t2('nav_edit_profile') %></a></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,218 @@
+<%- include('../partials/header') %>
+<%
+  const _s = (typeof settings !== 'undefined' && settings) ? settings : {};
+  const _models = (typeof models !== 'undefined' && models) ? models : [];
+  const _convs = (typeof conversations !== 'undefined' && conversations) ? conversations : [];
+  const _k = (typeof knowledge !== 'undefined') ? knowledge : null;
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+  const DEFAULT_PROMPTS = "How do I request blood urgently?\nOpen the medical shop\nWhen is Anti-D given during pregnancy?\nWho can receive O- blood?\nWhat is the delivery charge?\nHow do I become a verified donor?";
+%>
+
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-robot text-danger me-2"></i>AI Assistant</h2>
+      <small class="text-muted">Live AI Help — model, API key, persona, suggested prompts and the live knowledge base.</small>
+    </div>
+    <div class="d-flex gap-2">
+      <span class="badge <%= _s.ai_enabled ? 'bg-success' : 'bg-secondary' %> rounded-pill"><i class="fas fa-<%= _s.ai_enabled?'circle-check':'circle-pause' %> me-1"></i><%= _s.ai_enabled ? 'Live' : 'Disabled' %></span>
+      <span class="badge bg-dark rounded-pill"><%= _s.ai_model || 'qwen/qwen3.6-27b' %></span>
+    </div>
+  </div>
+
+  <div class="admin-wrapper">
+    <%- include('_sidebar', { active: 'ai', stats: {} }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-3">
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <form id="ai-form" class="row g-3">
+                <div class="col-12">
+                  <div class="form-check form-switch">
+                    <input class="form-check-input" type="checkbox" name="ai_enabled" id="ai_enabled" <%= _s.ai_enabled ? 'checked' : '' %>>
+                    <label class="form-check-label fw-bold" for="ai_enabled">Enable the Live AI Help widget</label>
+                  </div>
+                </div>
+
+                <div class="col-md-7">
+                  <label class="form-label">Model <span class="text-muted small">(Groq model ID)</span></label>
+                  <select name="ai_model" class="form-select" id="ai_model">
+                    <% const _cur = _s.ai_model || 'qwen/qwen3.6-27b'; %>
+                    <% _models.forEach(function(m){ %>
+                      <option value="<%= m.id %>" <%= m.id===_cur ? 'selected' : '' %>><%= m.label || m.id %></option>
+                    <% }) %>
+                    <% if (!_models.some(function(m){ return m.id === _cur; })) { %>
+                      <option value="<%= _cur %>" selected><%= _cur %></option>
+                    <% } %>
+                  </select>
+                  <div class="form-text"><a href="#" id="refresh-models">Fetch the live catalogue from Groq</a></div>
+                </div>
+                <div class="col-md-5">
+                  <label class="form-label">Provider</label>
+                  <input name="ai_provider" class="form-control" value="<%= _s.ai_provider || 'groq' %>">
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Groq API key</label>
+                  <div class="input-group">
+                    <span class="input-group-text bg-white"><i class="fas fa-key text-muted"></i></span>
+                    <input name="ai_api_key" id="ai_key" type="password" class="form-control" value="<%= _s.ai_api_key %>" placeholder="gsk_…" autocomplete="new-password">
+                    <button class="btn btn-light border" type="button" onclick="var p=document.getElementById('ai_key'); p.type = p.type==='password'?'text':'password';"><i class="fas fa-eye"></i></button>
+                  </div>
+                  <div class="form-text">
+                    <%= _s.ai_api_key_set ? 'A key is stored. Leave the field unchanged to keep it; clear it to remove it.' : 'No key stored yet — the widget will show a friendly "not configured" notice until you add one.' %>
+                    Get one free at <a href="https://console.groq.com/keys" target="_blank" rel="noopener">console.groq.com/keys</a>.
+                  </div>
+                </div>
+
+                <div class="col-md-8">
+                  <label class="form-label">API base URL</label>
+                  <input name="ai_base_url" class="form-control" value="<%= _s.ai_base_url || 'https://api.groq.com/openai/v1' %>">
+                </div>
+                <div class="col-md-4">
+                  <label class="form-label">Max tokens</label>
+                  <input name="ai_max_tokens" type="number" min="128" max="4096" class="form-control" value="<%= _s.ai_max_tokens || 900 %>">
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label">Temperature <span class="text-muted small" id="temp-out">(<%= _s.ai_temperature ?? 0.5 %>)</span></label>
+                  <input name="ai_temperature" id="temp" type="range" class="form-range" min="0" max="1" step="0.05" value="<%= _s.ai_temperature ?? 0.5 %>">
+                  <div class="d-flex justify-content-between small text-muted"><span>Precise</span><span>Creative</span></div>
+                </div>
+                <div class="col-md-6">
+                  <label class="form-label">Connection test</label>
+                  <button type="button" class="btn btn-dark w-100" id="test-btn"><i class="fas fa-plug-circle-check me-1"></i>Test connection</button>
+                  <div id="test-out" class="small mt-2"></div>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Persona / system instructions <span class="text-muted small">(optional — appended to the built-in knowledge-base prompt)</span></label>
+                  <textarea name="ai_persona" class="form-control" rows="3" placeholder="e.g. Always answer in a warm, formal tone and mention that delivery is only available in Kalai."><%= _s.ai_persona %></textarea>
+                </div>
+
+                <div class="col-12">
+                  <label class="form-label">Suggested prompts <span class="text-muted small">(one per line — shown as chips in the widget)</span></label>
+                  <textarea name="ai_prompts" class="form-control" rows="6"><%= _s.ai_prompts || DEFAULT_PROMPTS %></textarea>
+                </div>
+
+                <div class="col-12 d-flex gap-2">
+                  <button type="submit" class="btn btn-danger rounded-pill px-4"><i class="fas fa-save me-1"></i>Save AI settings</button>
+                  <a href="/admin" class="btn btn-light border rounded-pill">Back</a>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm mb-3" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-2"><i class="fas fa-brain me-2 text-danger"></i>Knowledge base</h6>
+              <p class="small text-muted">Rebuilt from the <em>current</em> database on every question, so the assistant knows live products, prices, stock and platform numbers.</p>
+              <% if (_k) { %>
+                <div class="row g-2 text-center mb-3">
+                  <div class="col-4"><div class="p-2 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold" style="font-family:var(--font-display); font-size:1.3rem;"><%= _k.characters != null ? Number(_k.characters).toLocaleString() : '—' %></div><div class="small text-muted"><%= t('adm_kb_chars') %></div></div></div>
+                  <div class="col-4"><div class="p-2 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold" style="font-family:var(--font-display); font-size:1.3rem;"><%= _k.productCount != null ? _k.productCount : '—' %></div><div class="small text-muted"><%= t('adm_kb_products') %></div></div></div>
+                  <div class="col-4"><div class="p-2 rounded-4" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold" style="font-family:var(--font-display); font-size:1.3rem;"><%= _k.approxTokens != null ? '~'+_k.approxTokens : '—' %></div><div class="small text-muted"><%= t('adm_kb_tokens') %></div></div></div>
+                </div>
+                <button class="btn btn-sm btn-outline-danger w-100" type="button" data-bs-toggle="collapse" data-bs-target="#kb-preview"><i class="fas fa-file-lines me-1"></i>Inspect the system prompt</button>
+                <div class="collapse mt-2" id="kb-preview">
+                  <pre class="p-3 rounded-4 small mb-0" style="background:#0f172a; color:#cbd5e1; max-height:340px; overflow:auto; font-size:.68rem; line-height:1.5;"><%= _k.preview %></pre>
+                </div>
+              <% } else { %>
+                <div class="alert alert-light border small mb-0 rounded-3">Knowledge preview unavailable.</div>
+              <% } %>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm" style="border-radius:20px;">
+            <div class="card-body p-4">
+              <h6 class="fw-bold mb-2"><i class="fas fa-comments me-2 text-danger"></i>Recent conversations</h6>
+              <% if (_convs.length) { %>
+                <div class="d-grid gap-2" style="max-height:300px; overflow:auto;">
+                  <% _convs.slice(0,20).forEach(function(c){ %>
+                    <div class="p-2 rounded-3" style="background:#f8fafc; border:1px solid #e2e8f0;">
+                      <div class="small text-muted"><%= String(c.last_at||'').slice(0,16).replace('T',' ') %> · <%= c.turns %> msgs</div>
+                      <div class="small fw-bold text-truncate"><%= c.last_question || c.conversation_id %></div>
+                    </div>
+                  <% }) %>
+                </div>
+              <% } else { %>
+                <div class="alert alert-light border small mb-0 rounded-3">No AI conversations yet.</div>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+
+<script>
+(function(){
+  function toast(msg, ok){
+    var el = document.createElement('div');
+    el.className = 'alert ' + (ok === false ? 'alert-danger' : 'alert-success') + ' border-0 shadow rounded-4 small';
+    el.style.cssText = 'position:fixed; top:20px; right:20px; z-index:3000; max-width:420px;';
+    el.textContent = msg;
+    document.body.appendChild(el);
+    setTimeout(function(){ el.remove(); }, 5000);
+  }
+  function collect(){
+    var f = document.getElementById('ai-form');
+    var b = {};
+    new FormData(f).forEach(function(v, k){ b[k] = v; });
+    b.ai_enabled = document.getElementById('ai_enabled').checked ? 1 : 0;
+    b.ai_temperature = document.getElementById('temp').value;
+    return b;
+  }
+  document.getElementById('temp').addEventListener('input', function(e){
+    document.getElementById('temp-out').textContent = '(' + e.target.value + ')';
+  });
+  document.getElementById('ai-form').addEventListener('submit', function(e){
+    e.preventDefault();
+    var btn = e.target.querySelector('button[type=submit]');
+    btn.disabled = true; btn.innerHTML = '<i class="fas fa-spinner fa-spin me-1"></i>Saving…';
+    fetch('/ai-help/admin/config', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify(collect())
+    }).then(function(r){ return r.json(); })
+      .then(function(d){ toast(d.message || (d.success ? 'Saved.' : 'Failed.'), d.success); if (d.success) setTimeout(function(){ location.reload(); }, 900); })
+      .catch(function(){ toast('Could not save.', false); })
+      .finally(function(){ btn.disabled = false; btn.innerHTML = '<i class="fas fa-save me-1"></i>Save AI settings'; });
+  });
+  document.getElementById('test-btn').addEventListener('click', function(){
+    var out = document.getElementById('test-out');
+    var btn = this;
+    btn.disabled = true; out.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Contacting Groq…';
+    fetch('/ai-help/admin/test', {
+      method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ api_key: document.getElementById('ai_key').value, model: document.getElementById('ai_model').value, base_url: document.querySelector('[name="ai_base_url"]').value })
+    }).then(function(r){ return r.json(); })
+      .then(function(d){
+        out.innerHTML = '<span class="' + (d.ok ? 'text-success' : 'text-danger') + ' fw-bold">' + d.message + '</span>';
+        toast(d.message, d.ok);
+      })
+      .catch(function(e){ out.innerHTML = '<span class="text-danger fw-bold">Request failed.</span>'; })
+      .finally(function(){ btn.disabled = false; });
+  });
+  document.getElementById('refresh-models').addEventListener('click', function(e){
+    e.preventDefault();
+    fetch('/ai-help/admin/models').then(function(r){ return r.json(); }).then(function(d){
+      var sel = document.getElementById('ai_model'); var cur = sel.value;
+      sel.innerHTML = '';
+      (d.models || []).forEach(function(m){
+        var o = document.createElement('option'); o.value = m.id; o.textContent = m.label || m.id;
+        if (m.id === cur) o.selected = true;
+        sel.appendChild(o);
+      });
+      toast('Loaded ' + (d.models || []).length + ' models from ' + (d.source || 'source') + '.', true);
+    }).catch(function(){ toast('Could not fetch models.', false); });
+  });
+})();
+</script>
+
+<%- include('../partials/footer') %>

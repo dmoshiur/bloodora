@@ -1,0 +1,42 @@
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+%>
+<%- include('../partials/header') %>
+<div class="container mt-4">
+  <div class="row justify-content-center">
+    <div class="col-lg-8">
+      <div class="card border-0 shadow-lg" style="border-radius:22px;">
+        <div class="card-header bg-white border-0 pt-4 px-4">
+          <h3 class="fw-bold mb-0"><i class="fas fa-gear me-2 text-danger"></i><%= _t('adm_settings') %></h3>
+          <small class="text-muted"><%= _t('adm_branding') %> • <%= _t('prof_saved_payments') %></small>
+        </div>
+        <div class="card-body px-4">
+          <form method="POST" action="/admin/settings-update" class="row g-3">
+            <div class="col-md-6"><label class="form-label"><%= _t('foot_about') %> / Site Name</label><input name="site_name" class="form-control" value="<%= settings.site_name||'BloodOra' %>"></div>
+            <div class="col-md-6"><label class="form-label"><%= _t('common_email') %></label><input name="site_email" class="form-control" value="<%= settings.site_email||'' %>"></div>
+            <div class="col-md-6"><label class="form-label"><%= _t('common_phone') %></label><input name="site_phone" class="form-control" value="<%= settings.site_phone||'' %>"></div>
+            <div class="col-md-6"><label class="form-label"><%= _t('prof_location') %></label><input name="site_address" class="form-control" value="<%= settings.site_address||'' %>"></div>
+            <div class="col-12"><label class="form-label"><%= _t('prod_description') %></label><textarea name="site_description" class="form-control" rows="2"><%= settings.site_description||'' %></textarea></div>
+            <div class="col-md-6"><label class="form-label">Facebook</label><input name="facebook_url" class="form-control" value="<%= settings.facebook_url||'' %>"></div>
+            <div class="col-md-6"><label class="form-label">Twitter / X</label><input name="twitter_url" class="form-control" value="<%= settings.twitter_url||'' %>"></div>
+            <div class="col-md-6"><label class="form-label">Instagram</label><input name="instagram_url" class="form-control" value="<%= settings.instagram_url||'' %>"></div>
+            <div class="col-md-6"><label class="form-label">LinkedIn</label><input name="linkedin_url" class="form-control" value="<%= settings.linkedin_url||'' %>"></div>
+
+            <div class="col-12"><hr><h6 class="fw-bold"><i class="fas fa-money-bill-wave me-2 text-success"></i><%= _t('prof_saved_payments') %> (<%= _t('nav_checkout') %>)</h6></div>
+            <div class="col-md-4"><label class="form-label">bKash Merchant</label><input name="bkash_merchant_number" class="form-control" value="<%= settings.bkash_merchant_number||'' %>"></div>
+            <div class="col-md-4"><label class="form-label">Nagad Merchant</label><input name="nagad_merchant_number" class="form-control" value="<%= settings.nagad_merchant_number||'' %>"></div>
+            <div class="col-md-4"><label class="form-label">Upay Merchant</label><input name="upay_merchant_number" class="form-control" value="<%= settings.upay_merchant_number||'' %>"></div>
+            <div class="col-md-4"><label class="form-label">Rocket Merchant</label><input name="rocket_merchant_number" class="form-control" value="<%= settings.rocket_merchant_number||'' %>"></div>
+            <div class="col-md-4"><label class="form-label">Pathao Merchant</label><input name="pathao_merchant_number" class="form-control" value="<%= settings.pathao_merchant_number||'' %>"></div>
+
+            <div class="col-12 d-flex gap-2">
+              <a href="/admin" class="btn btn-light border rounded-pill"><%= _t('common_back') %></a>
+              <button type="submit" class="btn btn-danger rounded-pill px-4"><%= _t('common_save') %></button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+<%- include('../partials/footer') %>

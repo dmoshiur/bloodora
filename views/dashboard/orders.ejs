@@ -1,0 +1,82 @@
+<%- include('../partials/header') %>
+<%
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  const _num = (n) => { if (lang !== 'bn') return String(n); const b=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n).replace(/\d/g,d=>b[d]); };
+  const stLabel = { pending: _t2('st_pending'), processing: _t2('st_processing'), completed: _t2('st_completed'), cancelled: _t2('st_cancelled') };
+  const stClass = { pending: 'bg-warning text-dark', processing: 'bg-info', completed: 'bg-success', cancelled: 'bg-secondary' };
+  const fmtDate = (v) => { try { return new Date(String(v).includes('T') ? v : String(v).replace(' ','T') + 'Z').toLocaleDateString(); } catch(e){ return String(v||'').slice(0,10); } };
+  const all = (typeof orders !== 'undefined' && orders) ? orders : { ok: false, list: [], stats: {} };
+  const curFilter = (typeof filter !== 'undefined') ? filter : '';
+  const filtered = curFilter ? all.list.filter(o => String(o.status||'').toLowerCase() === curFilter) : all.list;
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-box text-danger me-2"></i><%= _t2('dash_orders') %></h2>
+      <small class="text-muted"><%= _t2('dash_orders_sub') %></small>
+    </div>
+  </div>
+
+  <div class="dash-wrapper gap-4">
+    <%- include('_sidebar', { active: active }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <% if (all.ok) { %>
+        <div class="d-flex flex-wrap gap-2 mb-3">
+          <% [['', _t2('common_all') + ' (' + all.stats.total + ')'], ['pending', _t2('st_pending') + ' (' + all.stats.pending + ')'], ['completed', _t2('st_completed') + ' (' + all.stats.completed + ')'], ['cancelled', _t2('st_cancelled') + ' (' + all.stats.cancelled + ')']].forEach(function(f){ %>
+            <a class="btn btn-sm <%= curFilter === f[0] ? 'btn-danger' : 'btn-light border' %> rounded-pill" href="/dashboard/orders<%= f[0] ? '?status=' + f[0] : '' %>"><%= f[1] %></a>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div class="card border-0 shadow-sm" style="border-radius:18px;">
+        <div class="card-body p-0">
+          <% if (!all.ok) { %>
+            <div class="p-3"><div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i><%= _t2('common_load_failed') %> <a href="javascript:location.reload()" class="fw-bold"><%= _t2('common_retry') %></a></div></div>
+          <% } else if (!filtered.length) { %>
+            <div class="text-center p-5">
+              <i class="fas fa-box-open fa-3x mb-3" style="color:#94a3b8;"></i>
+              <h5 class="fw-bold"><%= _t2('ord_empty_title') %></h5>
+              <p class="text-muted small"><%= _t2('ord_empty_sub') %></p>
+              <a href="/shop" class="btn btn-danger rounded-pill"><%= _t2('ord_go_shop') %></a>
+            </div>
+          <% } else { %>
+            <div class="table-responsive">
+              <table class="table align-middle mb-0">
+                <thead><tr>
+                  <th><%= _t2('ord_id') %></th><th><%= _t2('common_date') %></th><th><%= _t2('common_total') %></th>
+                  <th><%= _t2('ord_payment') %></th><th><%= _t2('common_status') %></th><th><%= _t2('common_actions') %></th>
+                </tr></thead>
+                <tbody>
+                  <% filtered.forEach(function(o){ const st=String(o.status||'').toLowerCase(); %>
+                    <tr>
+                      <td class="fw-bold">#<%= o.id %></td>
+                      <td class="small text-muted"><%= fmtDate(o.created_at) %></td>
+                      <td class="fw-bold" style="color:var(--primary);">৳<%= o.total_amount %></td>
+                      <td>
+                        <span class="badge bg-light text-dark border rounded-pill"><%= o.payment_method || '—' %></span>
+                        <div><span class="badge <%= String(o.payment_status||'').toLowerCase()==='confirmed' ? 'bg-success' : 'bg-warning text-dark' %> rounded-pill"><%= String(o.payment_status||'').toLowerCase()==='confirmed' ? _t2('st_confirmed') : _t2('st_pending') %></span></div>
+                      </td>
+                      <td><span class="badge <%= stClass[st] || 'bg-secondary' %> rounded-pill"><%= stLabel[st] || st %></span></td>
+                      <td>
+                        <div class="d-flex flex-wrap gap-1">
+                          <a href="/shop/order/success/<%= o.id %>" class="btn btn-sm btn-outline-danger rounded-pill" title="<%= _t2('common_view') %>"><i class="fas fa-eye"></i></a>
+                          <% if (st === 'pending') { %>
+                            <form method="POST" action="/dashboard/orders/<%= o.id %>/cancel" onsubmit="return confirm('<%= _t2('ord_cancel_confirm') %>')">
+                              <button class="btn btn-sm btn-outline-secondary rounded-pill" title="<%= _t2('ord_cancel') %>"><i class="fas fa-ban"></i></button>
+                            </form>
+                          <% } %>
+                        </div>
+                      </td>
+                    </tr>
+                  <% }) %>
+                </tbody>
+              </table>
+            </div>
+          <% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<%- include('../partials/footer') %>

@@ -1,0 +1,309 @@
+<%- include('partials/header') %>
+<%
+  const _t = (typeof t === 'function') ? t : (k) => k;
+  const _num = (n) => { if (lang !== 'bn') return String(n); const b=['০','১','২','৩','৪','৫','৬','৭','৮','৯']; return String(n).replace(/\d/g,d=>b[d]); };
+  // EJS's escaped output tag escapes exactly once. The old local escaper ran on
+  // top of it and leaked literal &#39; / &amp; sequences into the rendered page.
+%>
+
+<!-- ================= Hero ================= -->
+<section class="hero-section">
+  <div class="container position-relative" style="z-index:1;">
+    <div class="row align-items-center">
+      <div class="col-lg-7">
+        <div class="d-inline-flex align-items-center gap-2 mb-3 px-3 py-2 rounded-pill hero-glass" style="font-weight:700; font-size:.8rem; letter-spacing:.05em;">
+          <span class="badge bg-white text-danger rounded-pill px-2 py-1"><i class="fas fa-shield-heart me-1"></i><%= _t('st_verified') %></span>
+          <%= _t('home_hero_badge') %>
+        </div>
+        <h1 class="mb-3"><%= _t('home_hero_title') %> <i class="fas fa-heart" style="color:#ff8fa0;"></i></h1>
+        <p class="lead mb-4"><%= _t('home_hero_lead') %></p>
+        <div class="d-flex flex-wrap gap-3">
+          <a href="/request-blood" class="btn btn-light btn-lg"><i class="fas fa-plus-circle me-2"></i><%= _t('home_cta_request') %></a>
+          <a href="/donors" class="btn btn-outline-light btn-lg" style="border:2px solid rgba(255,255,255,.9); color:#fff; background:rgba(255,255,255,.1); backdrop-filter:blur(8px);"><i class="fas fa-users me-2"></i><%= _t('home_cta_donors') %></a>
+          <a href="/shop" class="btn btn-dark btn-lg" style="background:rgba(15,23,42,.95); border:none; box-shadow:0 10px 28px rgba(0,0,0,.2);"><i class="fas fa-shopping-bag me-2"></i><%= _t('home_cta_shop') %></a>
+        </div>
+        <div class="d-flex flex-wrap gap-3 mt-4 small" style="color:rgba(255,255,255,.92);">
+          <span><i class="fas fa-check-circle me-1"></i><%= _t('home_64d') %></span>
+          <span><i class="fas fa-check-circle me-1"></i><%= _t('home_8bg') %></span>
+          <span><i class="fas fa-check-circle me-1"></i><%= _t('home_verified') %></span>
+        </div>
+      </div>
+
+      <!-- ---------- REAL Live Activity (SSE + polling fallback) ---------- -->
+      <div class="col-lg-5 d-none d-lg-block">
+        <div class="p-1 rounded-4 hero-glass" style="box-shadow:0 20px 60px rgba(0,0,0,.18);">
+          <div class="rounded-4 overflow-hidden" style="background:#fff; padding:18px;">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+              <div class="fw-bold" style="font-family:var(--font-display); font-size:1.15rem; color:#0f172a;">
+                <i class="fas fa-broadcast-tower text-danger me-2"></i><%= _t('home_live') %>
+              </div>
+              <span class="badge bg-success rounded-pill" id="live-badge"><span class="live-dot" style="background:#fff;"></span><span id="live-badge-text"><%= _t('home_live_on') %></span></span>
+            </div>
+            <div id="live-feed" class="d-grid gap-2" style="max-height:330px; overflow-y:auto;">
+              <div class="text-center text-muted small py-4"><%= _t('home_live_wait') %></div>
+            </div>
+            <div class="small text-muted mt-2 d-flex align-items-center justify-content-between">
+              <span id="live-source">…</span>
+              <a href="/blood-requests" class="text-danger fw-bold text-decoration-none"><%= _t('home_view_all') %> <i class="fas fa-arrow-right ms-1"></i></a>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ================= Stats ================= -->
+<section class="container mb-4">
+  <div class="row g-3">
+    <div class="col-6 col-md-3"><div class="stat-card"><h3><%= _num(total_donors || 0) %></h3><p><%= _t('home_verified') %></p></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><h3><%= _num(urgent_requests || 0) %></h3><p><%= _t('home_urgent') %></p></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><h3><%= _num(64) %></h3><p><%= _t('home_districts') %></p></div></div>
+    <div class="col-6 col-md-3"><div class="stat-card"><h3><%= _num(8) %></h3><p><%= _t('home_groups') %></p></div></div>
+  </div>
+</section>
+
+<% if (typeof notice !== 'undefined' && notice) { %>
+<div class="container mb-4">
+  <div class="alert alert-danger border-0 d-flex align-items-center gap-3" style="background:linear-gradient(135deg,#fff0f0,#ffe4e6); color:#9f1239; font-weight:700;">
+    <span class="d-inline-flex align-items-center justify-content-center" style="width:42px;height:42px;border-radius:50%; background:var(--primary); color:#fff; flex-shrink:0;"><i class="fas fa-bullhorn"></i></span>
+    <div><%= _t('home_notice') %>: <%= notice.content %></div>
+  </div>
+</div>
+<% } %>
+
+<!-- ================= Urgent requests ================= -->
+<% if (typeof recent_requests !== 'undefined' && recent_requests && recent_requests.length) { %>
+<section class="container mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h4 fw-bold mb-0"><i class="fas fa-exclamation-triangle text-danger me-2"></i><%= _t('home_urgent_requests') %></h2>
+    <a href="/blood-requests?urgent=true" class="btn btn-sm btn-outline-danger"><%= _t('home_view_all') %></a>
+  </div>
+  <div class="row g-3">
+    <% recent_requests.filter(r=>r.is_urgent && !r.is_fulfilled).slice(0,3).forEach(function(req){ %>
+      <div class="col-md-4">
+        <div class="card h-100" style="border-top:4px solid var(--primary);">
+          <div class="card-header d-flex align-items-center justify-content-between" style="background:#fff0f0; border-bottom:1px solid #ffe4e6; color:#9f1239; font-weight:800;">
+            <span><i class="fas fa-ambulance me-2"></i><%= _t('st_urgent') %></span>
+            <span class="badge bg-danger"><%= req.blood_group %></span>
+          </div>
+          <div class="card-body">
+            <h5 class="fw-bold"><%= req.blood_group %> <%= _t('req_needed') %></h5>
+            <div class="small text-muted d-grid gap-1">
+              <div><i class="fas fa-user me-2 text-danger"></i><strong><%= _t('req_patient_name') %>:</strong> <%= req.patient_name %></div>
+              <div><i class="fas fa-hospital me-2 text-danger"></i><%= req.hospital_name %>, <%= req.location_district %></div>
+              <div><i class="fas fa-clock me-2 text-danger"></i><%= _t('req_needed') %>: <%= new Date(req.needed_by).toLocaleString('en-GB', { day:'2-digit', month:'short', hour:'2-digit', minute:'2-digit' }) %></div>
+            </div>
+          </div>
+          <div class="card-footer bg-white border-0">
+            <a href="/blood-request/<%= req.id %>" class="btn btn-danger w-100"><i class="fas fa-hand-holding-medical me-2"></i><%= _t('common_view') %></a>
+          </div>
+        </div>
+      </div>
+    <% }) %>
+  </div>
+</section>
+<% } %>
+
+<!-- ================= How it works ================= -->
+<section class="container mb-5">
+  <div class="text-center mb-4">
+    <div class="eyebrow mb-2"><%= _t('home_how_eyebrow') %></div>
+    <h2 class="mb-0"><i class="fas fa-cogs me-2 text-danger"></i><%= _t('home_how') %></h2>
+  </div>
+  <div class="row g-3">
+    <div class="col-6 col-md-3"><div class="process-step"><div class="step-number">1</div><h5 class="fw-bold"><%= _t('home_step1_t') %></h5><p class="small text-muted mb-0"><%= _t('home_step1_d') %></p></div></div>
+    <div class="col-6 col-md-3"><div class="process-step"><div class="step-number">2</div><h5 class="fw-bold"><%= _t('home_step2_t') %></h5><p class="small text-muted mb-0"><%= _t('home_step2_d') %></p></div></div>
+    <div class="col-6 col-md-3"><div class="process-step"><div class="step-number">3</div><h5 class="fw-bold"><%= _t('home_step3_t') %></h5><p class="small text-muted mb-0"><%= _t('home_step3_d') %></p></div></div>
+    <div class="col-6 col-md-3"><div class="process-step"><div class="step-number">4</div><h5 class="fw-bold"><%= _t('home_step4_t') %></h5><p class="small text-muted mb-0"><%= _t('home_step4_d') %></p></div></div>
+  </div>
+</section>
+
+<!-- ================= Recent donors ================= -->
+<section class="container mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3">
+    <h2 class="h4 fw-bold mb-0"><i class="fas fa-users me-2 text-danger"></i><%= _t('home_recent_donors') %></h2>
+    <a href="/donors" class="btn btn-sm btn-outline-danger"><%= _t('home_view_all') %> <i class="fas fa-arrow-right ms-1"></i></a>
+  </div>
+  <div class="row g-3">
+    <% if (recent_donors && recent_donors.length) { %>
+      <% recent_donors.forEach(function(donor){ %>
+        <div class="col-6 col-md-2">
+          <div class="card text-center h-100 p-3">
+            <% if (donor.image_file && donor.image_file !== 'default.jpg') { %>
+              <img src="/uploads/<%= donor.image_file %>" class="rounded-circle mx-auto mb-2" alt="<%= donor.name %>" style="width:78px;height:78px;object-fit:cover; border:3px solid #fff; box-shadow:0 8px 20px rgba(15,23,42,.12);">
+            <% } else { %>
+              <img src="https://ui-avatars.com/api/?background=random&name=<%= encodeURIComponent(donor.name) %>&size=128&bold=true" class="rounded-circle mx-auto mb-2" alt="<%= donor.name %>" style="width:78px;height:78px;object-fit:cover; border:3px solid #fff; box-shadow:0 8px 20px rgba(15,23,42,.12);">
+            <% } %>
+            <div class="fw-bold" style="font-size:.95rem;"><%= donor.name %></div>
+            <div class="badge bg-danger mt-1"><%= donor.blood_group %></div>
+            <div class="small text-muted mt-1"><i class="fas fa-map-marker-alt me-1"></i><%= donor.district || donor.division || 'Bangladesh' %></div>
+            <a href="/donors/profile/view/<%= donor.id %>" class="btn btn-sm btn-outline-danger mt-2 rounded-pill px-3"><%= _t('common_view') %></a>
+          </div>
+        </div>
+      <% }) %>
+    <% } else { %>
+      <div class="col-12"><div class="alert alert-info text-center border-0 shadow-sm rounded-4"><%= _t('home_first_donor') %> <a href="/register" class="alert-link"><%= _t('nav_register') %></a></div></div>
+    <% } %>
+  </div>
+</section>
+
+<!-- ================= Shop teaser ================= -->
+<section class="container mb-2">
+  <div class="card border-0 overflow-hidden" style="background:linear-gradient(135deg,#0f172a 0%, #1e293b 100%); color:#fff; border-radius:24px;">
+    <div class="row g-0 align-items-center">
+      <div class="col-lg-7 p-4 p-lg-5">
+        <div class="badge bg-danger rounded-pill mb-3 px-3 py-2"><i class="fas fa-shopping-bag me-2"></i><%= (typeof branding!=='undefined' && branding.site_name) ? branding.site_name : 'BloodOra' %> <%= _t('adm_shop') %></div>
+        <h3 class="fw-bold mb-2" style="color:#fff;"><%= _t('shop_title') %></h3>
+        <p class="mb-3" style="color:#cbd5e1;"><%= _t('shop_sub') %></p>
+        <div class="d-flex flex-wrap gap-2">
+          <a href="/shop" class="btn btn-danger"><i class="fas fa-bag-shopping me-2"></i><%= _t('nav_shop') %></a>
+          <a href="/shop/cart" class="btn btn-outline-light" style="border:2px solid rgba(255,255,255,.9);"><i class="fas fa-cart-shopping me-2"></i><%= _t('shop_view_cart') %></a>
+          <a href="/reviews" class="btn btn-outline-light" style="border:2px solid rgba(255,255,255,.4);"><i class="fas fa-star me-2"></i><%= _t('nav_reviews') %></a>
+        </div>
+        <div class="small mt-3" style="color:#94a3b8;"><i class="fas fa-truck me-1"></i><%= _t('shop_delivery') %> • <%= _t('home_payment_methods') %></div>
+      </div>
+      <div class="col-lg-5 p-3">
+        <div class="rounded-4 overflow-hidden" style="background:#fff; padding:14px;">
+          <div class="d-flex gap-2">
+            <div class="flex-fill p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold text-danger" style="font-family:var(--font-display); font-size:1.3rem;">৳10</div><div class="small text-muted"><%= _t('shop_delivery_title') %></div></div>
+            <div class="flex-fill p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold text-danger"><i class="fas fa-shield-halved"></i> <%= _t('shop_genuine_stock') %></div></div>
+            <div class="flex-fill p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;"><div class="fw-bold text-danger"><i class="fas fa-file-invoice"></i> <%= _t('shop_printable_invoice') %></div></div>
+          </div>
+          <div class="mt-3">
+            <div class="small fw-bold text-muted mb-2"><%= _t('shop_latest_reviews') %></div>
+            <div class="d-grid gap-2" id="home-review-strip">
+              <div class="small text-muted">…</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<script>
+/* =====================================================================
+   REAL Live Activity — server-sent events with a polling fallback.
+   Nothing here is hardcoded: every row comes from /api/activity, which is
+   fed by real database events (verified donors, blood requests, orders,
+   published reviews, admin announcements).
+   ===================================================================== */
+(function(){
+  var LANG = <%- JSON.stringify(lang) %>;
+  var I18N_HOME = {
+    now: <%- JSON.stringify(_t('common_ago_now')) %>,
+    minAgo: <%- JSON.stringify(_t('common_ago_min')) %>,
+    hrAgo: <%- JSON.stringify(_t('common_ago_hr')) %>,
+    dayAgo: <%- JSON.stringify(_t('common_ago_day')) %>,
+    realtime: <%- JSON.stringify(_t('home_realtime')) %>,
+    polling: <%- JSON.stringify(_t('home_polling')) %>,
+    feedErr: <%- JSON.stringify(_t('home_feed_err')) %>,
+    noReviews: <%- JSON.stringify(_t('rev_none')) %>
+  };
+  var feed = document.getElementById('live-feed');
+  var sourceEl = document.getElementById('live-source');
+  var badgeText = document.getElementById('live-badge-text');
+  var stream = null, poll = null, seen = {};
+
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[c]; }); }
+  function ago(iso){
+    var d;
+    try { d = new Date(String(iso).includes('T') ? iso : String(iso).replace(' ', 'T') + 'Z'); } catch(e){ return ''; }
+    var s = Math.floor((Date.now() - d.getTime()) / 1000);
+    if (isNaN(s)) return '';
+    if (s < 60)   return I18N_HOME.now;
+    if (s < 3600) { var m = Math.floor(s/60); return I18N_HOME.minAgo.replace('{n}', m); }
+    if (s < 86400){ var h = Math.floor(s/3600); return I18N_HOME.hrAgo.replace('{n}', h); }
+    var dd = Math.floor(s/86400); return I18N_HOME.dayAgo.replace('{n}', dd);
+  }
+  function row(ev, prepend){
+    if (!ev) return;
+    var key = ev.id || (ev.kind + '|' + ev.title + '|' + ev.created_at);
+    if (seen[key]) return;
+    seen[key] = 1;
+    var tag = ev.link ? 'a' : 'div';
+    var el = document.createElement(tag);
+    el.className = 'activity-item';
+    if (ev.link) el.href = ev.link;
+    el.innerHTML =
+      '<div class="activity-icon tone-' + esc(ev.tone || 'info') + '"><i class="fas ' + esc(ev.icon || 'fa-circle-info') + '"></i></div>' +
+      '<div style="min-width:0;">' +
+        '<div class="fw-bold" style="font-size:.9rem; line-height:1.3;">' + esc(ev.title || '') + '</div>' +
+        (ev.detail ? '<div class="small text-muted" style="line-height:1.35;">' + esc(ev.detail) + '</div>' : '') +
+        '<div class="small mt-1" style="color:#94a3b8; font-size:.72rem;">' +
+          '<span class="badge bg-light text-dark border" style="font-size:.64rem;">' + esc(ev.label || '') + '</span> ' + esc(ago(ev.created_at)) +
+        '</div>' +
+      '</div>';
+    if (prepend && feed.firstChild) feed.insertBefore(el, feed.firstChild); else feed.appendChild(el);
+    while (feed.children.length > 12) feed.removeChild(feed.lastChild);
+  }
+  function empty(){
+    feed.innerHTML = '<div class="alert alert-info border-0 text-center small mb-0 rounded-3">' +
+      <%- JSON.stringify(_t('home_live_empty')) %> + '</div>';
+  }
+  function setSource(mode){
+    if (sourceEl) sourceEl.innerHTML = mode === 'live'
+      ? '<span class="text-success fw-bold"><i class="fas fa-bolt me-1"></i>' + esc(I18N_HOME.realtime) + '</span>'
+      : '<i class="fas fa-rotate me-1"></i>' + esc(I18N_HOME.polling);
+    if (badgeText) badgeText.textContent = <%- JSON.stringify(_t('home_live_on')) %>;
+  }
+
+  function load(){
+    return fetch('/api/activity')
+      .then(function(r){ return r.json(); })
+      .then(function(d){
+        feed.innerHTML = ''; seen = {};
+        var evs = (d && d.events) || [];
+        if (!evs.length) { empty(); return; }
+        evs.forEach(function(e){ row(e); });
+        setSource(stream ? 'live' : 'poll');
+      })
+      .catch(function(){
+        feed.innerHTML = '<div class="alert alert-warning border-0 text-center small mb-0 rounded-3">' +
+          esc(I18N_HOME.feedErr) + '</div>';
+      });
+  }
+
+  function openStream(){
+    if (typeof EventSource === 'undefined') { startPolling(); return; }
+    try {
+      stream = new EventSource('/api/activity/stream');
+      stream.addEventListener('activity', function(ev){
+        try { row(JSON.parse(ev.data), true); setSource('live'); } catch(e){}
+      });
+      stream.onerror = function(){
+        stream.close(); stream = null;
+        startPolling();
+      };
+    } catch(e){ stream = null; startPolling(); }
+  }
+  function startPolling(){
+    if (poll) return;
+    setSource('poll');
+    poll = setInterval(load, 12000);
+  }
+
+  load().then(openStream);
+
+  // Latest review strip in the shop teaser
+  fetch('/api/reviews?limit=3').then(function(r){ return r.json(); }).then(function(d){
+    var box = document.getElementById('home-review-strip');
+    if (!box) return;
+    var rs = ((d && d.reviews) || []).slice(0, 3);
+    if (!rs.length) { box.innerHTML = '<div class="small text-muted">' + esc(I18N_HOME.noReviews) + '</div>'; return; }
+    box.innerHTML = '';
+    rs.forEach(function(rv){
+      var href = rv.product_id ? ('/shop/product/' + rv.product_id) : '/reviews';
+      var el = document.createElement('a');
+      el.href = href; el.className = 'd-flex align-items-center gap-2 p-2 rounded-3 text-decoration-none';
+      el.style.cssText = 'background:#f1f5f9; color:#0f172a;';
+      el.innerHTML = '<i class="fas fa-star text-warning"></i><span class="small fw-bold text-truncate">' + esc(rv.title || (rv.author_name || 'Review')) + '</span>' +
+                     '<span class="ms-auto small fw-bold text-danger">' + '★'.repeat(rv.rating || 5) + '</span>';
+      box.appendChild(el);
+    });
+  }).catch(function(){});
+})();
+</script>
+
+<%- include('partials/footer') %>
