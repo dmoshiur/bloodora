@@ -19,7 +19,7 @@
  *      `fetch` completely. So "an unreachable Turso host must produce a fast
  *      503, never a hang" was asserted only by reading code.
  *
- * This suite boots the real serverless entry (`api/index.ts`) in
+ * This suite boots the real serverless entry (`app.ts`) in
  * `NODE_ENV=production` against `tests/turso-stub.mts` — a Hrana-over-HTTP
  * server that speaks the v2 JSON protocol and is backed by a throwaway libSQL
  * file — and then does what a real cloud database eventually does to every

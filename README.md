@@ -35,7 +35,7 @@ The browser harness uses the npm-hosted `@sparticuz/chromium` binary because som
 Browser / API client
         │
         ▼
-Vercel api/index.ts  or  local src/dev.ts
+Vercel app.ts  or  local src/dev.ts
         │
         ▼
 src/application.ts — Helmet, same-origin policy, sessions, CSRF, EJS + API routers
@@ -96,17 +96,17 @@ The application deploys as one function with EJS templates and static assets inc
 ```json
 {
   "functions": {
-    "api/index.ts": {
+    "app.ts": {
       "memory": 1024,
       "maxDuration": 10,
       "includeFiles": "{views/**,public/**}"
     }
   },
-  "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
+  "rewrites": [{ "source": "/(.*)", "destination": "/app" }]
 }
 ```
 
-`api/index.ts` exports the Vercel handler. Only `src/dev.ts` owns a local listening server. `FUNCTION_MAX_DURATION_MS` must match `maxDuration`; operation deadlines are clamped to the remaining budget. Keep the function region near Turso.
+`app.ts` exports the Vercel handler. Only `src/dev.ts` owns a local listening server. `FUNCTION_MAX_DURATION_MS` must match `maxDuration`; operation deadlines are clamped to the remaining budget. Keep the function region near Turso.
 
 **Initial rollout must use a preview deployment.** Do not overwrite the existing production projects or aliases until preview SSR, authentication, database, uploads, and provider checks pass. See [Deployment](docs/deployment.md).
 

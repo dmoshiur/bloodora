@@ -57,7 +57,7 @@ Real-browser admin/integration pages, multipart profile forms, responsive layout
 - Profile phone validation using the shared Bangladesh normalizer; invalid input returns 400 and leaves the previous value intact.
 - Strict CSRF/session/RBAC behavior retained across unified SSR and bearer APIs.
 - Nested exhausted deadlines consume abandoned inner rejections instead of crashing the process during SSE/session shutdown.
-- Explicit `src/application.ts` factory naming prevents Vercel Express auto-detection from creating extra functions; test process groups clean up completely.
+- One root `app.ts` Express entrypoint and the shared `src/application.ts` factory prevent duplicate functions; test process groups clean up completely.
 
 ## Not externally verified
 

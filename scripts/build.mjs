@@ -52,11 +52,11 @@ for (const file of templates) ejs.compile(fs.readFileSync(file, "utf8"), { filen
 
 const config = JSON.parse(fs.readFileSync("vercel.json", "utf8"));
 if (config.builds || config.routes) throw new Error("Use one functions/rewrites deployment; legacy builds/routes are forbidden");
-if (!config.rewrites?.some((route) => route.source === "/(.*)" && route.destination === "/api")) {
-  throw new Error("Missing unified /api rewrite");
+if (!config.rewrites?.some((route) => route.source === "/(.*)" && route.destination === "/app")) {
+  throw new Error("Missing unified /app rewrite");
 }
-if (!config.functions?.["api/index.ts"]) throw new Error("Missing single production entrypoint");
-for (const directory of ["views", "public", "src", "api"]) {
+if (!config.functions?.["app.ts"]) throw new Error("Missing single production entrypoint");
+for (const directory of ["views", "public", "src"]) {
   if (!fs.existsSync(directory)) throw new Error(`Missing deployable ${directory}/`);
 }
 const source = scripts.map((file) => fs.readFileSync(file, "utf8")).join("\n") + fs.readFileSync("src/application.ts", "utf8");
@@ -65,6 +65,6 @@ if (/(?:await|return|=)\s*fetch\s*\(/.test(fs.readFileSync("src/web/api.js", "ut
 const { default: createApp } = await import("../src/application.ts");
 const app = createApp();
 if (typeof app !== "function") throw new Error("Unified Express app could not initialize");
-const { default: handler } = await import("../api/index.ts");
+const { default: handler } = await import("../app.ts");
 if (typeof handler !== "function") throw new Error("Missing Vercel handler");
 console.log(`Unified production build passed: ${scripts.length} SSR modules, ${templates.length} EJS templates, local assets, one Vercel handler.`);

@@ -1,7 +1,7 @@
 /**
  * Vercel-function harness.
  *
- * Imports the REAL serverless entry (`api/index.ts`) and lets the *platform* own
+ * Imports the REAL serverless entry (`app.ts`) and lets the *platform* own
  * the HTTP socket — the module only exports a handler, exactly as on Vercel.
  * Used by `tests/production.e2e.mts`; not a test itself.
  *
@@ -13,7 +13,7 @@ import http from "node:http";
 
 const port = Number(process.env.HARNESS_PORT || 4100);
 const importStarted = Date.now();
-const mod = (await import("../api/index.js")) as { default?: unknown; handler?: unknown };
+const mod = (await import("../app.js")) as { default?: unknown; handler?: unknown };
 const importMs = Date.now() - importStarted;
 const handler = (mod.default ?? mod.handler) as ((req: unknown, res: unknown) => void) | undefined;
 

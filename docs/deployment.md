@@ -20,7 +20,7 @@ npm audit --audit-level=high
 
 ## Vercel shape
 
-`vercel.json` declares exactly one function, `api/index.ts`, with 1024 MB memory, a 10-second maximum duration, and `views/**` plus `public/**`. A single rewrite sends all paths to that function. Do not add a legacy `routes` array, a second unreachable function, or a separate frontend proxy.
+`vercel.json` declares exactly one function, `app.ts`, with 1024 MB memory, a 10-second maximum duration, and `views/**` plus `public/**`. A single rewrite sends all paths to that function. Do not add a legacy `routes` array, a second unreachable function, or a separate frontend proxy.
 
 The function and Turso database should be in nearby regions. Remote SQL latency is dominated by HTTPS round trips; batching and warm-catalogue fingerprints reduce cold-start work but cannot remove geographic latency.
 

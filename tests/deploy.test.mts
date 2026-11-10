@@ -65,28 +65,28 @@ if (vc) {
 
   const rewrites = vc.rewrites || [];
   step("exactly one rewrite rule", rewrites.length === 1, JSON.stringify(rewrites));
-  step("the rewrite sends every path to the /api function", rewrites[0]?.source === "/(.*)" && rewrites[0]?.destination === "/api", JSON.stringify(rewrites[0]));
+  step("the rewrite sends every path to the single Express function", rewrites[0]?.source === "/(.*)" && rewrites[0]?.destination === "/app", JSON.stringify(rewrites[0]));
 
   const fns = vc.functions || {};
-  step("api/index.ts is declared as the function entrypoint", !!fns["api/index.ts"], JSON.stringify(Object.keys(fns)));
+  step("app.ts is declared as the function entrypoint", !!fns["app.ts"], JSON.stringify(Object.keys(fns)));
   // Source files must never be declared as additional functions. Vercel's
   // Express preset can also auto-detect conventional app/server filenames,
   // so the factory deliberately lives at src/application.ts instead.
   step("no non-entrypoint file is declared as a function", !Object.keys(fns).some((k) => k.startsWith("src/")), JSON.stringify(Object.keys(fns)));
-  step("function memory is within the allowed range", !fns["api/index.ts"]?.memory || (fns["api/index.ts"].memory >= 128 && fns["api/index.ts"].memory <= 3008), JSON.stringify(fns["api/index.ts"]));
+  step("function memory is within the allowed range", !fns["app.ts"]?.memory || (fns["app.ts"].memory >= 128 && fns["app.ts"].memory <= 3008), JSON.stringify(fns["app.ts"]));
   // maxDuration above 10 s is rejected on the Hobby plan and fails the deploy.
-  step("maxDuration (if set) is deployable on Hobby", fns["api/index.ts"]?.maxDuration === undefined || fns["api/index.ts"].maxDuration <= 10, JSON.stringify(fns["api/index.ts"]?.maxDuration));
+  step("maxDuration (if set) is deployable on Hobby", fns["app.ts"]?.maxDuration === undefined || fns["app.ts"].maxDuration <= 10, JSON.stringify(fns["app.ts"]?.maxDuration));
 }
 
 // ---------------- the function entrypoint ----------------
 
-step("api/index.ts exists", existsSync(path.join(ROOT, "api/index.ts")));
-const entry = read("api/index.ts");
-step("api/index.ts has a default export", /export\s+default\s+handler/.test(entry));
-step("api/index.ts never calls listen() (the platform owns the socket)", !/\.listen\(/.test(code(entry)));
-step("api/index.ts survives a createApp() failure instead of failing to export", /try\s*{[\s\S]*?createApp\(\)[\s\S]*?}\s*catch/.test(entry));
+step("app.ts exists", existsSync(path.join(ROOT, "app.ts")));
+const entry = read("app.ts");
+step("app.ts has a default export", /export\s+default\s+handler/.test(entry));
+step("app.ts never calls listen() (the platform owns the socket)", !/\.listen\(/.test(code(entry)));
+step("app.ts survives a createApp() failure instead of failing to export", /try\s*{[\s\S]*?createApp\(\)[\s\S]*?}\s*catch/.test(entry));
 
-step("no auto-detected src/app.ts Express entrypoint remains", !existsSync(path.join(ROOT, "src/app.ts")));
+step("the Express entrypoint is root app.ts, not src/app.ts", !existsSync(path.join(ROOT, "src/app.ts")) && existsSync(path.join(ROOT, "app.ts")));
 step("no auto-detected src/server.ts Express entrypoint remains", !existsSync(path.join(ROOT, "src/server.ts")));
 
 const app = read("src/application.ts");
@@ -100,8 +100,8 @@ process.env.NODE_ENV = process.env.NODE_ENV || "development";
 process.env.JWT_SECRET = process.env.JWT_SECRET || "deploy-guard-secret-0123456789abcdef";
 process.env.FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 
-const mod = (await import("../api/index.js")) as { default?: unknown; handler?: unknown };
-step("importing api/index.ts yields a default-exported function", typeof mod.default === "function", typeof mod.default);
+const mod = (await import("../app.js")) as { default?: unknown; handler?: unknown };
+step("importing app.ts yields a default-exported function", typeof mod.default === "function", typeof mod.default);
 step("the handler accepts (req, res[, next])", typeof mod.default === "function" && (mod.default as (...a: unknown[]) => unknown).length >= 2, String((mod.default as (...a: unknown[]) => unknown).length));
 step("the named `handler` export matches the default", mod.handler === mod.default);
 

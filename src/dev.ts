@@ -3,7 +3,7 @@
  *
  * Runs the exact same app as production, but owns a long-lived HTTP server —
  * which serverless platforms must never do (hence the separate file; the
- * production entry is `api/index.ts`, whose handler is exported, never listened).
+ * production entry is `app.ts`, whose handler is exported, never listened).
  *
  * The database bootstrap deliberately does NOT block `listen()`. It used to
  * (`await ensureDbReady()` first), so a Turso outage — or simply a slow first

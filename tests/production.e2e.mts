@@ -3,7 +3,7 @@
  * PRODUCTION-PATH END-TO-END VERIFICATION.
  *
  * This is the "prove it actually responds" harness. It does not use `src/dev.ts`:
- * it imports the **Vercel serverless entry** (`api/index.ts`) and drives it with
+ * it imports the **Vercel serverless entry** (`app.ts`) and drives it with
  * real HTTP requests through a platform-owned socket, exactly as Vercel does.
  *
  * NODE_ENV=production is real (secure cookies, strict CORS, prod env validation).

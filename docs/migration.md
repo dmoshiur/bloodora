@@ -10,7 +10,7 @@ The migration preserved the original frontend at `d130725` and backend at `86096
 | --- | --- |
 | Separate EJS frontend and API servers | One Express app from `src/application.ts` |
 | `BACKEND_URL` and frontend HTTP proxy | `src/web/api.js` in-process dispatch |
-| Two Vercel functions/projects | One `api/index.ts` function with all routes |
+| Two Vercel functions/projects | One `app.ts` function with all routes |
 | Separate session/proxy assumptions | One Turso-backed browser session plus stateless bearer APIs |
 | Frontend-only route/API mappings | Shared controllers, services, repositories, and validation |
 | Remote branding dependencies | Local default logo/favicon/assets |

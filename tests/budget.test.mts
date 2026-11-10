@@ -55,7 +55,7 @@ console.log("--- 1. static: every deadline must fit inside the invocation ---");
 
 // ---------------- vercel.json ↔ env agreement ----------------
 const vc = JSON.parse(read("vercel.json"));
-const platformMaxDuration = vc?.functions?.["api/index.ts"]?.maxDuration;
+const platformMaxDuration = vc?.functions?.["app.ts"]?.maxDuration;
 step("vercel.json pins maxDuration explicitly (no reliance on a plan default)", typeof platformMaxDuration === "number", String(platformMaxDuration));
 step("maxDuration is deployable on Hobby (<=10s)", platformMaxDuration <= 10, String(platformMaxDuration));
 
@@ -175,7 +175,7 @@ process.env.GROQ_API_KEY = "gsk_budget_test_key";
 process.env.AI_MODEL = "budget-test-model";
 process.env.FUNCTION_MAX_DURATION_MS = String(TEST_MAX_DURATION_MS);
 
-const entry = (await import("../api/index.js")) as { default: (req: unknown, res: unknown) => void };
+const entry = (await import("../app.js")) as { default: (req: unknown, res: unknown) => void };
 const app = http.createServer((req, res) => {
   req.headers["x-forwarded-proto"] = "https";
   req.headers["x-forwarded-for"] = "203.0.113.7";

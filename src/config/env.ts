@@ -54,7 +54,7 @@ export interface Config {
   /**
    * The platform's hard limit for ONE invocation, in ms.
    *
-   * This MUST mirror `functions["api/index.ts"].maxDuration` in vercel.json
+   * This MUST mirror `functions["app.ts"].maxDuration` in vercel.json
    * (`npm run test:budget` asserts they agree). It is read from the environment
    * rather than from the JSON file at runtime on purpose: reading files off disk
    * inside a serverless handler is exactly the kind of thing that turns a config

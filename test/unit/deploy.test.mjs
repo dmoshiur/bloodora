@@ -8,15 +8,15 @@ const root = path.join(path.dirname(fileURLToPath(import.meta.url)), "../..");
 process.env.PORT = "4599";
 process.env.JWT_SECRET ||= "unit-test-secret-not-for-production";
 
-test("api/index.ts default-exports the one Vercel request handler", async () => {
-  const mod = await import("../../api/index.ts");
+test("app.ts default-exports the one Vercel request handler", async () => {
+  const mod = await import("../../app.ts");
   assert.equal(typeof mod.default, "function");
   assert.ok(mod.default.length >= 2);
 });
 
 test("importing the serverless handler does not open a listening port", async () => {
   const net = await import("node:net");
-  await import("../../api/index.ts");
+  await import("../../app.ts");
   const opened = await new Promise((resolve) => {
     const socket = net.connect(Number(process.env.PORT), "127.0.0.1");
     socket.on("connect", () => { socket.destroy(); resolve(true); });
@@ -28,9 +28,9 @@ test("importing the serverless handler does not open a listening port", async ()
 
 test("Vercel routes every page and API call to the single function and bundles runtime files", () => {
   const config = JSON.parse(readFileSync(path.join(root, "vercel.json"), "utf8"));
-  assert.ok(config.functions?.["api/index.ts"]);
-  assert.ok(config.rewrites.some((rule) => rule.destination === "/api"));
-  const included = JSON.stringify(config.functions["api/index.ts"].includeFiles || "");
+  assert.ok(config.functions?.["app.ts"]);
+  assert.ok(config.rewrites.some((rule) => rule.destination === "/app"));
+  const included = JSON.stringify(config.functions["app.ts"].includeFiles || "");
   for (const required of ["views", "public"]) assert.ok(included.includes(required), `${required} must be bundled`);
   assert.equal(existsSync(path.join(root, "server.js")), false, "legacy split frontend entry must stay unmounted");
 });
