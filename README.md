@@ -99,7 +99,7 @@ The application deploys as one function with EJS templates and static assets inc
     "api/index.ts": {
       "memory": 1024,
       "maxDuration": 10,
-      "includeFiles": ["views/**", "public/**"]
+      "includeFiles": "{views/**,public/**}"
     }
   },
   "rewrites": [{ "source": "/(.*)", "destination": "/api" }]
