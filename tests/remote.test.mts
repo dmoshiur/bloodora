@@ -114,6 +114,8 @@ async function bootApp(tursoUrl: string, env: Record<string, string> = {}): Prom
         ...env,
       },
       stdio: ["ignore", "pipe", "pipe"],
+      // Kill the tsx launcher and its actual Node child as one process group.
+      detached: process.platform !== "win32",
     },
   );
 
@@ -122,7 +124,8 @@ async function bootApp(tursoUrl: string, env: Record<string, string> = {}): Prom
     log: "",
     kill() {
       try {
-        child.kill("SIGKILL");
+        if (process.platform !== "win32" && child.pid) process.kill(-child.pid, "SIGKILL");
+        else child.kill("SIGKILL");
       } catch {
         /* already gone */
       }

@@ -13,9 +13,11 @@ process.env.SMS_PROVIDER = "disabled";
 process.env.RESEND_API_KEY = "";
 process.env.SMTP_ENABLED = "false";
 
-const { default: createApp } = await import("../../src/app.ts");
+const { default: createApp } = await import("../../src/application.ts");
 const { emailDeliveryService } = await import("../../src/services/emailDelivery.service.ts");
 const { emailService } = await import("../../src/services/email.service.ts");
+const { withTimeout } = await import("../../src/db/timeout.ts");
+const { runWithDeadline } = await import("../../src/utils/deadline.ts");
 const app = createApp();
 let server;
 let base;
@@ -184,6 +186,24 @@ test("outbox deduplicates and persists provider IDs with a mocked unit-test prov
   } finally {
     emailDeliveryService.status = originalStatus;
     emailDeliveryService.send = originalSend;
+  }
+});
+
+test("exhausted nested deadlines consume abandoned promise rejections", async () => {
+  const unhandled = [];
+  const listener = (error) => unhandled.push(error);
+  process.on("unhandledRejection", listener);
+  try {
+    await runWithDeadline({ startedAt: Date.now() - 10, deadlineAt: Date.now() - 1, path: "/unit-deadline" }, async () => {
+      const innerOperation = Promise.reject(new Error("inner database failure"));
+      const inner = withTimeout(innerOperation, 1000, "inner database");
+      const outer = withTimeout(inner, 1000, "session touch");
+      await assert.rejects(outer, /no time budget left/);
+    });
+    await new Promise((resolve) => setImmediate(resolve));
+    assert.deepEqual(unhandled, [], "abandoned inner promises must not crash the process after response end");
+  } finally {
+    process.off("unhandledRejection", listener);
   }
 });
 

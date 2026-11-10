@@ -62,6 +62,9 @@ const child = spawn(process.execPath, [path.join(HERE, "..", "node_modules", "ts
     SMTP_ENABLED: "0",
   },
   stdio: ["ignore", "pipe", "pipe"],
+  // tsx launches a child Node process. Own the whole group so cleanup cannot
+  // orphan the actual harness when the launcher receives the kill signal.
+  detached: process.platform !== "win32",
 });
 
 let harnessLog = "";
@@ -87,7 +90,12 @@ await new Promise<void>((resolve, reject) => {
   };
   check();
 });
-const killHarness = () => { try { child.kill("SIGKILL"); } catch { /* already gone */ } };
+const killHarness = () => {
+  try {
+    if (process.platform !== "win32" && child.pid) process.kill(-child.pid, "SIGKILL");
+    else child.kill("SIGKILL");
+  } catch { /* already gone */ }
+};
 process.on("exit", killHarness);
 process.on("uncaughtException", (err) => { console.error(err); killHarness(); process.exit(1); });
 process.on("unhandledRejection", (err) => { console.error(err); killHarness(); process.exit(1); });

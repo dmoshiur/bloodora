@@ -40,7 +40,7 @@ test("sessions use the bounded Turso store, not MemoryStore or a client-side cre
   const session = (await import("express-session")).default;
   const store = new TursoSessionStore();
   assert.ok(!(store instanceof session.MemoryStore));
-  const source = readFileSync(path.join(root, "src/app.ts"), "utf8");
+  const source = readFileSync(path.join(root, "src/application.ts"), "utf8");
   assert.ok(source.includes("store: new TursoSessionStore()"));
   assert.ok(!source.includes("new CookieSessionStore"));
 });

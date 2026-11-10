@@ -58,7 +58,7 @@ if (process.env.BENCH_CHILD === "1") {
     return origBatch.apply(this, a as never) as Promise<unknown>;
   };
 
-  const createApp = (await import("../src/app.js")).default;
+  const createApp = (await import("../src/application.js")).default;
   const app = createApp();
   const server = http.createServer((req, res) => app(req, res));
   await new Promise<void>((r) => server.listen(0, "127.0.0.1", r));

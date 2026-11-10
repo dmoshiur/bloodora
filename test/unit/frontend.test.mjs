@@ -146,7 +146,7 @@ test("every view referenced by a route exists on disk", () => {
 // ---------------------------------------------------------------------------
 process.env.TURSO_DATABASE_URL ||= "file:/tmp/bloodora-unit-frontend.db";
 process.env.JWT_SECRET ||= "unit-test-secret-not-for-production";
-const { default: createApp } = await import("../../src/app.ts");
+const { default: createApp } = await import("../../src/application.ts");
 const app = createApp();
 
 function request(server, method, urlPath, { headers = {}, body = null } = {}) {

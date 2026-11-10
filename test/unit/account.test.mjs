@@ -46,7 +46,7 @@ test("SSE compatibility stays same-origin and preserves the endpoint query", asy
 });
 
 test("canonical web routers are mounted inside the one unified application", () => {
-  const app = readFileSync(new URL("../../src/app.ts", import.meta.url), "utf8");
+  const app = readFileSync(new URL("../../src/application.ts", import.meta.url), "utf8");
   assert.match(app, /createWebRouter/);
   assert.match(app, /app\.use\("\/api"/);
   assert.match(app, /trust proxy/);

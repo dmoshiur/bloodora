@@ -1,20 +1,20 @@
 /**
- * Vercel serverless entry — thin wrapper around src/app.
+ * Vercel serverless entry — thin wrapper around src/application.
  *
  * Vercel historically serves functions from `api/` automatically. Having an
  * `api/index.ts` ensures the rewrite `/(.*) -> /api` always resolves to a
  * real function, even if the project was linked to expect `server.js` at the
  * root (the previous FUNCTION_INVOCATION_FAILED reported
  * `/var/task/server.js`). The file is intentionally tiny: all logic lives in
- * `src/app.ts` and `src/server.ts` so local `npm run dev` and Vercel use the
+ * `src/application.ts` so local `npm run dev` and Vercel use the
  * same code.
  *
- * The wrapper mirrors `src/server.ts`'s defensive init: if `createApp()`
+ * The wrapper mirrors the former duplicate wrapper's defensive init: if `createApp()`
  * throws (e.g. due to a malformed env var) the module still exports a
  * callable handler that returns JSON 500 instead of crashing the function
  * (which Vercel surfaces as "Invalid export must be a function" + timeout).
  */
-import createApp from "../src/app.js";
+import createApp from "../src/application.js";
 import { logger } from "../src/utils/logger.js";
 
 process.on("uncaughtException", (err) => {

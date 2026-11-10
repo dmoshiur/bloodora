@@ -12,7 +12,7 @@
  * `GET /` and `GET /api/health` answer straight away, and `/api/*` routes wait on
  * the same bounded bootstrap the serverless path uses.
  */
-import createApp from "./app.js";
+import createApp from "./application.js";
 import { config } from "./config/env.js";
 import { bootstrapDatabase } from "./db/init.js";
 import { logger } from "./utils/logger.js";

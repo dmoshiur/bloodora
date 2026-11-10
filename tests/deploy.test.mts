@@ -69,9 +69,9 @@ if (vc) {
 
   const fns = vc.functions || {};
   step("api/index.ts is declared as the function entrypoint", !!fns["api/index.ts"], JSON.stringify(Object.keys(fns)));
-  // `src/server.ts` is a library-style handler export, not a platform
-  // entrypoint. Declaring it makes Vercel build a SECOND function that no route
-  // can reach — and doubles the surface for the "invalid export" failure.
+  // Source files must never be declared as additional functions. Vercel's
+  // Express preset can also auto-detect conventional app/server filenames,
+  // so the factory deliberately lives at src/application.ts instead.
   step("no non-entrypoint file is declared as a function", !Object.keys(fns).some((k) => k.startsWith("src/")), JSON.stringify(Object.keys(fns)));
   step("function memory is within the allowed range", !fns["api/index.ts"]?.memory || (fns["api/index.ts"].memory >= 128 && fns["api/index.ts"].memory <= 3008), JSON.stringify(fns["api/index.ts"]));
   // maxDuration above 10 s is rejected on the Hobby plan and fails the deploy.
@@ -86,13 +86,12 @@ step("api/index.ts has a default export", /export\s+default\s+handler/.test(entr
 step("api/index.ts never calls listen() (the platform owns the socket)", !/\.listen\(/.test(code(entry)));
 step("api/index.ts survives a createApp() failure instead of failing to export", /try\s*{[\s\S]*?createApp\(\)[\s\S]*?}\s*catch/.test(entry));
 
-const server = read("src/server.ts");
-step("src/server.ts has a default export", /export\s+default\s+handler/.test(server));
-step("src/server.ts never calls listen()", !/\.listen\(/.test(code(server)));
+step("no auto-detected src/app.ts Express entrypoint remains", !existsSync(path.join(ROOT, "src/app.ts")));
+step("no auto-detected src/server.ts Express entrypoint remains", !existsSync(path.join(ROOT, "src/server.ts")));
 
-const app = read("src/app.ts");
-step("src/app.ts exports an app factory, not a listening server", /export\s+default\s+createApp/.test(app) && !/\.listen\(/.test(code(app)));
-step("src/app.ts uses the persistent (Turso) session store, never MemoryStore", /TursoSessionStore/.test(app) && !/new\s+session\.MemoryStore/.test(app));
+const app = read("src/application.ts");
+step("src/application.ts exports an app factory, not a listening server", /export\s+default\s+createApp/.test(app) && !/\.listen\(/.test(code(app)));
+step("src/application.ts uses the persistent (Turso) session store, never MemoryStore", /TursoSessionStore/.test(app) && !/new\s+session\.MemoryStore/.test(app));
 step("only src/dev.ts listens on a port", /\.listen\(/.test(code(read("src/dev.ts"))));
 
 // Importing the entrypoint must yield a callable handler WITHOUT opening a port
@@ -260,11 +259,11 @@ step("a successful health probe closes the breaker", /dbBreaker\.noteSuccess\("h
 step("health reports the database state explicitly", /database: "connected" \| "unavailable"|database,/.test(healthRaw));
 step("health keeps the legacy `db` field the contract suite reads", /db: ok \? "ok" : "error"/.test(healthRaw));
 
-const appSrc = code(read("src/app.ts"));
+const appSrc = code(read("src/application.ts"));
 step("probes bypass the session middleware (no DB read before the health route)", /isProbePath\(req\)/.test(appSrc) && /sessionMiddleware\(req, res, next\)/.test(appSrc));
 step("probes bypass the DB bootstrap middleware", /if \(isProbePath\(req\)\) \{\s*next\(\);\s*return;\s*\}/.test(appSrc));
 step("a request-level failsafe is mounted before the routes", /app\.use\(requestTimeout\)/.test(appSrc) && appSrc.indexOf("app.use(requestTimeout)") < appSrc.indexOf('app.use("/api"'));
-step("boot stages are logged for root-cause debugging", /\[BOOT\]/.test(read("src/app.ts")));
+step("boot stages are logged for root-cause debugging", /\[BOOT\]/.test(read("src/application.ts")));
 
 // Request identity + one response shape, both applied before any handler runs.
 const ridSrc = code(read("src/middleware/requestId.ts"));
@@ -296,7 +295,7 @@ step("a failed session read degrades to 'no session', never a hang", /cb\(null, 
 step("a failed session write still completes the request", /cb\(\);/.test(storeSrc));
 // code() strips comments on purpose: both files *document* the MemoryStore
 // warning they avoid, and matching the raw text would flag the note as the bug.
-step("no MemoryStore anywhere in the app or the store", !/MemoryStore/.test(code(read("src/app.ts"))) && !/MemoryStore/.test(code(read("src/sessions/tursoStore.ts"))));
+step("no MemoryStore anywhere in the app or the store", !/MemoryStore/.test(code(read("src/application.ts"))) && !/MemoryStore/.test(code(read("src/sessions/tursoStore.ts"))));
 
 // (b) every external call is bounded too.
 const aiSrc = code(read("src/services/ai.service.ts"));

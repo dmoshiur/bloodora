@@ -26,7 +26,7 @@ process.env.JWT_SECRET ||= "unit-test-secret-not-for-production";
 const { antidReference, compatibilityReference, resourcesReference } = await import("../../src/web/utils/content.js");
 const localize = await import("../../src/web/utils/localize.js");
 const i18n = await import("../../src/web/i18n.js");
-const { default: createApp } = await import("../../src/app.ts");
+const { default: createApp } = await import("../../src/application.ts");
 const app = createApp();
 
 function request(server, urlPath, headers = {}) {

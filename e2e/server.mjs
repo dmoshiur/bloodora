@@ -20,7 +20,7 @@ Object.assign(process.env, {
 });
 
 const [{ default: createApp }, { bootstrapDatabase }, { authService }, { userRepo }] = await Promise.all([
-  import("../src/app.ts"),
+  import("../src/application.ts"),
   import("../src/db/init.ts"),
   import("../src/services/auth.service.ts"),
   import("../src/repos/user.repo.ts"),

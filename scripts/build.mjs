@@ -59,10 +59,10 @@ if (!config.functions?.["api/index.ts"]) throw new Error("Missing single product
 for (const directory of ["views", "public", "src", "api"]) {
   if (!fs.existsSync(directory)) throw new Error(`Missing deployable ${directory}/`);
 }
-const source = scripts.map((file) => fs.readFileSync(file, "utf8")).join("\n") + fs.readFileSync("src/app.ts", "utf8");
+const source = scripts.map((file) => fs.readFileSync(file, "utf8")).join("\n") + fs.readFileSync("src/application.ts", "utf8");
 if (/process\.env(?:\.\s*BACKEND_URL|\[\s*["']BACKEND_URL["']\s*\])/.test(source)) throw new Error("Split-deployment BACKEND_URL dependency remains");
 if (/(?:await|return|=)\s*fetch\s*\(/.test(fs.readFileSync("src/web/api.js", "utf8"))) throw new Error("SSR must not make self-HTTP requests");
-const { default: createApp } = await import("../src/app.ts");
+const { default: createApp } = await import("../src/application.ts");
 const app = createApp();
 if (typeof app !== "function") throw new Error("Unified Express app could not initialize");
 const { default: handler } = await import("../api/index.ts");

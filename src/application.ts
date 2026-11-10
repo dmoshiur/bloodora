@@ -37,7 +37,7 @@ import { createWebRouter } from "./web/router.js";
  *     `require` condition → `index.d.cts`) models `default` as the whole
  *     `module.exports` namespace, which is NOT callable:
  *
- *       src/app.ts: error TS2349: This expression is not callable.
+ *       src/application.ts: error TS2349: This expression is not callable.
  *         Type 'typeof import(".../node_modules/helmet/index")'
  *         has no call signatures.
  *
@@ -45,7 +45,7 @@ import { createWebRouter } from "./web/router.js";
  * CJS shape is self-referential (`module.exports.default === module.exports`), so
  * the compiler sees `default` as the namespace again and refuses the assertion:
  *
- *       src/app.ts: error TS2352: Conversion of type
+ *       src/application.ts: error TS2352: Conversion of type
  *         'typeof import(".../node_modules/helmet/index")' to type
  *         '{ default?: HelmetMiddleware | undefined; }' may be a mistake …
  *         Types of property 'default' are incompatible.

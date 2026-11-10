@@ -6,8 +6,8 @@
 | --- | --- |
 | `npm run typecheck` | Passed |
 | `npm run build` | Passed: 21 SSR modules, 62 EJS templates, local assets, one Vercel handler |
-| `npm test` | **746 passed, 0 failed** |
-| Unit/integration | 82 checks |
+| `npm test` | **747 passed, 0 failed** |
+| Unit/integration | 83 checks |
 | Deployment | 129 checks |
 | Invocation budget | 88 checks |
 | Production-path E2E | 65 checks |
@@ -18,7 +18,7 @@
 | `npm run test:browser` | **12 passed, 0 failed** in real Chromium |
 | `npm audit --audit-level=high` | **0 vulnerabilities** |
 
-The Node total is the sum of the suite-reported checks: 82 + 129 + 88 + 65 + 56 + 31 + 126 + 169 = 746. Expected timeout/failure fixtures can log 503/504 errors while the suite passes; those logs are part of negative-path verification.
+The Node total is the sum of the suite-reported checks: 83 + 129 + 88 + 65 + 56 + 31 + 126 + 169 = 747. Expected timeout/failure fixtures can log 503/504 errors while the suite passes; those logs are part of negative-path verification. The production/remote harnesses were also verified to leave zero orphaned server processes after completion.
 
 ## Browser evidence
 
@@ -56,6 +56,8 @@ Real-browser admin/integration pages, multipart profile forms, responsive layout
 - Native-form origin compatibility without accepting `Origin: null`.
 - Profile phone validation using the shared Bangladesh normalizer; invalid input returns 400 and leaves the previous value intact.
 - Strict CSRF/session/RBAC behavior retained across unified SSR and bearer APIs.
+- Nested exhausted deadlines consume abandoned inner rejections instead of crashing the process during SSE/session shutdown.
+- Explicit `src/application.ts` factory naming prevents Vercel Express auto-detection from creating extra functions; test process groups clean up completely.
 
 ## Not externally verified
 

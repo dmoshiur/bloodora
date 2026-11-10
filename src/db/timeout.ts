@@ -80,6 +80,11 @@ export function withTimeout<T>(p: Promise<T>, ms: number, operation: string, cod
   // no-op, so long-running local work is never truncated.
   const effective = clampToRemaining(ms);
   if (effective <= 0) {
+    // The caller receives the budget error below, but `p` may itself already be
+    // rejected (nested request/DB/session wrappers do this at SSE shutdown).
+    // Attach a handler before abandoning it or Node emits an unhandled rejection
+    // after the response and can terminate the whole serverless instance.
+    void p.catch(() => undefined);
     // Nothing left: fail immediately with the same shaped error the timer would
     // have produced, rather than racing a platform kill.
     return Promise.reject(

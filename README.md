@@ -38,7 +38,7 @@ Browser / API client
 Vercel api/index.ts  or  local src/dev.ts
         │
         ▼
-src/app.ts — Helmet, same-origin policy, sessions, CSRF, EJS + API routers
+src/application.ts — Helmet, same-origin policy, sessions, CSRF, EJS + API routers
         │
         ├── src/web/routes + views + public     (SSR and browser forms)
         └── src/routes → controllers → services → repositories → Turso
