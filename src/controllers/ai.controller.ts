@@ -1,3 +1,6 @@
+import { randomId } from "../utils/errors.js";
+import { aiConversationRepo } from "../repos/aiConversation.repo.js";
+import { aiMessageRepo } from "../repos/aiMessage.repo.js";
 import type { Request, Response } from "express";
 import { ApiError } from "../utils/errors.js";
 import { aiService, MODEL_CHOICES, DEFAULT_MODEL } from "../services/ai.service.js";
@@ -12,7 +15,7 @@ export async function publicConfig(_req: Request, res: Response): Promise<void> 
 
 /** POST /api/ai/chat — {message, conversation_id?, language?, user_id?} */
 export async function chat(req: Request, res: Response): Promise<void> {
-  const out = await aiService.chat(req.body as Record<string, unknown>);
+  const out = await aiService.chat(req.body as Record<string, unknown>, owner(req), req.user?.id ?? null);
   res.json(out);
 }
 
@@ -69,3 +72,17 @@ export async function knowledgePreview(_req: Request, res: Response): Promise<vo
 }
 
 export { MODEL_CHOICES, DEFAULT_MODEL };
+
+function owner(req: Request): string {
+  if (req.user) return `user:${req.user.id}`;
+  const session = req.session as typeof req.session & { aiOwner?: string };
+  session.aiOwner ||= randomId();
+  return `guest:${session.aiOwner}`;
+}
+export async function conversations(req: Request, res: Response) {
+  res.json({ success: true, conversations: await aiConversationRepo.list(owner(req)) });
+}
+export async function history(req: Request, res: Response) {
+  await aiConversationRepo.owned(req.params.id, owner(req));
+  res.json({ success: true, messages: await aiMessageRepo.history(req.params.id, 100) });
+}

@@ -8,7 +8,7 @@
   const _fs  = (typeof fontStyle !== 'undefined' && fontStyle) ? fontStyle : 'calligraphic';
   const _p   = _b.brand_primary || '#e31b23';
   const _a   = _b.brand_accent  || '#ff3340';
-  const _name= _b.site_name || 'BloodOra';
+  const _name= _b.site_name || 'BloodFerry';
   const resolveAssetUrl = (url, fallback) => {
     const target = (url && String(url).trim()) || fallback;
     if (!target) return '';
@@ -17,7 +17,7 @@
     }
     return '/' + target;
   };
-  const _logo= resolveAssetUrl(_b.logo_file, '/images/logo.png');
+  const _logo= resolveAssetUrl(_b.logo_file, '/assets/brand/bloodferry-logo.png');
   const _fav = resolveAssetUrl(_b.favicon_file, '/favicon.png');
   const _tag = _b.site_tagline || '';
   const _langs = (typeof languages !== 'undefined' && languages) ? languages : [];
@@ -275,7 +275,7 @@
   <!-- ================= Navbar ================= -->
   <nav class="navbar navbar-expand-xl sticky-top" aria-label="<%= _t('nav_home') %>">
     <div class="container">
-      <!-- The logo artwork already carries the BloodOra wordmark, so the header
+      <!-- The logo artwork already carries the BloodFerry wordmark, so the header
            renders the image alone — a separate name beside it was a duplicate.
            `_name` stays as the image's alt/title text for screen readers. -->
       <a class="navbar-brand d-flex align-items-center" href="/" title="<%= _name %>">

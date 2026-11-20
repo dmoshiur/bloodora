@@ -139,7 +139,7 @@ export const smtpService = {
       }
       const info = await withTimeout(
         transporter.sendMail({
-          from: `"${s.fromName || "BloodOra"} <${s.fromEmail || s.user}>"`,
+          from: `"${s.fromName || "BloodFerry"} <${s.fromEmail || s.user}>"`,
           to,
           subject,
           text,
@@ -167,7 +167,7 @@ export const smtpService = {
       .join("");
     const html = `
       <div style="font-family:sans-serif">
-        <h2 style="color:#c62828">BloodOra — Order ${order.id}</h2>
+        <h2 style="color:#c62828">BloodFerry — Order ${order.id}</h2>
         <p>Thank you, ${order.customer_name}! Your order is being processed.</p>
         <table style="border-collapse:collapse;width:100%;max-width:480px">
           ${lines}
@@ -180,7 +180,7 @@ export const smtpService = {
       </div>`;
     const email = await orderUserEmail(order.user_id);
     if (!email) return;
-    await this.sendMail(email, `BloodOra order ${order.id} confirmed`, html);
+    await this.sendMail(email, `BloodFerry order ${order.id} confirmed`, html);
   },
 };
 

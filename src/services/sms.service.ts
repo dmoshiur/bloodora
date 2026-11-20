@@ -1,3 +1,6 @@
+import { deliveryProfileService } from "./deliveryProfile.service.js";
+import { GreenWebSMSProvider } from "../integrations/sms/greenweb.js";
+import { SSLWirelessSMSProvider } from "../integrations/sms/sslWireless.js";
 import { getSMSProvider, normalizeBangladeshPhone, smsConfigurationStatus, SMSProviderError } from "../integrations/sms/index.js";
 import { smsDeliveryRepo } from "../repos/smsDelivery.repo.js";
 import { config } from "../config/env.js";
@@ -30,8 +33,10 @@ export const smsService = {
   async send(input: SMSInput): Promise<SMSResult> {
     const to = normalizeBangladeshPhone(input.to);
     if (!to) return { success: false, status: "invalid", code: "INVALID_BD_PHONE", message: "A valid Bangladesh mobile number is required." };
-    const status = smsConfigurationStatus();
-    const provider = getSMSProvider();
+    const profile = await deliveryProfileService.resolve("sms");
+    const settings = profile ? {...config.sms,apiKey:profile.apiKey,senderId:profile.sender_id||"",apiUrl:""} : null;
+    const status = profile ? {configured:true,reason:null} : smsConfigurationStatus();
+    const provider = profile && settings ? (profile.provider==='greenweb' ? new GreenWebSMSProvider(settings) : new SSLWirelessSMSProvider(settings)) : getSMSProvider();
     if (!status.configured || !provider) {
       return { success: false, status: "disabled", code: "SMS_NOT_CONFIGURED", message: status.reason ?? "SMS is disabled. Use the available email or in-app notification instead." };
     }
@@ -49,7 +54,16 @@ export const smsService = {
       currency: config.sms.currency,
       dedupeKey: input.dedupeKey,
     });
-    if (!inserted) return { success: true, status: "duplicate", id, provider: provider.name, message: "Duplicate SMS suppressed." };
+    if (!inserted) {
+      const previous = input.dedupeKey ? await smsDeliveryRepo.byDedupe(input.dedupeKey) : null;
+      const confirmed = previous?.status === "sent";
+      return {
+        success: confirmed, status: "duplicate", id: previous?.id, provider: previous?.provider || provider.name,
+        providerMessageId: previous?.provider_message_id,
+        code: confirmed ? undefined : previous?.status === "failed" ? "SMS_PREVIOUS_FAILED" : "SMS_DELIVERY_UNCONFIRMED",
+        message: confirmed ? "Duplicate suppressed; the provider previously accepted this message." : "Duplicate suppressed; delivery has not been confirmed. Inspect the existing delivery record before retrying.",
+      };
+    }
 
     try {
       const delivered = await provider.send({ id, to, body });

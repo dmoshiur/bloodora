@@ -3,7 +3,7 @@
   "version": "4.0.0",
   "private": true,
   "type": "module",
-  "description": "BloodOra — unified EJS + TypeScript + Express + Turso blood donation and medical shop platform.",
+  "description": "BloodFerry — unified EJS + TypeScript + Express + Turso blood donation and medical shop platform.",
   "engines": {
     "node": "22.x"
   },

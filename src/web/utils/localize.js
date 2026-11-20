@@ -1,4 +1,4 @@
-// ==================== BloodOra Frontend - Content localization ====================
+// ==================== BloodFerry Frontend - Content localization ====================
 // This module turns *content* (the reference material in utils/content.js and,
 // when it is reachable, the same material served by the backend/CMS) into a
 // single-language document for the active locale.

@@ -1,3 +1,5 @@
+import { organizationRouter, institutionAdminRouter } from "./organizations.js";
+import donationRoutes, { donationAdminRouter } from "./donations.js";
 import { Router } from "express";
 import healthRoutes from "./health.js";
 import authRoutes from "./auth.js";
@@ -38,6 +40,11 @@ api.use("/users", usersRoutes);
 api.use("/donors", donorRouter);
 api.use("/shop", shopRoutes);
 api.use("/blood-requests", bloodRoutes);
+api.use("/donations", donationRoutes);
+api.use("/organizations", organizationRouter("organization"));
+api.use("/hospitals", organizationRouter("hospital"));
+api.use("/admin", institutionAdminRouter);
+api.use("/admin", donationAdminRouter);
 api.use("/messages", messageRoutes);
 api.use("/support", supportRoutes);
 api.use("/reviews", reviewRoutes);

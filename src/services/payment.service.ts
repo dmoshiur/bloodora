@@ -11,7 +11,7 @@ import type { SafeUser } from "../types.js";
 /**
  * Payments.
  *
- * BloodOra takes payment through mobile financial services (bKash, Nagad, Upay,
+ * BloodFerry takes payment through mobile financial services (bKash, Nagad, Upay,
  * Rocket, Pathao), card or cash on delivery. There is no hosted gateway in this
  * deployment, so the money movement is: customer sends money and submits the
  * TrxID → the order is created with `payment_status = 'pending'` and a `pending`

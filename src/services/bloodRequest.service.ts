@@ -1,3 +1,5 @@
+import { messageRepo } from "../repos/message.repo.js";
+import { normalizeBangladeshPhone } from "../integrations/sms/phone.js";
 import { bloodRequestRepo } from "../repos/bloodRequest.repo.js";
 import { activityRepo } from "../repos/activity.repo.js";
 import { messageService } from "./message.service.js";
@@ -33,7 +35,7 @@ export const bloodRequestService = {
    * patient_name, blood_group, hospital_name, contact_person, contact_phone,
    * needed_by, division, district, upazila, is_urgent, ...
    */
-  async create(user: SafeUser | null, body: Record<string, unknown>): Promise<{ type: string; message: string }> {
+  async create(user: SafeUser | null, body: Record<string, unknown>): Promise<{ id: string; type: string; message: string }> {
     const b = (k: string) => str(body[k]);
     const required: Record<string, string | undefined> = {
       "Patient Name": b("patient_name"),
@@ -57,12 +59,12 @@ export const bloodRequestService = {
       throw ApiError.badRequest(`Blood group must be one of: ${BLOOD_GROUPS.join(", ")}`, "BAD_BLOOD_GROUP");
     }
 
-    let neededBy = R["Needed By"];
-    try {
-      neededBy = new Date(R["Needed By"]).toISOString();
-    } catch {
-      /* keep raw */
-    }
+    const date = new Date(R["Needed By"]);
+    if (!Number.isFinite(date.getTime())) throw ApiError.badRequest("Invalid needed-by date", "INVALID_DATE");
+    const neededBy = date.toISOString();
+    const phone = normalizeBangladeshPhone(R["Contact Phone"]);
+    if (!phone) throw ApiError.badRequest("Invalid Bangladesh phone number", "INVALID_BD_PHONE");
+    R["Contact Phone"] = phone;
 
     const isUrgent = ["1", "true", "yes", "on"].includes(String(body.is_urgent ?? body.urgent ?? "").toLowerCase()) ? 1 : 0;
     const now = new Date().toISOString();
@@ -76,6 +78,7 @@ export const bloodRequestService = {
     await bloodRequestRepo.create({
       id,
       user_id: user?.id ?? null,
+      institution_id: b("institution_id") || null,
       // legacy columns (kept populated for old consumers)
       name: R["Patient Name"],
       phone: R["Contact Phone"],
@@ -118,9 +121,10 @@ export const bloodRequestService = {
     );
 
     return {
+      id,
       type: isUrgent ? "warning" : "success",
       message: isUrgent
-        ? "🚨 URGENT blood request submitted! Donors will be notified."
+        ? "🚨 URGENT blood request submitted! Your request is listed for donors."
         : "✅ Blood request submitted successfully! Thank you.",
     };
   },
@@ -153,8 +157,9 @@ export const bloodRequestService = {
   async fulfill(user: SafeUser, id: string): Promise<{ type: string; message: string }> {
     const br = await bloodRequestRepo.findById(id);
     if (!br) throw ApiError.notFound("Request not found.", "REQUEST_NOT_FOUND");
-    if (br.is_fulfilled) return { type: "info", message: "ℹ️ Already fulfilled." };
-    await bloodRequestRepo.fulfill(id, user.id);
+    if (br.user_id !== user.id && !user.is_admin) throw ApiError.forbidden("Only the requester or an administrator can confirm fulfillment.");
+    if (br.is_fulfilled && br.status === "fulfilled") return { type: "info", message: "ℹ️ Already fulfilled." };
+    await bloodRequestRepo.transition(id, "fulfilled", user.id, br.status);
     await activityRepo.create(
       "request_fulfilled",
       null,
@@ -176,7 +181,7 @@ export const bloodRequestService = {
     if (br.user_id !== user.id && !user.is_admin) {
       throw ApiError.forbidden("❌ You do not have permission to cancel this request.", "FORBIDDEN");
     }
-    await bloodRequestRepo.cancel(id);
+    await bloodRequestRepo.transition(id, "cancelled", user.id, br.status);
     return { type: "info", message: "ℹ️ Blood request cancelled." };
   },
 
@@ -186,6 +191,11 @@ export const bloodRequestService = {
     const message = str(body.message);
     const email = str(body.email);
     if (!message) throw ApiError.badRequest("Message is required.", "FIELDS_REQUIRED");
+    if (message.length > 4000) throw ApiError.badRequest("Message is too long");
+    if (!user) {
+      await messageRepo.create(`guest:${randomId()}`, "admin", subject || "Urgent inquiry",
+        `Guest contact (unverified): ${email || str(body.phone) || "not supplied"}\n\n${message}`, { isAdminMessage: true });
+    }
     if (user) {
       // Reuse the desk mailbox (recipient 'admin').
       await messageService.send(user, {
@@ -193,13 +203,13 @@ export const bloodRequestService = {
         content: `From: ${email || user.email}\n\n${message}`,
       });
     }
-    return { message: "✅ Your message has been sent to the BloodOra admin team!" };
+    return { message: "✅ Your message has been sent to the BloodFerry admin team!" };
   },
 
   // ---------- admin / old contract helpers ----------
 
   async mine(userId: string): Promise<BloodRequest[]> {
-    const rows = await bloodRequestRepo.listAll({ limit: 100 });
+    const rows = await bloodRequestRepo.listByUser(userId, 100);
     return rows.filter((r) => r.user_id === userId).map((r) => ({ ...r, user: null }));
   },
 
@@ -209,7 +219,7 @@ export const bloodRequestService = {
     }
     const row = await bloodRequestRepo.findById(id);
     if (!row) throw ApiError.notFound("Blood request not found", "REQUEST_NOT_FOUND");
-    await bloodRequestRepo.setStatus(id, status);
+    await bloodRequestRepo.transition(id, status, actor.id, row.status);
     await activityRepo.create("blood_status", actor.id, `Blood request ${id} → ${status}`);
     return this.get(id) as never;
   },

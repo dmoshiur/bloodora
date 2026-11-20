@@ -1,3 +1,4 @@
+import { rbacService } from "./rbac.service.js";
 import { settingsRepo } from "../repos/settings.repo.js";
 import { uploadService } from "./upload.service.js";
 import { activityRepo } from "../repos/activity.repo.js";
@@ -6,7 +7,7 @@ import { str } from "../utils/validate.js";
 import type { SafeUser, SettingsView, SiteSettings } from "../types.js";
 
 const INT_KEYS = ["delivery_fee", "free_shipping_threshold", "smtp_port"] as const;
-const BOOL_KEYS = ["card_enabled", "smtp_enabled", "smtp_secure"] as const;
+const BOOL_KEYS = ["card_enabled", "smtp_enabled", "smtp_secure", "ai_enabled"] as const;
 
 const FONT_STYLES = ["default", "serif", "rounded", "compact"];
 const LANGUAGES = ["en", "bn", "ar"];
@@ -41,6 +42,8 @@ export const settingsService = {
     const s = await this.getInternal();
     return {
       ...s,
+      smtp_pass: null,
+      ai_api_key: null,
       smtp_pass_display: s.smtp_pass ? "••••••••" : "",
       ai_api_key_display: s.ai_api_key ? "••••••••" : "",
       card_enabled_label: s.card_enabled ? "enabled" : "disabled",
@@ -52,6 +55,8 @@ export const settingsService = {
     const changes: Record<string, string | null> = {};
 
     for (const key of Object.keys(body)) {
+      if (key.startsWith("ai_")) await rbacService.require(actor, ["ai.configure"]);
+      if (key.startsWith("smtp_")) await rbacService.require(actor, ["settings.smtp"]);
       const raw = body[key];
       if (raw === undefined) continue;
       const value = normalize(raw);

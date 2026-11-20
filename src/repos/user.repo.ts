@@ -1,8 +1,21 @@
-import { get, all, run } from "../db/query.js";
+import { ApiError, randomId } from "../utils/errors.js";
+import { get, all, run, transaction } from "../db/query.js";
 import { nowIso } from "../utils/time.js";
 import type { UserRow } from "../types.js";
 
 export const userRepo = {
+  async adminUpdate(actorId:string,original:UserRow,changes:Record<string,unknown>) {
+    const allowed=['name','email','phone','blood_group','district','upazila','address_holding','is_verified','is_admin','can_donate','role','password_hash','session_token','email_verified','email_verified_at','phone_verified','phone_verified_at'];
+    const keys=allowed.filter(k=>changes[k]!==undefined);
+    await transaction(async tx=>{
+      const current=await tx.get<UserRow>('SELECT * FROM users WHERE id=?',[original.id]);
+      if(!current) throw ApiError.notFound('User not found');
+      if(current.is_super_admin || current.id===actorId) throw ApiError.forbidden('Protected account');
+      if(current.role!==original.role || current.session_token!==original.session_token || current.password_hash!==original.password_hash) throw ApiError.conflict('Account changed; reload before updating');
+      await tx.run(`UPDATE users SET ${keys.map(k=>`${k}=?`).join(',')} WHERE id=?`,[...keys.map(k=>changes[k]),original.id]);
+      await tx.run('INSERT INTO audit_logs (id,actor_id,action,entity_type,entity_id,summary,created_at) VALUES (?,?,?,?,?,?,?)',[randomId(),actorId,'user.update','user',original.id,'User profile or account settings updated',nowIso()]);
+    });
+  },
   async findById(id: string): Promise<UserRow | null> {
     return get<UserRow>(`SELECT * FROM users WHERE id = ?`, [id]);
   },
@@ -179,8 +192,8 @@ export const userRepo = {
   async toggleCanDonate(id: string, current: number): Promise<number> {
     const next = current ? 0 : 1;
     await run(
-      `UPDATE users SET can_donate = ?, last_donation = CASE WHEN ? = 0 THEN datetime('now') ELSE last_donation END WHERE id = ?`,
-      [next, next, id],
+      `UPDATE users SET can_donate = ? WHERE id = ?`,
+      [next, id],
     );
     return next;
   },

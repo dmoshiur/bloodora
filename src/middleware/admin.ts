@@ -17,7 +17,7 @@ async function ensureUser(req: Request): Promise<SafeUser | null> {
   const user = await authService.resolveUser(req as unknown as { session?: Record<string, unknown> | null }, bearer(req));
   if (!user) return null;
   req.user = user;
-  req.isAdminClaim = user.role !== "user";
+  req.isAdminClaim = Boolean(user.is_admin || user.is_super_admin);
   applyUserLanguage(req, user.language);
   return user;
 }

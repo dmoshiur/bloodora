@@ -18,6 +18,9 @@ export interface SMSDeliveryRow {
 }
 
 export const smsDeliveryRepo = {
+  async byDedupe(key:string):Promise<SMSDeliveryRow|null> {
+    return get<SMSDeliveryRow>('SELECT * FROM sms_deliveries WHERE dedupe_key=?',[key]);
+  },
   async create(input: {
     id: string;
     userId?: string | null;

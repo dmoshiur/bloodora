@@ -147,7 +147,7 @@ function createApp(): express.Express {
 
   // Structured HTTP access logs (request line only — no bodies, no cookies).
   app.use(
-    morgan("combined", {
+    morgan((tokens, req, res) => `${tokens.method(req, res)} ${req.url.split("?")[0]} ${tokens.status(req, res)} ${tokens["response-time"](req, res)}ms`, {
       stream: { write: (msg: string) => logger.debug("http", { line: msg.trim() }) },
     }),
   );
@@ -266,7 +266,7 @@ function createApp(): express.Express {
         // Anything else is an unexpected failure and deserves the full report.
         if (alreadyShaped) {
           logger.warn("db: not ready — answering 503", {
-            path: req.originalUrl,
+            path: req.originalUrl.split("?")[0],
             error: shaped.message ?? "unknown",
           });
           next(err);
@@ -274,7 +274,7 @@ function createApp(): express.Express {
         }
         logger.error("db: init failed", {
           error: err instanceof Error ? err.message : String(err),
-          path: req.originalUrl,
+          path: req.originalUrl.split("?")[0],
         });
         next(Object.assign(new Error("Database is not ready"), { status: 503, code: "DB_NOT_READY" }));
       });

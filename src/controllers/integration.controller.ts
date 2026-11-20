@@ -1,3 +1,5 @@
+import { deliveryProfileService } from "../services/deliveryProfile.service.js";
+import { aiService } from "../services/ai.service.js";
 import type { Request, Response } from "express";
 import { z } from "zod";
 import { emailDeliveryService } from "../services/emailDelivery.service.js";
@@ -12,14 +14,16 @@ const testSchema = z.object({ to: z.string().trim().min(6).max(24) }).strict();
 
 export async function integrationStatus(_req: Request, res: Response): Promise<void> {
   const [email, emailStats, smsStats] = await Promise.all([emailDeliveryService.status(), emailService.stats(), smsService.stats()]);
-  const sms = smsService.status();
+  const smsProfile = await deliveryProfileService.resolve("sms");
+  const sms = smsProfile ? {configured:true,provider:smsProfile.provider,reason:null} : smsService.status();
+  const ai = await aiService.getConfig();
   res.json({
     success: true,
     integrations: {
       database: { configured: Boolean(config.tursoDatabaseUrl), mode: config.tursoDatabaseUrl ? "turso" : "development-file", health: "/api/health" },
       email: { configured: email.configured, provider: email.provider, from_configured: Boolean(email.from), stats: emailStats },
       sms: { configured: sms.configured, provider: sms.provider, reason: sms.reason, estimated_cost_tracking: true, stats: smsStats },
-      ai: { configured: Boolean(config.groqApiKey), provider: config.aiProvider },
+      ai: { configured: ai.available && Boolean(ai.enabled), provider: ai.provider },
       storage: uploadService.status(),
     },
   });
@@ -27,7 +31,8 @@ export async function integrationStatus(_req: Request, res: Response): Promise<v
 
 export async function smsDashboard(_req: Request, res: Response): Promise<void> {
   const [stats, recent] = await Promise.all([smsService.stats(), smsService.recent(50)]);
-  res.json({ success: true, configuration: smsService.status(), stats, recent });
+  const profile=await deliveryProfileService.resolve("sms");
+  res.json({ success: true, configuration: profile ? {configured:true,provider:profile.provider,reason:null} : smsService.status(), stats, recent });
 }
 
 /** Sends a real, potentially billable SMS; never a simulated success. */

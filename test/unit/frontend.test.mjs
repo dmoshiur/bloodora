@@ -248,16 +248,16 @@ test("all core public pages render 200 in EN, BN, and AR with fallback content",
 test("branding defaults use local, deployment-independent assets", async () => {
   const { fetchBranding } = await import("../../src/web/middleware/site.js");
   const branding = await fetchBranding();
-  assert.equal(branding.logo_file, "/images/logo.png");
-  assert.equal(branding.favicon_file, "/images/logo.png");
+  assert.equal(branding.logo_file, "/assets/brand/bloodferry-logo.png");
+  assert.equal(branding.favicon_file, "/favicon.png");
 });
 
 test("header and footer include the logo and favicon links", async () => {
   const server = app.listen(0);
   try {
     const res = await request(server, "GET", "/");
-    assert.ok(res.body.includes("/images/logo.png"), "page must include local logo URL");
-    assert.ok(res.body.includes("/images/logo.png"), "page must include favicon URL");
+    assert.ok(res.body.includes("/assets/brand/bloodferry-logo.png"), "page must include local logo URL");
+    assert.ok(res.body.includes("/assets/brand/bloodferry-logo.png"), "page must include favicon URL");
   } finally { server.close(); }
 });
 

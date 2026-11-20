@@ -2,7 +2,7 @@
 
 ## Backend selection
 
-When `BLOB_READ_WRITE_TOKEN` is configured, new uploads are written to **Vercel Blob** as public objects. Without it, BloodOra retains the Turso BLOB backend for development and legacy installations. Turso stores upload metadata in both modes.
+When `BLOB_READ_WRITE_TOKEN` is configured, new uploads are written to **Vercel Blob** as public objects. Without it, BloodFerry retains the Turso BLOB backend for development and legacy installations. Turso stores upload metadata in both modes.
 
 ```dotenv
 BLOB_READ_WRITE_TOKEN=

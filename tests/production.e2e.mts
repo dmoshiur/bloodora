@@ -14,6 +14,8 @@
  * Every assertion has a hard client-side deadline. A hang is a FAILURE, not a
  * wait: that is the whole point of this file.
  */
+import { createClient } from "@libsql/client";
+import os from "node:os";
 import { spawn } from "node:child_process";
 import fs from "node:fs";
 import path from "node:path";
@@ -36,8 +38,7 @@ const FRONTEND_ORIGINS = ["http://localhost:3000", "https://bloodora-frontend.ve
  * @libsql/client resolves the `file:` scheme to its local engine, because this
  * sandbox cannot reach a real Turso host.
  */
-const dbFile = path.join(ROOT, "data", "e2e-prod.db");
-fs.rmSync(path.join(ROOT, "data"), { recursive: true, force: true });
+const dbFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "bloodferry-e2e-")), "test.db");
 fs.mkdirSync(path.dirname(dbFile), { recursive: true });
 
 const child = spawn(process.execPath, [path.join(HERE, "..", "node_modules", "tsx", "dist", "cli.mjs"), path.join(HERE, "serverless-harness.mts")], {
@@ -169,7 +170,7 @@ console.log(`    every request has a ${DEADLINE}ms hard deadline; a hang is a fa
 let r = await req("GET", "/");
 step("GET / responds", r.status === 200 && !r.hung, `${r.status} in ${r.ms}ms`);
 step("GET / is instant (no DB dependency)", r.ms < 1500, `${r.ms}ms`);
-step("GET / renders the unified EJS home page", r.text.includes("<!DOCTYPE html>") && r.text.includes("BloodOra"), j(r.text.slice(0, 120)));
+step("GET / renders the unified EJS home page", r.text.includes("<!DOCTYPE html>") && r.text.includes("BloodFerry"), j(r.text.slice(0, 120)));
 
 r = await req("GET", "/api/health");
 step("GET /api/health responds", r.status === 200 && !r.hung, `${r.status} in ${r.ms}ms`);
@@ -198,8 +199,12 @@ r = await req("POST", "/api/auth/register", {
   origin,
 });
 step("POST /api/auth/register (first account)", [200, 201].includes(r.status) && !r.hung, `${r.status} ${j(r.data?.error ?? r.data?.user?.role)}`);
-step("first registered account becomes super_admin", r.data?.user?.role === "super_admin", j(r.data?.user?.role));
+step("first public production registration is NOT an administrator", r.data?.user?.role === "user", j(r.data?.user?.role));
 const adminId = r.data?.user?.id;
+// Explicit isolated-test fixture provisioning, never a public registration side effect.
+const fixtureDb = createClient({ url: `file:${dbFile}` });
+await fixtureDb.execute({ sql: "UPDATE users SET role = 'super_admin', is_admin = 1, is_super_admin = 1 WHERE id = ?", args: [adminId] });
+fixtureDb.close();
 
 r = await req("POST", "/api/auth/login", { json: { email: adminEmail, password: "Password123" }, origin });
 step("POST /api/auth/login", r.status === 200 && !!r.data?.token, `${r.status}`);

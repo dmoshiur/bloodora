@@ -292,14 +292,32 @@ router.post("/branding", requireAdmin, upload.fields([{ name: "logo", maxCount: 
   res.redirect("/admin/branding");
 });
 
+router.post('/delivery-profiles', requireAdmin, async(req,res)=>{
+  try {
+    const body={...req.body};delete body._csrf;
+    for(const k of ['sender_email','sender_name','sender_id']) if(!body[k]) delete body[k];
+    await apiPost('/api/admin/delivery-profiles',body,req.session.token);
+    req.session.flash={type:'success',message:'Profile saved. Activate it explicitly after confirming provider setup.'};
+  } catch(e){req.session.flash={type:'danger',message:e.message};}
+  res.redirect('/admin/integrations');
+});
+router.post('/delivery-profiles/:id/activate', requireAdmin, async(req,res)=>{
+  try {await apiPost(`/api/admin/delivery-profiles/${encodeURIComponent(req.params.id)}/activate`,{},req.session.token);req.session.flash={type:'success',message:'Default delivery profile changed.'};}
+  catch(e){req.session.flash={type:'danger',message:e.message};}res.redirect('/admin/integrations');
+});
+router.post('/sms/send',requireAdmin,async(req,res)=>{
+  try {const d=await apiPost('/api/admin/sms/send',{to:req.body.to,body:req.body.body,request_key:req.body.request_key},req.session.token);req.session.flash={type:'success',message:d.message};}
+  catch(e){req.session.flash={type:'danger',message:e.message};}res.redirect('/admin/integrations');
+});
 // ---------------------------------------------------- Integration health / SMS
 router.get("/integrations", requireAdmin, async (req, res) => {
-  let integrations = null, sms = null;
+  let integrations = null, sms = null, profiles = [];
+  try { profiles = (await apiGet("/api/admin/delivery-profiles", req.session.token)).profiles || []; } catch {}
   try { integrations = (await apiGet("/api/admin/integrations", req.session.token)).integrations; }
   catch (e) { res.locals.loadError = true; }
   try { sms = await apiGet("/api/admin/sms", req.session.token); }
   catch (e) { res.locals.loadError = true; }
-  res.render("admin/integrations", { title: `Integrations & SMS - ${res.locals.siteName}`, integrations, sms, active: "integrations" });
+  res.render("admin/integrations", { title: `Integrations & SMS - ${res.locals.siteName}`, integrations, sms, profiles, active: "integrations" });
 });
 
 router.post("/sms/test", requireAdmin, async (req, res) => {

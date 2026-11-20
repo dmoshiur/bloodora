@@ -9,7 +9,7 @@
 //   3. English content arriving from the API/CMS is translated by source match
 //   4. the rendered /antid page in bn and ar contains NO English article text
 //   5. no double-escaped HTML entities anywhere in the rendered HTML
-//   6. the navbar shows the logo only — no duplicate "BloodOra" wordmark
+//   6. the navbar shows the logo only — no duplicate "BloodFerry" wordmark
 //   7. switching language changes the page on the very next request
 import { test } from "node:test";
 import assert from "node:assert/strict";
@@ -318,18 +318,18 @@ test("compatibility and resources pages are localized end to end", async () => {
 // ---------------------------------------------------------------------------
 // 5. Header identity
 // ---------------------------------------------------------------------------
-test("the navbar shows the logo only — no duplicate BloodOra wordmark", async () => {
+test("the navbar shows the logo only — no duplicate BloodFerry wordmark", async () => {
   const server = app.listen(0);
   try {
     const res = await request(server, "/");
     assert.equal(res.status, 200);
     const nav = res.body.match(/<nav[\s\S]*?<\/nav>/)[0];
     assert.ok(nav.includes("<img"), "the logo image must still be there");
-    assert.ok(nav.includes('alt="BloodOra"'), "the name must remain as the image's alt text");
-    assert.ok(!/>\s*BloodOra\s*</.test(nav), "no separate BloodOra text node beside the logo");
+    assert.ok(nav.includes('alt="BloodFerry"'), "the name must remain as the image's alt text");
+    assert.ok(!/>\s*BloodFerry\s*</.test(nav), "no separate BloodFerry text node beside the logo");
 
     const footer = res.body.match(/<footer[\s\S]*?<\/footer>/)[0];
-    assert.ok(!/>\s*BloodOra\s*</.test(footer.split("©")[0]), "footer must not repeat the wordmark next to the logo");
+    assert.ok(!/>\s*BloodFerry\s*</.test(footer.split("©")[0]), "footer must not repeat the wordmark next to the logo");
   } finally { server.close(); }
 });
 

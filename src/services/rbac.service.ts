@@ -50,13 +50,8 @@ export const rbacService = {
     const hit = permissionCache.get(key);
     if (hit && Date.now() - hit.at < CACHE_TTL_MS) return [...hit.keys];
     const keys = new Set(await roleRepo.permissionsForRole(key));
-    // A missing/unseeded role row must never lock an admin out of the panel:
-    // built-in roles fall back to their coded definition (defence against a
-    // half-applied migration), while custom roles simply have no permissions.
-    if (keys.size === 0) {
-      const fallback = ROLES.find((r) => r.key === key);
-      if (fallback) for (const p of fallback.permissions) keys.add(p);
-    }
+    // Empty grants mean revoked access, not a reason to restore defaults.
+    // Bootstrap seeds roles before serving requests; authorization fails closed.
     permissionCache.set(key, { keys, at: Date.now() });
     return [...keys];
   },
@@ -81,7 +76,7 @@ export const rbacService = {
     return {
       role,
       permissions,
-      isAdmin: Boolean(row?.is_admin) || role !== "user",
+      isAdmin: Boolean(row?.is_admin) || ["admin", "super_admin"].includes(role),
       isSuperAdmin: Boolean(row?.is_super_admin) || role === "super_admin",
     };
   },
@@ -252,7 +247,8 @@ export const rbacService = {
 
     const before = target.role;
     const isSuper = roleKey === "super_admin";
-    const isAdmin = roleKey !== "user";
+    const grants = await this.permissionsForRole(roleKey);
+    const isAdmin = ["admin", "super_admin"].includes(roleKey) || grants.some(key => key !== "ai.use");
     await userRepo.setSuperAdmin(userId, isSuper, isAdmin || isSuper);
     await userRepo.setRole(userId, roleKey, isAdmin || isSuper);
     // A role change must take effect immediately: rotate the session token so

@@ -37,20 +37,10 @@ export const aiMessageRepo = {
 
   /** Conversation history (bounded) for context reconstruction. */
   async history(conversationId: string, limit = 20): Promise<AiMessageRow[]> {
-    return all<AiMessageRow>(
-      `SELECT * FROM ai_messages WHERE conversation_id = ? ORDER BY created_at ASC LIMIT ?`,
+    return (await all<AiMessageRow>(
+      `SELECT * FROM ai_messages WHERE conversation_id = ? ORDER BY created_at DESC, rowid DESC LIMIT ?`,
       [conversationId, limit],
-    );
-  },
-
-  /** Keep only the N most-recent conversations (best-effort). */
-  async prune(keep = 300): Promise<void> {
-    await run(
-      `DELETE FROM ai_messages WHERE conversation_id NOT IN (
-         SELECT conversation_id FROM ai_messages GROUP BY conversation_id ORDER BY MAX(created_at) DESC LIMIT ?
-       )`,
-      [keep],
-    );
+    )).reverse();
   },
 
   /** Recent conversations for the admin panel (aggregated). */

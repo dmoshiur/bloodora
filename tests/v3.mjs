@@ -23,6 +23,7 @@
  * Usage:  npm run test:v3            (self-contained; needs port 4200 free)
  *         V3_BASE=http://… node tests/v3.mjs
  */
+import { createClient } from "@libsql/client";
 import { spawn } from "node:child_process";
 import { mkdtempSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
@@ -33,6 +34,7 @@ const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), "..");
 const PORT = Number(process.env.V3_PORT || 4200);
 const BASE = process.env.V3_BASE || `http://127.0.0.1:${PORT}`;
 
+let fixtureDbFile = process.env.V3_TEST_DB_FILE || null;
 let pass = 0;
 const failures = [];
 const step = (name, ok, extra = "") => {
@@ -132,17 +134,20 @@ function stopServer(child) {
   }, 1500).unref();
 }
 
-/** Pull `token=…` out of the newest outbox mail whose subject contains `needle`. */
-async function tokenFromMail(adminToken, needle) {
-  const r = await req("GET", "/api/admin/mail/outbox?limit=25", { token: adminToken });
-  const rows = r.data?.recent || [];
-  for (const row of rows) {
-    const hay = `${row.subject || ""} ${row.html || ""} ${row.text || ""}`;
-    if (!hay.toLowerCase().includes(needle.toLowerCase())) continue;
-    const m = hay.match(/token=([A-Za-z0-9_\-]+)/);
-    if (m) return m[1];
-  }
-  return null;
+/** Read only this test recipient's isolated fixture inbox, never an admin API. */
+async function tokenFromMail(_adminToken, needle, recipient) {
+  if (!fixtureDbFile) throw new Error("This suite requires an isolated V3_TEST_DB_FILE; reset tokens are not exposed through admin APIs.");
+  const db = createClient({url:`file:${fixtureDbFile}`});
+  try {
+    const {rows} = await db.execute({sql:"SELECT subject,html,text FROM email_outbox WHERE to_email=? ORDER BY rowid DESC LIMIT 25",args:[recipient]});
+    for (const row of rows) {
+      const hay = `${row.subject || ""} ${row.html || ""} ${row.text || ""}`;
+      if (!hay.toLowerCase().includes(needle.toLowerCase())) continue;
+      const m = hay.match(/token=([A-Za-z0-9_\-]+)/);
+      if (m) return m[1];
+    }
+    return null;
+  } finally { db.close(); }
 }
 
 async function runSuite() {
@@ -213,7 +218,7 @@ async function runSuite() {
   r = await req("POST", "/api/auth/forgot-password", { json: { email: "not-an-email" } });
   step("forgot-password validates the email shape", r.status === 400, j(r.data));
 
-  const resetToken = await tokenFromMail(admin, "reset");
+  const resetToken = await tokenFromMail(admin, "reset", userEmail);
   step("reset link is queued in the mail outbox", !!resetToken, resetToken ? "found" : "no token in outbox");
 
   r = await req("GET", `/api/auth/reset-password/validate?token=${resetToken || "nope"}`);
@@ -243,7 +248,7 @@ async function runSuite() {
   // ---------------- email verification ----------------
   r = await req("POST", "/api/auth/verify-email/request", { token: userToken });
   step("POST /api/auth/verify-email/request", r.status === 200 && r.data?.success === true, j(r.data));
-  const verifyToken = await tokenFromMail(admin, "verify");
+  const verifyToken = await tokenFromMail(admin, "verify", userEmail);
   step("verification link is queued in the outbox", !!verifyToken, verifyToken ? "found" : "not found");
   r = await req("POST", "/api/auth/verify-email", { json: { token: verifyToken } });
   step("POST /api/auth/verify-email confirms the address", r.status === 200 && r.data?.success === true, j(r.data));
@@ -639,6 +644,8 @@ async function runSuite() {
   step("a different account is not affected by another's bucket", r.status === 200 && !!r.data?.token, j(r.data, 120));
 
   // ---------------- activity stream cursor ----------------
+  // Create an explicitly public event; private account/message activity is not a feed fixture.
+  await req("POST", "/api/users/me/toggle-status", { token: userToken, json: {} });
   r = await req("GET", "/api/meta/activity?limit=5");
   step("GET /api/meta/activity returns events with a server time", r.status === 200 && Array.isArray(r.data?.events) && typeof r.data?.serverTime === "string", j(r.data, 140));
   const since = new Date(Date.now() - 60_000).toISOString();
@@ -678,6 +685,7 @@ async function runSuite() {
 
 const main = async () => {
   if (process.env.V3_BASE) {
+    if (!fixtureDbFile) throw new Error("V3_BASE requires an isolated V3_TEST_DB_FILE. Never run this mutating suite against production.");
     console.log(`Running the v3 suite against ${BASE} (external target)`);
     const ok = await runSuite();
     process.exit(ok ? 0 : 1);
@@ -685,6 +693,7 @@ const main = async () => {
   }
   await assertPortFree();
   const cwd = mkdtempSync(path.join(tmpdir(), "bloodora-v3-"));
+  fixtureDbFile = path.join(cwd, "data", "local.db");
   const child = startServer(cwd);
   try {
     const up = await waitForHealth(child);

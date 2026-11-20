@@ -21,7 +21,7 @@ router.get("/", async (req, res) => {
 // View profile
 router.get("/profile/view/:id", async (req, res) => {
   try {
-    const d = await apiGet(`/api/users/${req.params.id}`);
+    const d = await apiGet(`/api/users/${req.params.id}`, req.session?.token);
     res.render("profile_view", { title: d.user.name + " - Profile", user: d.user });
   } catch (e) {
     return res.status(404).render("404", { title: `${req.t("page_not_found")} - ${res.locals.siteName}` });

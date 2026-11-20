@@ -1,3 +1,7 @@
+import { z } from "zod";
+import { rbacService } from "./rbac.service.js";
+import { normalizeBangladeshPhone } from "../integrations/sms/phone.js";
+import { BLOOD_GROUPS } from "../data/constants.js";
 import { userRepo } from "../repos/user.repo.js";
 import { productRepo } from "../repos/product.repo.js";
 import { orderRepo } from "../repos/order.repo.js";
@@ -9,10 +13,10 @@ import { contentRepo } from "../repos/content.repo.js";
 import { settingsService } from "./settings.service.js";
 import { loadSettings } from "./meta.service.js";
 import { emailDeliveryService } from "./emailDelivery.service.js";
-import { authService } from "./auth.service.js";
+import { authService, assertPasswordPolicy } from "./auth.service.js";
 import { uploadService } from "./upload.service.js";
 import { ApiError } from "../utils/errors.js";
-import { str } from "../utils/validate.js";
+import { str, toBool } from "../utils/validate.js";
 import { randomId } from "../utils/errors.js";
 import { antidReference, resourcesReference } from "../data/content.js";
 import bcrypt from "bcryptjs";
@@ -132,7 +136,7 @@ export const adminService = {
       return v == null || v === "" ? (existing[k] as string | null) ?? null : String(v);
     };
     const changes: Record<string, string | null> = {
-      site_name: pick("site_name") ?? "BloodOra",
+      site_name: pick("site_name") ?? "BloodFerry",
       site_email: pick("site_email"),
       site_phone: pick("site_phone"),
       site_address: pick("site_address"),
@@ -235,7 +239,7 @@ export const adminService = {
       smtp_secure: body.smtp_secure ? "1" : "0",
       smtp_user: str(body.smtp_user) ?? "",
       smtp_pass: pass,
-      smtp_from_name: str(body.smtp_from_name) || s.site_name || "BloodOra",
+      smtp_from_name: str(body.smtp_from_name) || s.site_name || "BloodFerry",
       smtp_from_email: str(body.smtp_from_email) ?? "",
     };
     await settingsService.update(actor, changes);
@@ -442,27 +446,37 @@ export const adminService = {
     if (user.is_super_admin === 1 || user.id === actor.id) {
       throw ApiError.badRequest("⚠️ Cannot edit this user.", "PROTECTED_USER");
     }
-    await userRepo.updateProfile(id, {
-      name: str(body.name) ?? user.name,
-      email: str(body.email) ?? user.email,
-      phone: str(body.phone) ?? user.phone,
-      blood_group: str(body.blood_group) ?? user.blood_group ?? null,
-      district: str(body.district) ?? user.district ?? null,
-      upazila: str(body.upazila) ?? user.upazila ?? null,
-      address_holding: str(body.address_holding) ?? user.address_holding ?? null,
-    });
-    await userRepo.setVerified(id, Boolean(body.is_verified));
-    await userRepo.setRole(id, body.is_admin ? "admin" : "user", Boolean(body.is_admin));
-    await userRepo.setCanDonate(id, Boolean(body.can_donate));
-    await activityRepo.create("user_update", actor.id, `${actor.name} updated ${user.name}`, { user: id });
-
-    const newPassword = str(body.new_password);
-    if (newPassword && newPassword.length >= 6) {
-      await userRepo.setPassword(id, await bcrypt.hash(newPassword, 10));
-      await userRepo.setSessionToken(id, randomId());
-      return { success: true, type: "info", message: "🔑 Password changed. User will need to login again." };
-    }
-    return { success: true, message: `✅ User '${str(body.name) || user.name}' updated!` };
+    if(user.is_admin) await rbacService.require(actor,["users.role.assign"]);
+    const name=str(body.name) ?? user.name;
+    const email=(str(body.email) ?? user.email).toLowerCase();
+    const phone=body.phone===undefined ? user.phone : normalizeBangladeshPhone(body.phone);
+    const bloodGroup=str(body.blood_group) ?? user.blood_group;
+    if(name.length<2 || name.length>80 || !z.string().email().max(160).safeParse(email).success || !phone || (bloodGroup && !BLOOD_GROUPS.includes(bloodGroup))) throw ApiError.badRequest("Invalid profile fields", "VALIDATION_ERROR");
+    const taken=await userRepo.findByEmail(email);
+    if(taken && taken.id!==id) throw ApiError.conflict("Email already in use", "EMAIL_TAKEN");
+    const isAdmin=toBool(body.is_admin,Boolean(user.is_admin));
+    const verified=toBool(body.is_verified,Boolean(user.is_verified));
+    if(isAdmin!==Boolean(user.is_admin)) await rbacService.require(actor,["users.role.assign"]);
+    if(verified!==Boolean(user.is_verified)) await rbacService.require(actor,["users.verify"]);
+    const newPassword=body.new_password;
+    if(newPassword!==undefined && typeof newPassword!=="string") throw ApiError.badRequest("Invalid password");
+    if(newPassword) assertPasswordPolicy(newPassword);
+    const roleChanged=isAdmin!==Boolean(user.is_admin);
+    const changes:Record<string,unknown>={
+      name,email,phone,blood_group:bloodGroup,
+      district:str(body.district) ?? user.district,
+      upazila:str(body.upazila) ?? user.upazila,
+      address_holding:str(body.address_holding) ?? user.address_holding,
+      is_verified:verified?1:0,is_admin:isAdmin?1:0,
+      can_donate:toBool(body.can_donate,Boolean(user.can_donate))?1:0,
+      role:roleChanged?(isAdmin?"admin":"user"):user.role,
+    };
+    if(email!==user.email) { changes.email_verified=0; changes.email_verified_at=null; }
+    if(phone!==user.phone) { changes.phone_verified=0; changes.phone_verified_at=null; }
+    if(newPassword) changes.password_hash=await bcrypt.hash(newPassword,10);
+    if(newPassword || roleChanged) changes.session_token=randomId();
+    await userRepo.adminUpdate(actor.id,user,changes);
+    return {success:true,type:newPassword?"info":"success",message:newPassword?"Password changed. User will need to login again.":"User profile updated."};
   },
 
   /** GET /api/admin/user/details/:id (super admin). */
@@ -496,6 +510,8 @@ export const adminService = {
     if (!name || !email || !password) {
       throw ApiError.badRequest("❌ Name, email and password are required.", "REQUIRED_FIELDS");
     }
+    assertPasswordPolicy(password);
+    if (!z.string().email().max(160).safeParse(email).success) throw ApiError.badRequest("Invalid email");
     if (await userRepo.findByEmail(email)) {
       throw ApiError.conflict("⚠️ Email already registered.", "EMAIL_TAKEN");
     }

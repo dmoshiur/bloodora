@@ -3,7 +3,7 @@
  * the repositories map them into these camelCase shapes for the services.
  */
 
-export type Role = "user" | "admin" | "super_admin";
+export type Role = "user" | "donor" | "recipient" | "volunteer" | "organization" | "hospital" | "admin" | "super_admin";
 
 /** Identity remap: strips an index signature so Omit<> keeps concrete keys. */
 export type NoIndex<T> = {
@@ -173,6 +173,7 @@ export interface CartState {
 
 export interface BloodRequestRow {
   id: string;
+  institution_id?: string | null;
   user_id: string | null;
   name: string | null;
   phone: string;

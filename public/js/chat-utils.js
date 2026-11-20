@@ -1,4 +1,4 @@
-// ==================== BloodOra shared chat utilities (browser + tests) =====
+// ==================== BloodFerry shared chat utilities (browser + tests) =====
 // Loaded as a classic <script> in the footer (sets window.BOSanitize) and
 // imported in Node tests via createRequire (module.exports). One source of
 // truth for:

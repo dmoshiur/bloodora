@@ -79,7 +79,7 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   // nothing left to catch it with. Log and stop instead.
   if (res.headersSent || res.writableEnded) {
     logger.warn("error after the response was already sent — dropping", {
-      path: req.originalUrl,
+      path: req.originalUrl.split("?")[0],
       method: req.method,
       requestId: requestIdOf(req),
       err: err instanceof Error ? err.message : String(err),
@@ -140,16 +140,16 @@ export function errorHandler(err: unknown, req: Request, res: Response, _next: N
   // exactly the debugging session where the signal mattered most.
   if (status >= 500 && !(err instanceof ApiError)) {
     logger.error("unhandled error", {
-      path: req.originalUrl,
+      path: req.originalUrl.split("?")[0],
       method: req.method,
       requestId: requestIdOf(req),
       code,
       err: err instanceof Error ? { message: err.message, stack: err.stack } : String(err),
     });
   } else if (status >= 500) {
-    logger.warn("service unavailable", { path: req.originalUrl, method: req.method, requestId: requestIdOf(req), status, code, message });
+    logger.warn("service unavailable", { path: req.originalUrl.split("?")[0], method: req.method, requestId: requestIdOf(req), status, code, message });
   } else if (status === 401 || status === 403) {
-    logger.warn("auth rejection", { path: req.originalUrl, requestId: requestIdOf(req), status, code });
+    logger.warn("auth rejection", { path: req.originalUrl.split("?")[0], requestId: requestIdOf(req), status, code });
   }
 
   const shaped = (err ?? {}) as ShapedError;

@@ -1,4 +1,4 @@
-// ==================== BloodOra Backend - Canonical Reference Content ====================
+// ==================== BloodFerry Backend - Canonical Reference Content ====================
 // This module is the *guaranteed* source of the site's reference material.
 // Admin-managed database rows are MERGED on top of it (see routes/meta.js), so a
 // reference page can never render empty because the database is fresh, empty,
@@ -92,7 +92,7 @@ export const antidReference = {
     { q: "It has been more than 72 hours. Is it too late?", a: "Give it anyway. Protection declines but does not vanish — evidence supports benefit up to 28 days after the event. Do not withhold a late dose." },
     { q: "Does Anti-D harm the baby?", a: "No. Anti-D does not cross into the fetus in a clinically meaningful amount and has an excellent safety record over five decades of use. The small amount that does cross can cause a weakly positive direct antiglobulin test in the newborn, which is harmless." },
     { q: "Can Anti-D be given with other vaccines?", a: "Yes, including live attenuated vaccines. Use a separate syringe and a separate injection site. Rubella vaccine given postpartum alongside Anti-D is standard practice." },
-    { q: "Where can I get it in Bangladesh?", a: "Anti-D is available in most district and upazila health complexes and in private hospitals. BloodOra's medical shop lists Rhophylac Anti-D 300 mcg under the Medicine category; you can order it for ৳10 delivery inside Kalai Upazila." },
+    { q: "Where can I get it in Bangladesh?", a: "Anti-D is available in most district and upazila health complexes and in private hospitals. BloodFerry's medical shop lists Rhophylac Anti-D 300 mcg under the Medicine category; you can order it for ৳10 delivery inside Kalai Upazila." },
   ],
   sources: [
     "ACOG Practice Bulletin No. 181 — Prevention of Rh D Alloimmunization",
@@ -125,7 +125,7 @@ export const compatibilityReference = {
     { point: "ABO preference, not absolute", detail: "Platelets carry only weak ABO antigens. Group-identical platelets are preferred, but ABO-mismatched platelets are acceptable when they are the only option." },
     { point: "Plasma volume matters", detail: "The incompatible part is the donor plasma. Use platelet concentrates with reduced plasma volume, or wash them, for major mismatches." },
     { point: "RhD still matters", detail: "RhD-negative women of childbearing potential receiving RhD-positive platelets should be given Anti-D, because of contaminating red cells." },
-    { point: "Never cold-stored casually", detail: "Platelets are stored at 20–24 °C with continuous agitation for only 5 days, so supply is chronically short — register as a platelet donor on BloodOra if you can." },
+    { point: "Never cold-stored casually", detail: "Platelets are stored at 20–24 °C with continuous agitation for only 5 days, so supply is chronically short — register as a platelet donor on BloodFerry if you can." },
   ],
   components: [
     { component: "Whole blood", storage: "2–6 °C", shelfLife: "35 days (CPDA-1)", used: "Rarely used today; exchanged for component therapy in acute massive haemorrhage." },
@@ -201,14 +201,14 @@ export const resourcesReference = [
     category: "First-Aid",
     readTime: "5 min",
     summary: "Direct pressure, elevation, tourniquets and shock positioning — what actually saves the patient before transfusion.",
-    content: "The single most effective action is firm, continuous direct pressure on the wound with a clean cloth — do not remove a soaked dressing, add another layer on top. Raise the injured limb above heart level if no fracture is suspected. For life-threatening limb bleeding that does not respond to pressure, apply a commercial tourniquet 5–7 cm above the wound, never over a joint, tighten until bleeding stops, and write down the time; do not loosen it. Lay the patient flat with the legs elevated 30 cm, keep them warm with a blanket, and give nothing to drink if surgery may be needed. Watch for shock: pale cold clammy skin, rapid weak pulse, rapid breathing, restlessness and confusion. Call for emergency help and post the request on BloodOra at the same time — the average response for an urgent request is under 30 minutes.",
+    content: "The single most effective action is firm, continuous direct pressure on the wound with a clean cloth — do not remove a soaked dressing, add another layer on top. Raise the injured limb above heart level if no fracture is suspected. For life-threatening limb bleeding that does not respond to pressure, apply a commercial tourniquet 5–7 cm above the wound, never over a joint, tighten until bleeding stops, and write down the time; do not loosen it. Lay the patient flat with the legs elevated 30 cm, keep them warm with a blanket, and give nothing to drink if surgery may be needed. Watch for shock: pale cold clammy skin, rapid weak pulse, rapid breathing, restlessness and confusion. Call for emergency help and post the request on BloodFerry at the same time — the average response for an urgent request is under 30 minutes.",
   },
   {
     title: "Dengue and platelets: what the count really means",
     category: "First-Aid",
     readTime: "4 min",
     summary: "When platelet transfusion genuinely helps in dengue, and why the number alone should not trigger it.",
-    content: "A falling platelet count is expected in dengue and by itself is not an indication to transfuse. Transfusion is indicated for significant bleeding — gastrointestinal, mucosal or intracranial — regardless of the count, and is considered prophylactically only below 10,000–20,000/µL with additional risk factors. The mainstay of dengue management is careful fluid management: isotonic crystalloid titrated to the haematocrit and urine output, with strict avoidance of over-hydration, which causes pulmonary oedema. Because platelets are stored at room temperature for only 5 days, dengue season creates acute shortages — a single patient may need 10–20 units. Register as a platelet donor on BloodOra before the season peaks.",
+    content: "A falling platelet count is expected in dengue and by itself is not an indication to transfuse. Transfusion is indicated for significant bleeding — gastrointestinal, mucosal or intracranial — regardless of the count, and is considered prophylactically only below 10,000–20,000/µL with additional risk factors. The mainstay of dengue management is careful fluid management: isotonic crystalloid titrated to the haematocrit and urine output, with strict avoidance of over-hydration, which causes pulmonary oedema. Because platelets are stored at room temperature for only 5 days, dengue season creates acute shortages — a single patient may need 10–20 units. Register as a platelet donor on BloodFerry before the season peaks.",
   },
   {
     title: "Nutrition for donors: rebuilding iron after a donation",
@@ -222,7 +222,7 @@ export const resourcesReference = [
     category: "Health",
     readTime: "5 min",
     summary: "Why premarital Hb electrophoresis matters, and the transfusion burden of thalassaemia major.",
-    content: "Bangladesh has an estimated 10–12% carrier rate for thalassaemia traits. When two carriers marry, each pregnancy carries a 25% chance of thalassaemia major, a lifelong disease requiring transfusion every 3–4 weeks from infancy plus iron chelation therapy to prevent cardiac and endocrine damage. A single simple test — haemoglobin electrophoresis or HPLC, costing only a few hundred taka — identifies carriers before marriage. Two carriers can still marry and have healthy children with prenatal diagnosis in the first trimester. Because thalassaemia patients consume a large and permanent share of the blood supply, every voluntary donor directly supports them. If you or your partner have a family history of unexplained anaemia or transfusion dependence, get screened — and register as a regular donor on BloodOra.",
+    content: "Bangladesh has an estimated 10–12% carrier rate for thalassaemia traits. When two carriers marry, each pregnancy carries a 25% chance of thalassaemia major, a lifelong disease requiring transfusion every 3–4 weeks from infancy plus iron chelation therapy to prevent cardiac and endocrine damage. A single simple test — haemoglobin electrophoresis or HPLC, costing only a few hundred taka — identifies carriers before marriage. Two carriers can still marry and have healthy children with prenatal diagnosis in the first trimester. Because thalassaemia patients consume a large and permanent share of the blood supply, every voluntary donor directly supports them. If you or your partner have a family history of unexplained anaemia or transfusion dependence, get screened — and register as a regular donor on BloodFerry.",
   },
   {
     title: "Blood safety: how every donated unit is screened",
@@ -236,7 +236,7 @@ export const resourcesReference = [
     category: "Health",
     readTime: "4 min",
     summary: "Bone marrow, cord blood, kidney and cornea donation — eligibility and how to register.",
-    content: "A living kidney donor can lead a completely normal life with the remaining kidney and is the best source for a transplant recipient. Bone marrow or peripheral blood stem cell donation treats leukaemia, aplastic anaemia and thalassaemia major; a matched unrelated donor is found through HLA typing, and collection is now usually by apheresis rather than a marrow harvest. Umbilical cord blood, collected painlessly after delivery, is a rich source of stem cells and is wasted in almost every birth in Bangladesh. Cornea donation after death can restore sight to two people and requires only the family's consent within 6 hours. Registering as a voluntary blood donor on BloodOra is the fastest way to be reachable for all of these.",
+    content: "A living kidney donor can lead a completely normal life with the remaining kidney and is the best source for a transplant recipient. Bone marrow or peripheral blood stem cell donation treats leukaemia, aplastic anaemia and thalassaemia major; a matched unrelated donor is found through HLA typing, and collection is now usually by apheresis rather than a marrow harvest. Umbilical cord blood, collected painlessly after delivery, is a rich source of stem cells and is wasted in almost every birth in Bangladesh. Cornea donation after death can restore sight to two people and requires only the family's consent within 6 hours. Registering as a voluntary blood donor on BloodFerry is the fastest way to be reachable for all of these.",
   },
 ];
 
@@ -255,7 +255,7 @@ export const siteRoutes = [
   { path: "/shop/cart", title: "Shopping Cart", purpose: "Review cart items, change quantities, remove items and see the subtotal before checkout.", keywords: ["cart", "basket", "cart items"] },
   { path: "/shop/checkout", title: "Checkout", purpose: "Choose payment method (bKash, Nagad, Upay, Rocket, Pathao, Card or Cash on Delivery), enter the transaction ID and the delivery address. Delivery is only available in Kalai Upazila for ৳10.", keywords: ["checkout", "payment", "order", "bkash", "nagad", "delivery", "address"] },
   { path: "/shop/my-orders", title: "My Orders", purpose: "Order history with status (pending, processing, shipped, delivered, cancelled), payment status and totals.", keywords: ["my orders", "order history", "track order", "order status"] },
-  { path: "/reviews", title: "Reviews & Testimonials", purpose: "Public review page: star-rated product reviews for shop items plus general BloodOra testimonials, with an average-rating summary and a submission form for logged-in users.", keywords: ["review", "reviews", "rating", "testimonial", "feedback", "stars", "রিভিউ"] },
+  { path: "/reviews", title: "Reviews & Testimonials", purpose: "Public review page: star-rated product reviews for shop items plus general BloodFerry testimonials, with an average-rating summary and a submission form for logged-in users.", keywords: ["review", "reviews", "rating", "testimonial", "feedback", "stars", "রিভিউ"] },
   { path: "/compatibility", title: "Blood Compatibility", purpose: "Complete ABO/RhD reference: red-cell donor and recipient matrix, plasma compatibility, platelet rules, component storage and shelf life, emergency transfusion rules and blood-group facts.", keywords: ["compatibility", "blood group chart", "donate to", "receive from", "universal donor", "universal recipient", "plasma", "platelet"] },
   { path: "/antid", title: "Anti-D Information", purpose: "Full clinical reference on Anti-D Immunoglobulin (RhIg): what it is, why RhD-negative mothers need it, every indication, the dosing schedule, administration technique, side effects, contraindications, cold-chain storage and FAQs.", keywords: ["anti-d", "antid", "rhd", "immunoglobulin", "rh negative", "pregnancy", "hdfn", "এন্টি-ডি"] },
   { path: "/resources", title: "Educational Resources", purpose: "Article library: donor eligibility, what happens on donation day, preparation, recovery, blood-group genetics, transfusion testing, first aid for bleeding, dengue platelets, donor nutrition, thalassaemia screening, blood safety and organ/marrow donation.", keywords: ["resources", "education", "articles", "learn", "guide", "resources page"] },
@@ -265,7 +265,7 @@ export const siteRoutes = [
   { path: "/login", title: "Login", purpose: "Sign in with email and password. Returns a JWT session valid for 7 days.", keywords: ["login", "sign in", "log in", "account access"] },
   { path: "/register", title: "Register", purpose: "Create an account: name, email, phone, password, blood group, division/district/upazila and date of birth. Donors must be 18+.", keywords: ["register", "sign up", "create account", "new account"] },
   { path: "/messages", title: "Messages", purpose: "User messaging centre: inbox, sent items, unread count, send a message to the admin team or to another user, and reply.", keywords: ["messages", "inbox", "message admin", "send message", "reply"] },
-  { path: "/messages/send", title: "Send Message", purpose: "Compose a message to the BloodOra admin team or to another registered user by email.", keywords: ["send message", "compose", "write message"] },
+  { path: "/messages/send", title: "Send Message", purpose: "Compose a message to the BloodFerry admin team or to another registered user by email.", keywords: ["send message", "compose", "write message"] },
   { path: "/admin", title: "Admin Dashboard", purpose: "Admin control centre: live stats (users, verified donors, orders, products, pending verifications, urgent requests), the site notice broadcaster, user management (verify, promote, demote, edit, delete, impersonate) and admin creation.", keywords: ["admin", "dashboard", "control panel", "stats", "users", "notice"] },
   { path: "/admin/settings", title: "Site Settings", purpose: "Manage the site name, tagline, contact details, description, social links and all payment gateway merchant numbers.", keywords: ["settings", "site settings", "social links", "payment gateway", "merchant number"] },
   { path: "/admin/branding", title: "Branding & Identity", purpose: "Upload the site logo and favicon, set the display name, tagline, primary and accent brand colours and the calligraphic heading style. Changes apply across the whole site instantly.", keywords: ["branding", "logo", "favicon", "site name", "colors", "theme", "identity"] },
@@ -297,7 +297,7 @@ export const featureKnowledge = [
   },
   {
     area: "Reviews & Testimonials",
-    details: "The review page at /reviews shows two kinds of feedback: 1–5 star reviews attached to specific shop products, and general testimonials about BloodOra itself. Reviews can be filtered by product, by star rating and by type, and the page shows the overall average rating and total count. Logged-in users submit a review with a rating, title and body; if the review is attached to a product the user must have ordered it. New reviews go to the admin moderation queue and only appear publicly once approved. Admins can approve, reject, feature and publicly reply to any review, and can delete it.",
+    details: "The review page at /reviews shows two kinds of feedback: 1–5 star reviews attached to specific shop products, and general testimonials about BloodFerry itself. Reviews can be filtered by product, by star rating and by type, and the page shows the overall average rating and total count. Logged-in users submit a review with a rating, title and body; if the review is attached to a product the user must have ordered it. New reviews go to the admin moderation queue and only appear publicly once approved. Admins can approve, reject, feature and publicly reply to any review, and can delete it.",
   },
   {
     area: "Live Activity",

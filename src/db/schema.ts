@@ -2,6 +2,7 @@ import { all, batch, run } from "./query.js";
 
 /** Full schema as ordered DDL statements. Every statement is idempotent. */
 const DDL: string[] = [
+  `CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS users (
     id TEXT PRIMARY KEY,
     name TEXT NOT NULL,
@@ -139,6 +140,56 @@ const DDL: string[] = [
   )`,
   `CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(created_at)`,
 
+  // One institutional registry: a hospital is a kind of organization, not a duplicate entity.
+  `CREATE TABLE IF NOT EXISTS organizations (
+    id TEXT PRIMARY KEY,
+    kind TEXT NOT NULL CHECK(kind IN ('organization','hospital')),
+    name TEXT NOT NULL,
+    description TEXT NOT NULL DEFAULT '',
+    district TEXT NOT NULL,
+    address TEXT NOT NULL,
+    contact_email TEXT NOT NULL,
+    contact_phone TEXT NOT NULL,
+    publish_contact INTEGER NOT NULL DEFAULT 0 CHECK(publish_contact IN (0,1)),
+    status TEXT NOT NULL DEFAULT 'pending' CHECK(status IN ('pending','approved','rejected','suspended')),
+    review_note TEXT,
+    reviewed_by TEXT REFERENCES users(id),
+    reviewed_at TEXT,
+    created_by TEXT NOT NULL REFERENCES users(id),
+    request_key TEXT NOT NULL,
+    request_fingerprint TEXT NOT NULL,
+    version INTEGER NOT NULL DEFAULT 1,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    UNIQUE(created_by, request_key)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_organizations_directory ON organizations(kind, status, district, name)`,
+  `CREATE TABLE IF NOT EXISTS organization_members (
+    organization_id TEXT NOT NULL REFERENCES organizations(id),
+    user_id TEXT NOT NULL REFERENCES users(id),
+    role TEXT NOT NULL CHECK(role IN ('owner','manager','volunteer')),
+    active INTEGER NOT NULL DEFAULT 1 CHECK(active IN (0,1)),
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
+    PRIMARY KEY(organization_id, user_id)
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_organization_members_user ON organization_members(user_id, active)`,
+
+  `CREATE TABLE IF NOT EXISTS donations (
+    id TEXT PRIMARY KEY,
+    donor_id TEXT NOT NULL REFERENCES users(id),
+    request_id TEXT REFERENCES blood_requests(id),
+    recorded_by TEXT NOT NULL REFERENCES users(id),
+    donated_at TEXT NOT NULL,
+    blood_group TEXT NOT NULL,
+    units INTEGER NOT NULL CHECK(units BETWEEN 1 AND 10),
+    note TEXT,
+    idempotency_key TEXT NOT NULL UNIQUE,
+    created_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_donations_donor ON donations(donor_id, donated_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_donations_request ON donations(request_id)`,
+
   // User↔admin messaging (subject + reply threading; recipient_id 'admin'
   // means the site administrator).
   `CREATE TABLE IF NOT EXISTS messages (
@@ -270,6 +321,19 @@ const DDL: string[] = [
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
 
+  `CREATE TABLE IF NOT EXISTS ai_conversations (
+    id TEXT PRIMARY KEY, owner_key TEXT NOT NULL,
+    user_id TEXT REFERENCES users(id), created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_ai_conversations_owner ON ai_conversations(owner_key, updated_at)`,
+  `CREATE TABLE IF NOT EXISTS ai_submissions (
+    conversation_id TEXT NOT NULL REFERENCES ai_conversations(id),
+    request_id TEXT NOT NULL, message TEXT NOT NULL,
+    status TEXT NOT NULL CHECK(status IN ('pending','completed','failed')),
+    response TEXT, created_at TEXT NOT NULL,
+    PRIMARY KEY(conversation_id, request_id)
+  )`,
   // Live AI Help conversation history (per conversation_id).
   `CREATE TABLE IF NOT EXISTS ai_messages (
     id TEXT PRIMARY KEY,
@@ -473,6 +537,12 @@ const DDL: string[] = [
 
   // Outgoing mail that still has to be delivered (SMTP off/failed at request
   // time). Flushed opportunistically and by GET /api/cron/maintenance.
+  `CREATE TABLE IF NOT EXISTS delivery_profiles (
+    id TEXT PRIMARY KEY, kind TEXT NOT NULL, label TEXT NOT NULL, provider TEXT NOT NULL,
+    sender_email TEXT, sender_name TEXT, sender_id TEXT, secret TEXT NOT NULL,
+    is_default INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
+  )`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_default ON delivery_profiles(kind) WHERE is_default=1`,
   `CREATE TABLE IF NOT EXISTS email_outbox (
     id TEXT PRIMARY KEY,
     to_email TEXT NOT NULL,
@@ -492,8 +562,8 @@ const DDL: string[] = [
 
 export const SETTINGS_DEFAULTS: Record<string, string> = {
   // --- identity / branding (original site_settings fields) ---
-  site_name: "BloodOra",
-  site_tagline: "Donate blood. Save lives.",
+  site_name: "BloodFerry",
+  site_tagline: "DONATE • TRANSFUSE • SAVE LIVES",
   site_description: "Connecting blood donors to save lives across Bangladesh.",
   site_email: "info.bloodora@gmail.com",
   site_phone: "+8801709202140",
@@ -502,13 +572,13 @@ export const SETTINGS_DEFAULTS: Record<string, string> = {
   twitter_url: "#",
   instagram_url: "#",
   linkedin_url: "#",
-  logo_file: "",
-  favicon_file: "",
+  logo_file: "/assets/brand/bloodferry-logo.png",
+  favicon_file: "/favicon.png",
   brand_primary: "#e31b23",
   brand_accent: "#ff3340",
   brand_font_style: "calligraphic",
   default_language: "en",
-  footer_note: "BloodOra — donate blood, save lives.",
+  footer_note: "BloodFerry — donate blood, save lives.",
   primary_color: "#c62828",
   font_style: "default",
   announcement: "",
@@ -544,9 +614,9 @@ export const SETTINGS_DEFAULTS: Record<string, string> = {
   // real values and the panel becomes the override from then on.
   // --- Live AI Help ---
   ai_enabled: "1",
-  ai_provider: "groq",
-  ai_model: "qwen/qwen3.6-27b",
-  ai_base_url: "https://api.groq.com/openai/v1",
+  ai_provider: "",
+  ai_model: "",
+  ai_base_url: "",
   ai_api_key: "",
   ai_temperature: "0.5",
   ai_max_tokens: "900",
@@ -594,6 +664,7 @@ const MIGRATIONS: Array<[string, string, string]> = [
   ["messages", "subject", "TEXT NOT NULL DEFAULT ''"],
   ["messages", "is_admin_message", "INTEGER NOT NULL DEFAULT 0"],
   ["messages", "replied_to", "TEXT"],
+  ["blood_requests", "institution_id", "TEXT REFERENCES organizations(id)"],
   // blood_requests (v2: original request form fields)
   ["blood_requests", "patient_name", "TEXT"],
   ["blood_requests", "patient_relation", "TEXT"],
@@ -634,6 +705,10 @@ const MIGRATIONS: Array<[string, string, string]> = [
   // v4: durable, idempotent multi-provider delivery. Existing rows remain valid.
   ["email_outbox", "dedupe_key", "TEXT"],
   ["email_outbox", "provider_id", "TEXT"],
+  ["email_outbox", "profile_id", "TEXT"],
+  ["email_outbox", "claim_token", "TEXT"],
+  ["email_outbox", "lease_until", "TEXT"],
+  ["email_outbox", "next_attempt_at", "TEXT"],
   ["users", "phone_verified", "INTEGER NOT NULL DEFAULT 0"],
   ["users", "phone_verified_at", "TEXT"],
   ["users", "notify_sms", "INTEGER NOT NULL DEFAULT 0"],
@@ -652,6 +727,7 @@ const MIGRATIONS: Array<[string, string, string]> = [
  * v3 (client_message_id IS NULL) never collide with each other.
  */
 const POST_MIGRATION_INDEXES: string[] = [
+  `CREATE INDEX IF NOT EXISTS idx_requests_institution ON blood_requests(institution_id, created_at)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_live_messages_client
      ON live_messages(session_key, client_message_id)`,
   `CREATE INDEX IF NOT EXISTS idx_live_messages_created ON live_messages(created_at)`,
@@ -663,6 +739,7 @@ const POST_MIGRATION_INDEXES: string[] = [
   `CREATE INDEX IF NOT EXISTS idx_messages_created ON messages(created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_live_sessions_activity ON live_sessions(last_message_at)`,
   `CREATE INDEX IF NOT EXISTS idx_products_active ON products(is_active)`,
+  `CREATE INDEX IF NOT EXISTS idx_outbox_due ON email_outbox(status, next_attempt_at, lease_until)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_outbox_dedupe ON email_outbox(dedupe_key)`,
 ];
 
@@ -721,6 +798,15 @@ export async function applySchema(): Promise<void> {
   // (4) Indexes that depend on a migrated column — must follow the ALTERs.
   await batch(POST_MIGRATION_INDEXES);
 
+  // One-time brand migration; keep every account and domain row untouched.
+  await batch([
+    `UPDATE settings SET value = 'BloodFerry' WHERE key = 'site_name' AND value IN ('BloodOra', 'Bloodora')`,
+    `UPDATE settings SET value = replace(value, 'BloodOra', 'BloodFerry') WHERE key IN ('footer_note', 'site_description')`,
+    `UPDATE settings SET value = 'DONATE • TRANSFUSE • SAVE LIVES' WHERE key = 'site_tagline' AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE id = 'bloodferry-brand-v1')`,
+    `UPDATE settings SET value = CASE key WHEN 'logo_file' THEN '/assets/brand/bloodferry-logo.png' ELSE '/favicon.png' END WHERE key IN ('logo_file', 'favicon_file') AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE id = 'bloodferry-brand-v1')`,
+    `INSERT INTO schema_migrations VALUES ('bloodferry-brand-v1', datetime('now')) ON CONFLICT(id) DO NOTHING`,
+  ]);
+
   // (5) Settings defaults, inserted but never overwriting an admin's edit.
   await batch(
     Object.entries(SETTINGS_DEFAULTS).map(
@@ -731,11 +817,15 @@ export async function applySchema(): Promise<void> {
 }
 
 export const TABLES = [
+  "schema_migrations",
   "users",
   "products",
   "orders",
   "order_items",
   "blood_requests",
+  "donations",
+  "organizations",
+  "organization_members",
   "activities",
   "messages",
   "live_sessions",
@@ -749,6 +839,8 @@ export const TABLES = [
   "site_notice",
   "email_log",
   "ai_messages",
+  "ai_conversations",
+  "ai_submissions",
   "notifications",
   "transactions",
   "audit_logs",
@@ -759,6 +851,7 @@ export const TABLES = [
   "auth_tokens",
   "rate_limits",
   "email_outbox",
+  "delivery_profiles",
   "sms_deliveries",
   "phone_otps",
 ];

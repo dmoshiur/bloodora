@@ -19,6 +19,7 @@
         </div></section></div>
       <% } %>
     </div>
+    <%- include('delivery-profiles', { profiles: typeof profiles === 'undefined' ? [] : profiles }) %>
     <div class="row g-4">
       <div class="col-lg-5"><section class="card border-0 shadow-sm"><div class="card-body">
         <h2 class="h5">Real SMS test</h2>

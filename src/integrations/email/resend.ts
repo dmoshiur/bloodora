@@ -1,3 +1,4 @@
+import { deliveryProfileService } from "../../services/deliveryProfile.service.js";
 import { Resend } from "resend";
 import { config } from "../../config/env.js";
 import { withTimeout } from "../../db/timeout.js";
@@ -9,6 +10,7 @@ export interface EmailMessage {
   html: string;
   text?: string;
   idempotencyKey?: string;
+  profileId?: string | null;
 }
 
 export interface EmailProvider {
@@ -35,10 +37,11 @@ export class ResendEmailProvider implements EmailProvider {
   }
 
   async send(message: EmailMessage): Promise<string | null> {
-    const fromName = config.resend.fromName.replace(/["<>\r\n]/g, "").trim() || "BloodOra";
+    const profile = message.profileId ? await deliveryProfileService.resolve("email",message.profileId) : null;
+    const fromName = (profile?.sender_name || config.resend.fromName).replace(/["<>\r\n]/g, "").trim() || "BloodFerry";
     const result = await withTimeout(
-      this.getClient().emails.send({
-        from: `${fromName} <${config.resend.fromEmail}>`,
+      (profile ? new Resend(profile.apiKey) : this.getClient()).emails.send({
+        from: `${fromName} <${profile?.sender_email || config.resend.fromEmail}>`,
         to: [message.to],
         subject: message.subject,
         html: message.html,
