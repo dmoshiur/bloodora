@@ -35,15 +35,15 @@
                     <td class="small text-muted"><%= fmtDate(a.last_login_at) %></td>
                     <td class="text-end">
                       <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
-                        <form method="POST" action="/admin/admins/<%= a.id %>/revoke-sessions" class="d-inline" onsubmit="return confirm('Revoke every session of this account?')"><button class="btn btn-outline-secondary btn-sm rounded-pill" title="Revoke all sessions"><i class="fas fa-right-from-bracket"></i></button></form>
+                        <form method="POST" action="/admin/admins/<%= a.id %>/revoke-sessions" class="d-inline" data-confirm="Revoke every session of this account?"><button class="btn btn-outline-secondary btn-sm rounded-pill" title="Revoke all sessions"><i class="fas fa-right-from-bracket"></i></button></form>
                         <% if (a.is_active) { %>
-                          <form method="POST" action="/admin/admins/<%= a.id %>/deactivate" class="d-inline" onsubmit="return confirm('Deactivate this account? All sessions will be revoked immediately.')"><button class="btn btn-outline-danger btn-sm rounded-pill" title="Deactivate"><i class="fas fa-user-slash"></i></button></form>
+                          <form method="POST" action="/admin/admins/<%= a.id %>/deactivate" class="d-inline" data-confirm="Deactivate this account? All sessions will be revoked immediately."><button class="btn btn-outline-danger btn-sm rounded-pill" title="Deactivate"><i class="fas fa-user-slash"></i></button></form>
                         <% } else { %>
                           <form method="POST" action="/admin/admins/<%= a.id %>/activate" class="d-inline"><button class="btn btn-outline-success btn-sm rounded-pill" title="Activate"><i class="fas fa-user-check"></i></button></form>
                         <% } %>
                         <% if (isSuper && Array.isArray(assignableRoles) && assignableRoles.length) { %>
                           <form method="POST" action="/admin/admins/<%= a.id %>/role" class="d-inline">
-                            <select name="role" class="form-select form-select-sm d-inline-block" style="width:auto; border-radius:999px;" onchange="this.form.submit()">
+                            <select name="role" class="form-select form-select-sm d-inline-block js-autosubmit" style="width:auto; border-radius:999px;">
                               <% assignableRoles.forEach(r => { %><option value="<%= r.key %>" <%= r.key === a.role ? 'selected' : '' %>><%= r.name %></option><% }) %>
                             </select>
                           </form>

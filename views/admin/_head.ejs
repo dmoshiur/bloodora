@@ -17,7 +17,7 @@
   <meta name="robots" content="noindex, nofollow">
   <link rel="icon" href="<%= logo %>" type="image/png">
   <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-  <script>
+  <script nonce="<%= cspNonce %>">
     // Same-origin mutating fetches carry the synchronizer token; HTML forms get
     // their hidden token injected server-side. Never expose the token elsewhere.
     (() => {

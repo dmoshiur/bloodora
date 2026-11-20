@@ -12,7 +12,7 @@
             <% cart_items.forEach(item=>{ %>
               <div class="d-flex gap-3 p-3 border-bottom align-items-center">
                 <% if (item.product.image_file && item.product.image_file !== 'default_product.jpg') { %>
-                  <img src="/uploads/<%= item.product.image_file %>" alt="<%= item.product.name %>" class="rounded-3" style="width:84px;height:84px;object-fit:cover;border:1px solid #e2e8f0;" onerror="this.src='https://via.placeholder.com/84'">
+                  <img src="/uploads/<%= item.product.image_file %>" alt="<%= item.product.name %>" class="rounded-3" style="width:84px;height:84px;object-fit:cover;border:1px solid #e2e8f0;" data-img-fallback="placeholder" data-placeholder-size="84">
                 <% } else { %>
                   <div class="d-flex align-items-center justify-content-center rounded-3" style="width:84px;height:84px;background:#f1f5f9;border:1px solid #e2e8f0;"><i class="fas fa-box text-muted"></i></div>
                 <% } %>

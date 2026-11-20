@@ -28,7 +28,7 @@
         <div class="col-lg-4">
           <h5 class="d-flex align-items-center gap-2">
             <% /* logo artwork already contains the BloodFerry wordmark — no duplicate text */ %>
-            <img src="<%= _logo %>" alt="<%= _name %>" style="height:38px;" onerror="this.style.display='none'">
+            <img src="<%= _logo %>" alt="<%= _name %>" style="height:38px;" data-img-fallback="hide">
           </h5>
           <% if (_b.site_tagline) { %><p class="script-accent mt-2 mb-0" style="color:#f1a4ab; font-size:1.15rem;"><%= _b.site_tagline %></p><% } %>
           <p class="mt-2" style="color:#94a3b8; max-width:38ch;"><%= _b.site_description || _t('site_default_description') %></p>
@@ -162,7 +162,7 @@
   <!-- message store that makes live-chat deduplication exact. Same file  -->
   <!-- is exercised by the Node test-suite (test/frontend.test.mjs).      -->
   <script src="/js/chat-utils.js"></script>
-  <script>
+  <script nonce="<%= cspNonce %>">
   (function(){
     var LANG = <%- JSON.stringify(_lang) %>;
     var I18N = {
@@ -609,8 +609,9 @@
   })();
   </script>
 
+  <script src="/js/bo.js" defer></script>
   <script src="/vendor/bootstrap/bootstrap.bundle.min.js" defer></script>
-  <script>
+  <script nonce="<%= cspNonce %>">
     // Auto-dismiss flash messages after 4.5s
     setTimeout(function(){
       document.querySelectorAll('.alert-dismissible').forEach(function(a){

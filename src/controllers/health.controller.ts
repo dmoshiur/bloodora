@@ -13,7 +13,183 @@ import { requestIdOf } from "../middleware/requestId.js";
  * runtime `readFileSync("../package.json")` would be the one thing that can make
  * the health probe itself fail.
  */
-const APP_VERSION = "2.0.0";
+const APP_VERSION = "4.0.0";
+
+/**
+ * GET /health/live — process liveness.
+ *
+ * The only dependency this reports on is the event loop itself. It answers 200
+ * even when the database, the session store or a required env var is broken,
+ * because a platform must distinguish "the instance is up" from "the instance
+ * is gone" — a liveness probe that turns red on a dependency outage causes
+ * restart loops that fix nothing and hide the real failure.
+ */
+export function liveness(_req: Request, res: Response): void {
+  res.json({
+    ok: true,
+    status: "ok",
+    service: "bloodora-backend",
+    version: APP_VERSION,
+    uptime: Math.round(process.uptime()),
+    time: new Date().toISOString(),
+  });
+}
+
+/** The tables every request path depends on. Read-only presence check. */
+const REQUIRED_TABLES = ["users", "settings"] as const;
+const REQUIRED_TABLES_SQL = `SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name IN (${REQUIRED_TABLES.map((t) => `'${t}'`).join(", ")})`;
+
+interface ReadinessCheck {
+  ok: boolean;
+  ms?: number;
+  /** Leak-free failure category; never a host, token, SQL statement or stack. */
+  reason?: string;
+}
+
+/**
+ * GET /health/ready — dependency readiness.
+ *
+ * Reports ready ONLY when the database operations the site actually needs
+ * succeed *right now*. Readiness deliberately does NOT call the bootstrap:
+ * running `applySchema()` here would migrate (or create tables inside)
+ * whatever database this instance happens to reach, and a check that mutates
+ * its own subject is not a check — it would report ready for a database the
+ * app had never seen before, and would silently repair an empty replacement
+ * database in place of the missing production one. Instead it performs three
+ * read-only operations, each bounded by `HEALTH_DB_TIMEOUT_MS`:
+ *
+ *   1. connectivity — `SELECT 1` through the breaker-bypassing health path;
+ *   2. schema      — the required tables (users, settings) exist;
+ *   3. data read   — a real `SELECT COUNT(*)` against `users` answers.
+ *
+ * Any failure yields 503 with the coarse per-check category. Nothing here
+ * contains a credential, a host or a query — those stay in the server log.
+ */
+export async function readiness(req: Request, res: Response): Promise<void> {
+  const requestId = requestIdOf(req);
+  const started = Date.now();
+  const checks: Record<"connectivity" | "schema" | "dataRead", ReadinessCheck> = {
+    connectivity: { ok: false },
+    schema: { ok: false },
+    dataRead: { ok: false },
+  };
+
+  const fail = (status: "not_configured" | "not_ready", reason: string, missing?: string[]) => {
+    logger.warn("readiness: dependencies not ready", { reason, missing, requestId });
+    res.status(503).json({
+      ok: false,
+      ready: false,
+      status,
+      database: "unavailable",
+      reason,
+      service: "bloodora-backend",
+      version: APP_VERSION,
+      checks,
+      ...(missing ? { missing } : {}),
+      requestId,
+      time: new Date().toISOString(),
+      uptime: Math.round(process.uptime()),
+    });
+  };
+
+  // A misconfigured instance must not even touch the network: answer from
+  // configuration alone. Variable NAMES are safe to expose; values never are.
+  const missing = [...config.productionConfigMissing];
+  if (config.isProd && !config.tursoDatabaseUrl && !missing.includes("TURSO_DATABASE_URL")) {
+    missing.push("TURSO_DATABASE_URL");
+  }
+  if (missing.length > 0) {
+    checks.connectivity = { ok: false, reason: "not_configured" };
+    checks.schema = { ok: false, reason: "not_configured" };
+    checks.dataRead = { ok: false, reason: "not_configured" };
+    fail("not_configured", "not_configured", missing);
+    return;
+  }
+
+  const checkOne = async (
+    key: keyof typeof checks,
+    sql: string,
+    ok: (row: Record<string, unknown> | null) => boolean,
+    badReason: string,
+  ): Promise<boolean> => {
+    const t0 = Date.now();
+    try {
+      const row = await probeQuery<Record<string, unknown>>(sql, [], config.healthDbTimeoutMs);
+      const ms = Date.now() - t0;
+      if (ok(row)) {
+        checks[key] = { ok: true, ms };
+        return true;
+      }
+      checks[key] = { ok: false, ms, reason: badReason };
+      return false;
+    } catch (err) {
+      checks[key] = {
+        ok: false,
+        ms: Date.now() - t0,
+        reason: isTimeoutError(err) ? "timeout" : publicReason(err),
+      };
+      return false;
+    }
+  };
+
+  // 1. Connectivity — prerequisite for the checks below.
+  const connected = await checkOne(
+    "connectivity",
+    "SELECT 1 AS ok",
+    (row) => Number(row?.ok) === 1,
+    "unknown",
+  );
+
+  // 2. Schema — required tables exist (no DDL is issued by this probe).
+  if (connected) {
+    await checkOne(
+      "schema",
+      REQUIRED_TABLES_SQL,
+      (row) => Number(row?.n ?? 0) === REQUIRED_TABLES.length,
+      "schema_missing",
+    );
+  } else {
+    checks.schema = { ok: false, reason: checks.connectivity.reason ?? "unreachable" };
+  }
+
+  // 3. Data read — a real query against a required read path.
+  if (checks.schema.ok) {
+    await checkOne(
+      "dataRead",
+      "SELECT COUNT(*) AS n FROM users",
+      (row) => row?.n !== undefined,
+      "unknown",
+    );
+  } else {
+    checks.dataRead = { ok: false, reason: checks.schema.reason ?? "unreachable" };
+  }
+
+  const ready = Object.values(checks).every((c) => c.ok);
+  if (!ready) {
+    dbBreaker.noteFailure(
+      Object.assign(new Error("readiness probe failed"), { dependency: true }),
+      "readiness probe",
+    );
+    fail("not_ready", checks.connectivity.reason ?? checks.schema.reason ?? checks.dataRead.reason ?? "unknown");
+    return;
+  }
+  // A green readiness probe is a half-open trial for the breaker, same as the
+  // /api/health success path: this instance may serve data traffic again.
+  dbBreaker.noteSuccess("readiness probe");
+  res.json({
+    ok: true,
+    ready: true,
+    status: "ready",
+    database: "connected",
+    service: "bloodora-backend",
+    version: APP_VERSION,
+    checks,
+    requestId,
+    time: new Date().toISOString(),
+    uptime: Math.round(process.uptime()),
+    readinessMs: Date.now() - started,
+  });
+}
 
 /**
  * GET /api/health — deployment health probe.

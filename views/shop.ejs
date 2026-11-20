@@ -19,7 +19,7 @@
         <div class="small"><%= shopError %></div>
         <div class="small mt-2">
           <a href="/shop" class="btn btn-sm btn-danger rounded-pill me-1"><i class="fas fa-rotate me-1"></i><%= _t('common_retry') %></a>
-          <button class="btn btn-sm btn-outline-primary rounded-pill" style="border-color:#c7d2fe; color:#4338ca;" onclick="document.getElementById('bo-ai-fab')?.click()"><i class="fas fa-robot me-1"></i><%= _t('err_ai') %></button>
+          <button type="button" class="btn btn-sm btn-outline-primary rounded-pill js-open-ai" style="border-color:#c7d2fe; color:#4338ca;"><i class="fas fa-robot me-1"></i><%= _t('err_ai') %></button>
         </div>
       </div>
     </div>
@@ -29,7 +29,7 @@
   <div class="card p-3 mb-4 border-0 shadow-sm" style="border-radius:18px; background:#fff;">
     <form method="GET" class="row g-2 align-items-center">
       <div class="col-md-4">
-        <select name="category" class="form-select" onchange="this.form.submit()">
+        <select name="category" class="form-select js-autosubmit">
           <option value=""><%= _t('shop_all_cats') %></option>
           <% categories.forEach(cat=>{ %>
             <option value="<%= cat %>" <%= (query && query.category===cat)?'selected':'' %>><%= cat %></option>
@@ -76,7 +76,7 @@
                 <div class="btn-group">
                   <a href="/shop/product/<%= product.id %>" class="btn btn-outline-danger btn-sm flex-fill"><i class="fas fa-eye me-1"></i><%= _t('common_view') %></a>
                   <% if (product.stock>0 && product.is_available) { %>
-                    <button onclick="addToCart(<%= product.id %>)" class="btn btn-danger btn-sm flex-fill"><i class="fas fa-cart-plus me-1"></i><%= _t('shop_add') %></button>
+                    <button class="btn btn-danger btn-sm flex-fill js-add-cart" data-product-id="<%= product.id %>"><i class="fas fa-cart-plus me-1"></i><%= _t('shop_add') %></button>
                   <% } else { %>
                     <button class="btn btn-secondary btn-sm flex-fill" disabled><%= _t('shop_sold_out') %></button>
                   <% } %>
@@ -98,11 +98,18 @@
     <i class="fas fa-shopping-cart me-2"></i><%= _t('nav_cart') %> (<span id="cart-count"><%= typeof sessionCartCount !== 'undefined' ? sessionCartCount : 0 %></span>)
   </a>
 </div>
-<script>
+<script nonce="<%= cspNonce %>">
   (function(){
     const count = <%= typeof sessionCartCount !== 'undefined' ? sessionCartCount : 0 %>;
     if(count>0) document.getElementById('cart-float').classList.remove('d-none');
   })();
+  document.addEventListener('click', function (event) {
+    var btn = event.target.closest('.js-add-cart');
+    if (!btn) return;
+    // Product ids are opaque strings (e.g. "oxy-1002"), not numbers.
+    var id = (btn.getAttribute('data-product-id') || '').trim();
+    if (id) addToCart(id);
+  });
   async function addToCart(id){
     try{
       const res = await fetch(`/shop/cart/add/${id}`, { method:'POST', headers:{'Content-Type':'application/json', 'Accept':'application/json'}, body:'{}' });

@@ -63,7 +63,7 @@
     <a href="/" class="btn btn-outline-light btn-sm rounded-pill" style="justify-content:center; border-color:rgba(255,255,255,.2); color:#fff;"><i class="fas fa-home me-2"></i><%= _t2('err_home') %></a>
   </div>
 </aside>
-<script>
+<script nonce="<%= cspNonce %>">
   // "Support" opens the real Live Messaging widget (no fake support page).
   document.addEventListener('click', function(e){
     if (e.target.closest && e.target.closest('#dash-open-support')) {

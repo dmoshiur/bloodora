@@ -55,7 +55,7 @@
                       <td class="small"><span class="badge bg-light text-dark border"><%= a.timing %></span></td>
                       <td class="small"><span class="badge bg-danger"><%= a.dosage %></span></td>
                       <td>
-                        <form method="POST" action="/admin/content/antid/<%= a.id %>/delete" onsubmit="return confirm('Delete this Anti-D entry?')">
+                        <form method="POST" action="/admin/content/antid/<%= a.id %>/delete" data-confirm="Delete this Anti-D entry?">
                           <button class="btn btn-sm btn-light border text-danger rounded-pill"><i class="fas fa-trash"></i></button>
                         </form>
                       </td>
@@ -104,7 +104,7 @@
                       </div>
                       <div class="d-flex gap-1">
                         <% if (r.is_featured) { %><span class="badge bg-warning text-dark">Featured</span><% } %>
-                        <form method="POST" action="/admin/content/resources/<%= r.id %>/delete" onsubmit="return confirm('Delete this resource?')">
+                        <form method="POST" action="/admin/content/resources/<%= r.id %>/delete" data-confirm="Delete this resource?">
                           <button class="btn btn-sm btn-light border text-danger rounded-pill"><i class="fas fa-trash"></i></button>
                         </form>
                       </div>

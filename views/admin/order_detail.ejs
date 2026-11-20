@@ -22,7 +22,7 @@
               <tbody>
                 <% items.forEach(it=>{ %>
                   <tr>
-                    <td class="d-flex align-items-center gap-2"><img src="/uploads/<%= it.image_file||'default_product.jpg' %>" alt="<%= it.product_name %>" style="width:48px;height:48px;object-fit:cover;border-radius:10px; border:1px solid #e2e8f0;" onerror="this.src='https://via.placeholder.com/48'"><span class="fw-bold" style="font-size:.9rem;"><%= it.product_name %></span></td>
+                    <td class="d-flex align-items-center gap-2"><img src="/uploads/<%= it.image_file||'default_product.jpg' %>" alt="<%= it.product_name %>" style="width:48px;height:48px;object-fit:cover;border-radius:10px; border:1px solid #e2e8f0;" data-img-fallback="placeholder" data-placeholder-size="48"><span class="fw-bold" style="font-size:.9rem;"><%= it.product_name %></span></td>
                     <td>৳<%= it.price %></td>
                     <td><%= it.quantity %></td>
                     <td class="fw-bold">৳<%= (it.price*it.quantity).toFixed(2) %></td>

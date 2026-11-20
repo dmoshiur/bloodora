@@ -32,7 +32,7 @@
       <div class="card border-0 shadow-sm" style="border-radius:18px;">
         <div class="card-body p-0">
           <% if (!all.ok) { %>
-            <div class="p-3"><div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i><%= _t2('common_load_failed') %> <a href="javascript:location.reload()" class="fw-bold"><%= _t2('common_retry') %></a></div></div>
+            <div class="p-3"><div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i><%= _t2('common_load_failed') %> <a href="#" class="fw-bold js-reload"><%= _t2('common_retry') %></a></div></div>
           <% } else if (!filtered.length) { %>
             <div class="text-center p-5">
               <i class="fas fa-box-open fa-3x mb-3" style="color:#94a3b8;"></i>
@@ -62,7 +62,7 @@
                         <div class="d-flex flex-wrap gap-1">
                           <a href="/shop/order/success/<%= o.id %>" class="btn btn-sm btn-outline-danger rounded-pill" title="<%= _t2('common_view') %>"><i class="fas fa-eye"></i></a>
                           <% if (st === 'pending') { %>
-                            <form method="POST" action="/dashboard/orders/<%= o.id %>/cancel" onsubmit="return confirm('<%= _t2('ord_cancel_confirm') %>')">
+                            <form method="POST" action="/dashboard/orders/<%= o.id %>/cancel" data-confirm="<%= _t2('ord_cancel_confirm') %>">
                               <button class="btn btn-sm btn-outline-secondary rounded-pill" title="<%= _t2('ord_cancel') %>"><i class="fas fa-ban"></i></button>
                             </form>
                           <% } %>

@@ -8,7 +8,10 @@ services:
     plan: free
     buildCommand: npm ci && npm run build
     startCommand: npm start
-    healthCheckPath: /health
+    # Gate deploy health on real database operations, not on process startup:
+    # a deployment whose database is unreachable or missing its schema must not
+    # go green. /health/live remains available for pure process liveness.
+    healthCheckPath: /health/ready
     envVars:
       - key: NODE_ENV
         value: production

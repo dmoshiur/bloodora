@@ -7,7 +7,7 @@
   const stLabel = { pending: _t2('st_pending'), processing: _t2('st_processing'), completed: _t2('st_completed'), cancelled: _t2('st_cancelled') };
   const stClass = { pending: 'bg-warning text-dark', processing: 'bg-info', completed: 'bg-success', cancelled: 'bg-secondary' };
   const fmtDate = (v) => { try { return new Date(String(v).includes('T') ? v : String(v).replace(' ','T') + 'Z').toLocaleDateString(lang === 'bn' ? 'bn-BD' : lang === 'ar' ? 'ar' : 'en-GB'); } catch(e){ return String(v||'').slice(0,10); } };
-  const sectionError = (msg) => `<div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i>${msg || ''} <a href="javascript:location.reload()" class="fw-bold">${_t2('common_retry')}</a></div>`;
+  const sectionError = (msg) => `<div class="alert alert-light border small rounded-4 mb-0"><i class="fas fa-triangle-exclamation text-warning me-2"></i>${msg || ''} <a href="#" class="fw-bold js-reload">${_t2('common_retry')}</a></div>`;
 %>
 <style>
   .dash-stat{ background:#fff; border-radius:18px; padding:18px; border:1px solid #e2e8f0; box-shadow:0 4px 20px rgba(15,23,42,.06); display:flex; align-items:center; gap:14px; height:100%; }

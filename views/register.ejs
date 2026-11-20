@@ -23,7 +23,7 @@
             <div class="col-md-6 mb-3"><label class="form-label"><%= _t('auth_password') %> *</label><input type="password" class="form-control" name="password" required placeholder="<%= _t('sec_min8') %>"></div>
           </div>
           <div class="row">
-            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('auth_dob') %> *</label><input type="date" class="form-control" id="dob" name="date_of_birth" required onchange="calculateAge()"></div>
+            <div class="col-md-6 mb-3"><label class="form-label"><%= _t('auth_dob') %> *</label><input type="date" class="form-control" id="dob" name="date_of_birth" required></div>
             <div class="col-md-6 mb-3"><label class="form-label"><%= _t('auth_age') %></label><input type="number" class="form-control bg-light" id="age" name="age" readonly placeholder="<%= _t('auth_18plus') %>"><small class="text-muted"><%= _t('auth_18plus') %></small></div>
           </div>
           <div class="mb-3"><label class="form-label"><%= _t('auth_birth_cert') %> (<%= _t('common_optional') %>)</label><input type="text" class="form-control" name="birth_certificate"></div>
@@ -55,7 +55,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
   var SEL_PLACEHOLDER_DIST='<option value=""><%= _t('auth_select') %></option>';
   var SEL_PLACEHOLDER_UPA='<option value=""><%= _t('auth_select') %></option>';
   function calculateAge(){
@@ -78,6 +78,7 @@
     "Mymensingh":{"Jamalpur":["Baksiganj","Dewanganj","Islampur","Jamalpur Sadar","Madarganj","Melandaha","Sarishabari"],"Mymensingh":["Bhaluka","Dhobaura","Fulbaria","Gaffargaon","Gauripur","Haluaghat","Ishwarganj","Mymensingh Sadar","Muktagachha","Nandail","Phulpur","Trishal"],"Netrokona":["Atpara","Barhatta","Durgapur","Khaliajuri","Kalmakanda","Madan","Mohanganj","Netrokona Sadar","Purbadhala"],"Sherpur":["Jhenaigati","Nakla","Nalitabari","Sherpur Sadar","Sreebardi"]}
   };
   document.addEventListener('DOMContentLoaded', ()=>{
+    document.getElementById('dob').addEventListener('change', calculateAge);
     const divSel=document.getElementById('division'), distSel=document.getElementById('district'), upaSel=document.getElementById('upazila');
     Object.keys(bdData).forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; divSel.appendChild(o); });
     divSel.addEventListener('change', function(){

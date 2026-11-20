@@ -15,7 +15,7 @@
           <tbody>
             <% products.forEach(p=>{ %>
               <tr>
-                <td><img src="/uploads/<%= p.image_file %>" alt="<%= p.name %>" class="rounded-3" style="width:56px;height:56px;object-fit:cover; border:1px solid #e2e8f0;" onerror="this.src='https://via.placeholder.com/56'"></td>
+                <td><img src="/uploads/<%= p.image_file %>" alt="<%= p.name %>" class="rounded-3" style="width:56px;height:56px;object-fit:cover; border:1px solid #e2e8f0;" data-img-fallback="placeholder" data-placeholder-size="56"></td>
                 <td class="fw-bold" style="font-size:.9rem;"><%= p.name %></td>
                 <td><span class="badge bg-light text-dark border rounded-pill"><%= p.category ? _t('shop_cat_' + p.category.toLowerCase(), {}) || p.category : '—' %></span></td>
                 <td class="fw-bold" style="color:var(--primary);">৳<%= p.price %></td>
@@ -24,7 +24,7 @@
                 <td>
                   <div class="d-flex gap-1">
                     <a href="/shop/admin/product/edit/<%= p.id %>" class="btn btn-sm btn-warning rounded-pill" title="<%= _t('common_edit') %>"><i class="fas fa-edit"></i></a>
-                    <form method="POST" action="/shop/admin/product/delete/<%= p.id %>" onsubmit="return confirm('<%= _t('common_confirm') %>')"><button class="btn btn-sm btn-danger rounded-pill" title="<%= _t('common_delete') %>"><i class="fas fa-trash"></i></button></form>
+                    <form method="POST" action="/shop/admin/product/delete/<%= p.id %>" data-confirm="<%= _t('common_confirm') %>"><button class="btn btn-sm btn-danger rounded-pill" title="<%= _t('common_delete') %>"><i class="fas fa-trash"></i></button></form>
                   </div>
                 </td>
               </tr>
