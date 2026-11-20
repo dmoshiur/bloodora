@@ -1,3 +1,5 @@
+import { optionalAuth } from "../middleware/auth.js";
+import { conversations, history } from "../controllers/ai.controller.js";
 import { Router } from "express";
 import { ah } from "../utils/async.js";
 import { rateLimit } from "../middleware/rateLimit.js";
@@ -17,11 +19,14 @@ import {
 } from "../controllers/ai.controller.js";
 
 const router = Router();
+router.use(optionalAuth);
+router.get("/conversations", ah(conversations));
+router.get("/conversations/:id/messages", ah(history));
 
 // Mounted at /api/ai (admin paths live under /api/ai/admin/* — original contract).
 router.get("/config", ah(publicConfig));
-router.post("/chat", rateLimit({ scope: "ai-chat", windowMs: 60 * 1000, max: 15 }), ah(chat));
-router.post("/ask", rateLimit({ scope: "ai-ask", windowMs: 60 * 1000, max: 10 }), ah(ask));
+router.post("/chat", rateLimit({ scope: "ai-chat", shared: true, keyBy: req => req.user?.id, windowMs: 60 * 1000, max: 15 }), ah(chat));
+router.post("/ask", rateLimit({ scope: "ai-ask", shared: true, keyBy: req => req.user?.id, windowMs: 60 * 1000, max: 10 }), ah(ask));
 router.get("/status", ah(status));
 
 // Admin (also reachable via /api/admin/ai legacy mount through adminRouter below).

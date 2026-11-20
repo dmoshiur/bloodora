@@ -48,12 +48,12 @@ export function resolveLanguage(req) {
 
 // ------------------------------ branding --------------------------------
 const DEFAULT_BRANDING = {
-  site_name: "BloodOra",
+  site_name: "BloodFerry",
   // Localized records: `pickLocale` resolves them per visitor locale, and a
   // real backend value (plain string or { en, bn, ar }) overrides them.
   site_tagline: {
-    en: "Donate blood. Save lives.",
-    bn: "রক্ত দিন। জীবন বাঁচান।",
+    en: "DONATE • TRANSFUSE • SAVE LIVES",
+    bn: "রক্ত বহনকারী",
     ar: "تبرّع بالدم. أنقذ حياة.",
   },
   site_description: {
@@ -61,8 +61,8 @@ const DEFAULT_BRANDING = {
     bn: "বাংলাদেশজুড়ে জীবন বাঁচাতে রক্তদাতাদের সংযুক্ত করা।",
     ar: "نربط متبرّعي الدم لإنقاذ الأرواح في أنحاء بنغلاديش.",
   },
-  logo_file: "/images/logo.png",
-  favicon_file: "/images/logo.png",
+  logo_file: "/assets/brand/bloodferry-logo.png",
+  favicon_file: "/assets/brand/bloodferry-logo.png",
   brand_primary: "#e31b23",
   brand_accent: "#ff3340",
   brand_font_style: "calligraphic",

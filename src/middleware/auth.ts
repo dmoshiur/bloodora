@@ -47,7 +47,7 @@ export async function requireAuth(req: Request, _res: Response, next: NextFuncti
       return;
     }
     req.user = user;
-    req.isAdminClaim = user.role !== "user";
+    req.isAdminClaim = Boolean(user.is_admin || user.is_super_admin);
     // A signed-in caller's saved preference outranks Accept-Language but never
     // an explicit ?lang=/body.lang (that is how the frontend switcher works).
     applyUserLanguage(req, user.language);
@@ -63,7 +63,7 @@ export async function optionalAuth(req: Request, _res: Response, next: NextFunct
     const user = await authService.resolveUser(req as unknown as { session?: Record<string, unknown> | null }, bearer(req));
     if (user) {
       req.user = user;
-      req.isAdminClaim = user.role !== "user";
+      req.isAdminClaim = Boolean(user.is_admin || user.is_super_admin);
       applyUserLanguage(req, user.language);
     }
     next();

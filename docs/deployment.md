@@ -75,7 +75,7 @@ Use `/health`, not `/api/health/live`, for liveness.
 
 ## Bootstrap and provisioning
 
-The first data request runs idempotent schema and seed bootstrap. Optional `SUPER_ADMIN_*` variables provision the first super-admin. Remove or rotate bootstrap credentials after provisioning according to operational policy. Do not expose them in logs or screenshots.
+The first data request runs idempotent schema and seed bootstrap. `SUPER_ADMIN_*` variables provision the first super-admin. On a fresh production database these must be configured for initial administration: public production registration never grants admin rights. Remove or rotate bootstrap credentials after provisioning according to operational policy. Do not expose them in logs or screenshots.
 
 For an explicit local/operational bootstrap, use `npm run db:init` with the intended environment. Back up production before schema rollout. `npm run db:backup` is a helper, not a substitute for a verified remote backup/restore procedure.
 
@@ -87,4 +87,4 @@ If Vercel returns HTML `FUNCTION_INVOCATION_TIMEOUT` or `FUNCTION_INVOCATION_FAI
 
 ## External validation still required
 
-Local tests do not prove real paid/provider behavior. Before enabling production delivery, perform separately authorized low-volume checks for Blob write/read/delete, Resend and SMTP fallback, each selected SMS adapter, sender IDs, delivery receipts, costs, and failure handling. Payment ledger checks require admin reconciliation; no hosted gateway webhook exists.
+Local tests do not prove real paid/provider behavior. Before enabling production delivery, perform separately authorized low-volume checks for Blob write/read/delete, Resend and, when applicable, legacy SMTP pre-configuration fallback, each selected SMS adapter, sender IDs, delivery receipts, costs, and failure handling. Payment ledger checks require admin reconciliation; no hosted gateway webhook exists.

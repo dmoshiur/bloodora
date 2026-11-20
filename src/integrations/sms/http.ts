@@ -1,8 +1,8 @@
 import { config } from "../../config/env.js";
 import { SMSProviderError } from "./types.js";
 
-export function smsApiUrl(fallback: string): string {
-  const raw = config.sms.apiUrl || fallback;
+export function smsApiUrl(fallback: string, override = config.sms.apiUrl): string {
+  const raw = override || fallback;
   let url: URL;
   try { url = new URL(raw); } catch { throw new SMSProviderError("SMS_API_URL must be an absolute HTTPS URL.", "SMS_CONFIG", false); }
   const local = ["localhost", "127.0.0.1", "::1"].includes(url.hostname);

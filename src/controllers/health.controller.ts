@@ -82,7 +82,7 @@ export async function health(req: Request, res: Response): Promise<void> {
     success: ok,
     status: ok ? "ok" : "degraded",
     service: "bloodora-backend",
-    label: "BloodOra API",
+    label: "BloodFerry API",
     version: APP_VERSION,
     database,
     // Legacy alias — the existing contract tests and the frontend's /health proxy

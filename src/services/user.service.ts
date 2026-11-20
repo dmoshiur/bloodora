@@ -1,3 +1,4 @@
+import { donationRepo } from "../repos/donation.repo.js";
 import bcrypt from "bcryptjs";
 import { userRepo } from "../repos/user.repo.js";
 import { activityRepo } from "../repos/activity.repo.js";
@@ -12,7 +13,7 @@ import { ApiError, maskPhone } from "../utils/errors.js";
 import { str, toBool } from "../utils/validate.js";
 import { normalizeLang } from "../i18n/index.js";
 import { LANGUAGES } from "../data/constants.js";
-import { toSafeUser } from "../utils/userShape.js";
+import { toSafeUser, toPublicUser } from "../utils/userShape.js";
 import { nowIso } from "../utils/time.js";
 import { normalizeBangladeshPhone } from "../integrations/sms/phone.js";
 import type { SafeUser, UserRow } from "../types.js";
@@ -28,7 +29,7 @@ export const userService = {
    * `user.id` from the session — no id is taken from the request.
    */
   async dashboard(user: SafeUser) {
-    const [orders, requestCounts, requests, reviews, unreadMessages, notifications, transactions] = await Promise.all([
+    const [orders, requestCounts, requests, reviews, unreadMessages, notifications, transactions, donationSummary, donationHistory] = await Promise.all([
       orderRepo.byUser(user.id, 5),
       bloodRequestRepo.countByUser(user.id),
       bloodRequestRepo.listByUser(user.id, 5),
@@ -36,6 +37,8 @@ export const userService = {
       messageRepo.unreadCount(user.id),
       notificationService.summaryFor(user),
       paymentService.myTransactions(user.id, { limit: 5 }),
+      donationRepo.summary(user.id),
+      donationRepo.list(user.id, 5, 0),
     ]);
 
     const orderCounts = orders.reduce(
@@ -59,6 +62,8 @@ export const userService = {
       success: true,
       user: toSafeUser((await userRepo.findById(user.id)) ?? (user as unknown as UserRow)),
       donation: {
+        records: donationSummary,
+        history: donationHistory,
         blood_group: user.blood_group ?? null,
         can_donate: Boolean(user.can_donate),
         is_verified: Boolean(user.is_verified),
@@ -213,14 +218,14 @@ export const userService = {
       ageMin: opts.ageMin,
       limit: 200,
     });
-    return rows.map(normalizeFlags);
+    return rows.map(row => toPublicUser(row));
   },
 
   /** GET /api/users/:id — full profile (flags normalized to booleans). */
-  async publicProfile(id: string): Promise<SafeUser> {
+  async publicProfile(id: string, viewer?: SafeUser): Promise<SafeUser> {
     const row = await userRepo.findById(id);
     if (!row) throw ApiError.notFound("User not found", "USER_NOT_FOUND");
-    return normalizeFlags(row);
+    return toPublicUser(row, Boolean(viewer));
   },
 
   /** PUT /api/users/me — self-service edit (multipart fields + optional image). */
@@ -281,8 +286,7 @@ export const userService = {
   },
 
   async donateCount(): Promise<number> {
-    const raw = await settingsRepo.get("total_donations");
-    return raw ? Number(raw) : 0;
+    return donationRepo.count();
   },
 };
 

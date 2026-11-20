@@ -4,7 +4,7 @@
   const _s   = _b;
   const _dir = (typeof dir !== 'undefined' && dir) ? dir : 'ltr';
   const _lang= (typeof lang !== 'undefined' && lang) ? lang : 'en';
-  const _name= _b.site_name || 'BloodOra';
+  const _name= _b.site_name || 'BloodFerry';
   const resolveAssetUrl = (url, fallback) => {
     const target = (url && String(url).trim()) || fallback;
     if (!target) return '';
@@ -13,7 +13,7 @@
     }
     return '/' + target;
   };
-  const _logo= resolveAssetUrl(_b.logo_file, '/images/logo.png');
+  const _logo= resolveAssetUrl(_b.logo_file, '/assets/brand/bloodferry-logo.png');
   const _p   = _b.brand_primary || '#e31b23';
   const _aiOn    = _b.ai_enabled !== false;
   const _chatOn  = _b.live_chat_enabled !== false;
@@ -27,7 +27,7 @@
       <div class="row g-4">
         <div class="col-lg-4">
           <h5 class="d-flex align-items-center gap-2">
-            <% /* logo artwork already contains the BloodOra wordmark — no duplicate text */ %>
+            <% /* logo artwork already contains the BloodFerry wordmark — no duplicate text */ %>
             <img src="<%= _logo %>" alt="<%= _name %>" style="height:38px;" onerror="this.style.display='none'">
           </h5>
           <% if (_b.site_tagline) { %><p class="script-accent mt-2 mb-0" style="color:#f1a4ab; font-size:1.15rem;"><%= _b.site_tagline %></p><% } %>
@@ -224,7 +224,7 @@
     }
 
     /* ============================== LIVE AI HELP ============================== */
-    var aiState = { conv: null, busy: false, prompts: [], lastMessage: null, controller: null };
+    var aiState = { conv: null, busy: false, prompts: [], lastMessage: null, controller: null, started: false };
     var aiPanel = document.getElementById('bo-ai-panel');
     var aiBody  = document.getElementById('bo-ai-body');
     var aiInput = document.getElementById('bo-ai-input');
@@ -285,8 +285,11 @@
       var isRetry = typeof attemptCount === 'number' && attemptCount > 0;
       if (!text && !isRetry) return;
       if (!isRetry) {
+        aiState.started = true;
         aiInput.value = '';
         aiState.lastMessage = text;
+        aiState.requestId = crypto.randomUUID();
+        aiState.conv = aiState.conv || crypto.randomUUID();
         aiSay(text, 'msg-user');
       } else {
         text = aiState.lastMessage || text;
@@ -305,7 +308,7 @@
       fetch('/ai-help/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-        body: JSON.stringify({ message: text, conversation_id: aiState.conv, language: LANG }),
+        body: JSON.stringify({ message: text, conversation_id: aiState.conv, request_id: aiState.requestId, language: LANG }),
         signal: aiState.controller ? aiState.controller.signal : undefined
       })
       .then(function(r){
@@ -387,6 +390,7 @@
       var resetBtn = document.getElementById('bo-ai-reset');
       if (resetBtn) resetBtn.onclick = function(){
         if (aiState.busy && aiState.controller) aiState.controller.abort();
+        aiState.started = true;
         aiState.conv = null;
         aiState.lastMessage = null;
         aiBody.innerHTML = '';
@@ -404,6 +408,21 @@
         if (d && d.enabled === false && fab) { fab.style.opacity = .45; }
         aiState.prompts = (d && d.prompts) || [];
         aiRenderChips();
+        if (d && d.enabled) {
+          fetch('/api/ai/conversations').then(function(r){ return r.json(); }).then(function(list){
+            var latest = list.conversations && list.conversations[0];
+            if (!latest || aiState.started) return;
+            return fetch('/api/ai/conversations/' + encodeURIComponent(latest.id) + '/messages').then(function(r){ return r.json(); }).then(function(history){
+              if (!history.success || aiState.started || !history.messages.length) return;
+              aiState.conv = latest.id;
+              aiBody.innerHTML = '';
+              history.messages.forEach(function(m){
+                if (m.role === 'assistant') aiAnswer(m.content);
+                else { aiState.lastMessage = m.content; aiSay(m.content, 'msg-user'); }
+              });
+            });
+          }).catch(function(){});
+        }
       }).catch(function(){});
       aiSay(I18N.greeting, 'msg-bot');
     }

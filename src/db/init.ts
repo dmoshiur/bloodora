@@ -254,7 +254,7 @@ async function seedContent(): Promise<string> {
 export async function seedSuperAdmin(): Promise<void> {
   const email = config.superAdminEmail;
   if (!email || !config.superAdminPassword) {
-    logger.debug("db: no SUPER_ADMIN_* configured; first registered user becomes super admin");
+    logger.debug("db: no SUPER_ADMIN_* configured; automatic first-user admin is development-only");
     return;
   }
   try {

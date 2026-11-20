@@ -2,7 +2,7 @@
 
 ## One deployable application
 
-BloodOra combines the former EJS frontend and TypeScript API into one Express application. `src/application.ts` builds the middleware and router graph. `src/dev.ts` is the only module that calls `listen()` for local development; `app.ts` adapts the same app to Vercel without listening.
+BloodFerry combines the former EJS frontend and TypeScript API into one Express application. `src/application.ts` builds the middleware and router graph. `src/dev.ts` is the only module that calls `listen()` for local development; `app.ts` adapts the same app to Vercel without listening.
 
 The production build verifies 21 SSR modules and 62 EJS templates, local static assets, and the single function entrypoint. `vercel.json` includes `views/**` and `public/**` in the function bundle.
 

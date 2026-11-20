@@ -1,3 +1,4 @@
+import { aiConversationRepo } from "../repos/aiConversation.repo.js";
 import { settingsService } from "./settings.service.js";
 import { loadSettings } from "./meta.service.js";
 import { aiKnowledgeService } from "./aiKnowledge.service.js";
@@ -7,7 +8,7 @@ import { extractAnswer, sanitizeAnswer } from "./aiSanitize.js";
 import { config } from "../config/env.js";
 import { clampToRemaining } from "../utils/deadline.js";
 import { ApiError, randomId } from "../utils/errors.js";
-import { str } from "../utils/validate.js";
+import { str, toBool } from "../utils/validate.js";
 import { logger } from "../utils/logger.js";
 import type { AiConfig, AiMessage, AiResult, SafeUser } from "../types.js";
 
@@ -68,17 +69,23 @@ async function fetchWithTimeout(url: string, init: RequestInit, ms: number): Pro
   // to a finite value, then to whatever this invocation has left.
   const requested = Number.isFinite(ms) && ms > 0 ? ms : config.aiTimeoutMs;
   const clamped = clampToRemaining(requested);
-  const effective = Number.isFinite(clamped) && clamped > 0 ? clamped : requested;
+  const effective = Number.isFinite(clamped) ? clamped : requested;
   if (effective <= 0) {
     throw Object.assign(new Error("No invocation budget left for the AI provider call"), { name: "TimeoutError" });
   }
 
+  const target = new URL(url);
+  const approved = new Set(["api.groq.com", "api.openai.com", ...String(process.env.AI_ALLOWED_HOSTS || "").split(",").map(s => s.trim()).filter(Boolean)]);
+  const explicitlyConfigured = process.env.AI_BASE_URL && target.origin === new URL(config.aiBaseUrl).origin;
+  if (target.username || target.password || (!explicitlyConfigured && (target.protocol !== "https:" || !approved.has(target.hostname)))) {
+    throw ApiError.badRequest("AI provider must use HTTPS and an operator-approved AI_ALLOWED_HOSTS hostname", "AI_PROVIDER_URL_REJECTED");
+  }
   const controller = new AbortController();
   const started = Date.now();
   const timer = setTimeout(() => controller.abort(), effective);
   timer.unref?.();
   try {
-    const res = await fetch(url, { ...init, signal: controller.signal });
+    const res = await fetch(url, { ...init, redirect: "error", signal: controller.signal });
     // Read the body BEFORE the timer is cleared, so a stalled body is aborted too.
     const text = await res.text();
     return { ok: res.ok, status: res.status, text, ms: Date.now() - started };
@@ -99,14 +106,14 @@ function parseJson(text: string): unknown {
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 const MAX_ANSWER_CHARS = 4000;
 
-export const DEFAULT_MODEL = "qwen/qwen3.6-27b";
+export const DEFAULT_MODEL = "llama-3.3-70b-versatile";
 
 /** Models safe to offer in the Admin dropdown (Groq-served). */
 export const MODEL_CHOICES = [
-  { id: "qwen/qwen3.6-27b", label: "Qwen3.6 27B (Groq) — default", note: "262K context, strong multilingual." },
+  { id: "qwen/qwen3.6-27b", label: "Qwen3.6 27B (Groq)", note: "Confirm availability using the live provider catalogue." },
   { id: "openai/gpt-oss-120b", label: "GPT-OSS 120B (Groq)", note: "Reasoning model, higher latency." },
   { id: "openai/gpt-oss-20b", label: "GPT-OSS 20B (Groq)", note: "Fast, lightweight." },
-  { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile (Groq)", note: "General purpose fallback." },
+  { id: "llama-3.3-70b-versatile", label: "Llama 3.3 70B Versatile (Groq) — default", note: "Confirm current availability with your provider." },
   { id: "moonshotai/kimi-k2-instruct-0905", label: "Kimi K2 Instruct (Groq)", note: "Long-context alternative." },
 ];
 
@@ -173,7 +180,7 @@ async function extractLinks(text: string): Promise<{ label: string; path: string
 function maskKey(key: string | null | undefined): { masked: string; set: boolean } {
   const k = key || "";
   return {
-    masked: k ? `${k.slice(0, 6)}${"•".repeat(10)}${k.slice(-4)}` : "",
+    masked: k ? "•".repeat(16) : "",
     set: Boolean(k),
   };
 }
@@ -194,15 +201,16 @@ export const aiService = {
       baseUrl: s.ai_base_url || config.aiBaseUrl,
       apiKey,
       available: Boolean(apiKey),
-      temperature: Number(s.ai_temperature) || 0.5,
+      temperature: s.ai_temperature == null || !Number.isFinite(Number(s.ai_temperature)) ? 0.5 : Number(s.ai_temperature),
       maxTokens: Number(s.ai_max_tokens) || 900,
-      enabled: s.ai_enabled,
+      enabled: Number(s.ai_enabled),
       persona: s.ai_persona,
     };
   },
 
   async ask(question: string, history: ChatTurn[] = [], opts: { language?: string } = {}): Promise<AiResult> {
     const cfg = await this.getConfig();
+    if (!cfg.enabled) throw new ApiError(503, "AI_DISABLED", "The AI assistant is disabled.");
     if (!cfg.apiKey) {
       throw new ApiError(
         503,
@@ -292,6 +300,7 @@ export const aiService = {
           left,
         );
       } catch (err) {
+        if (err instanceof ApiError) throw err;
         const name = (err as Error)?.name;
         if (name === "AbortError" || name === "TimeoutError") {
           lastError = new ApiError(504, "AI_TIMEOUT", tooSlowReply);
@@ -311,7 +320,7 @@ export const aiService = {
       if (res.ok) break;
 
       const text = res.text;
-      logger.error("ai: provider returned error", { attempt, status: res.status, body: text.slice(0, 300) });
+      logger.error("ai: provider returned error", { attempt, status: res.status, bodyLength: text.length });
       if (res.status === 401 || res.status === 403) {
         throw new ApiError(503, "AI_NOT_CONFIGURED", "The AI API key is invalid or has no access. An admin should update Settings → AI.");
       }
@@ -388,7 +397,8 @@ export const aiService = {
 
   /** POST /api/ai/chat — the Live AI Help popup (persists conversation). */
   async chat(
-    body: { message?: unknown; conversation_id?: unknown; language?: unknown; user_id?: unknown },
+    body: { message?: unknown; conversation_id?: unknown; language?: unknown; user_id?: unknown; request_id?: unknown },
+    ownerKey: string, userId: string | null = null,
   ): Promise<{ success: boolean; conversation_id: string; reply: string; links: { label: string; path: string; title: string }[]; model: string; usage: unknown }> {
     const cfg = await this.getConfig();
     const s = await loadSettings();
@@ -400,11 +410,15 @@ export const aiService = {
     }
     const message = (str(body.message) ?? "").trim();
     if (!message) throw ApiError.badRequest("❌ Message cannot be empty.", "MESSAGE_REQUIRED");
-    if (message.length > 4000) throw ApiError.badRequest("❌ Message too long.", "MESSAGE_TOO_LONG");
+    if (message.length > 2000) throw ApiError.badRequest("❌ Message too long.", "MESSAGE_TOO_LONG");
 
     const conversationId = str(body.conversation_id) || randomId();
     const language = str(body.language) || "en";
-    const userId = str(body.user_id) || null;
+    await aiConversationRepo.ensure(conversationId, ownerKey, userId);
+    const requestId = str(body.request_id) || randomId();
+    if (!/^[a-zA-Z0-9_-]{1,128}$/.test(requestId)) throw ApiError.badRequest("Invalid request ID");
+    const previous = await aiConversationRepo.claim(conversationId, requestId, message);
+    if (previous) return JSON.parse(previous);
 
     // Rebuild recent history for this conversation (bounded, ascending).
     const historyRows = await aiMessageRepo.history(conversationId, 12);
@@ -413,30 +427,19 @@ export const aiService = {
       content: h.content,
     }));
 
-    const result = await this.ask(message, history, { language });
-
-    // Persist both turns (best-effort) and prune old conversations. Only the
-    // sanitized answer is stored, so the admin transcript can never re-expose
-    // reasoning that was stripped on the way out.
     try {
-      await aiMessageRepo.add(conversationId, userId, "user", message, cfg.model);
-      await aiMessageRepo.add(conversationId, userId, "assistant", result.answer, cfg.model, {
-        tokens: result.tokens,
-        reasoningChars: result.reasoningChars ?? 0,
-      });
-      await aiMessageRepo.prune(300);
-    } catch (err) {
-      logger.warn("ai: history persistence failed", { err: String(err) });
+      const result = await this.ask(message, history, { language });
+      const response = {
+        success: true, conversation_id: conversationId, reply: result.answer,
+        links: await extractLinks(result.answer), model: result.model,
+        usage: result.tokens ? { total_tokens: result.tokens } : null,
+      };
+      await aiConversationRepo.complete(conversationId, requestId, userId, message, result, response);
+      return response;
+    } catch (error) {
+      await aiConversationRepo.fail(conversationId, requestId);
+      throw error;
     }
-
-    return {
-      success: true,
-      conversation_id: conversationId,
-      reply: result.answer,
-      links: await extractLinks(result.answer),
-      model: result.model,
-      usage: result.tokens ? { total_tokens: result.tokens } : null,
-    };
   },
 
   // ------------------------------- admin -------------------------------
@@ -448,7 +451,7 @@ export const aiService = {
     return {
       success: true,
       settings: {
-        ai_enabled: s.ai_enabled,
+        ai_enabled: Number(s.ai_enabled),
         ai_provider: s.ai_provider || config.aiProvider,
         ai_model: s.ai_model || config.aiModel,
         ai_base_url: s.ai_base_url || config.aiBaseUrl,
@@ -466,7 +469,7 @@ export const aiService = {
   /** POST /api/ai/admin/config — save (masked key means "keep current"). */
   async adminSaveConfig(actor: SafeUser, body: Record<string, unknown>): Promise<{ success: boolean; message: string }> {
     const changes: Record<string, string | null> = {
-      ai_enabled: body.ai_enabled ? "1" : "0",
+      ai_enabled: toBool(body.ai_enabled, false) ? "1" : "0",
       ai_provider: str(body.ai_provider) || config.aiProvider,
       ai_model: str(body.ai_model) || DEFAULT_MODEL,
       ai_base_url: str(body.ai_base_url) || config.aiBaseUrl,

@@ -232,7 +232,7 @@ function build(): Config {
   // ---------------------------------------------------------------------------
   // The CALLER's budget.
   //
-  // The frontend that renders BloodOra's pages is itself a Vercel function on the
+  // The frontend that renders BloodFerry's pages is itself a Vercel function on the
   // same 10 s limit, and it awaits this API before it can render. Whatever this
   // function spends, the caller must still have enough left to answer the
   // browser. Holding back `UPSTREAM_RESERVE_MS` is what keeps a slow AI answer or
@@ -339,9 +339,9 @@ function build(): Config {
     superAdminName: env.SUPER_ADMIN_NAME || "Super Admin",
     superAdminPhone: env.SUPER_ADMIN_PHONE || "",
     aiProvider: env.AI_PROVIDER || "groq",
-    aiModel: env.AI_MODEL || "qwen/qwen3.6-27b",
+    aiModel: env.AI_MODEL || "llama-3.3-70b-versatile",
     aiBaseUrl: env.AI_BASE_URL || "https://api.groq.com/openai/v1",
-    groqApiKey: env.GROQ_API_KEY || "",
+    groqApiKey: env.AI_API_KEY || env.GROQ_API_KEY || "",
     // Vercel rejects request bodies above 4.5 MB before Express sees them.
     // Keep the application-level limit below that platform ceiling so clients
     // receive our JSON upload error instead of an opaque platform response.
@@ -350,7 +350,7 @@ function build(): Config {
     uploadTimeoutMs: deadline("UPLOAD_TIMEOUT_MS", rawUploadTimeoutMs, answerByMs),
     resend: {
       apiKey: env.RESEND_API_KEY || "",
-      fromName: env.RESEND_FROM_NAME || "BloodOra",
+      fromName: env.RESEND_FROM_NAME || "BloodFerry",
       fromEmail: env.RESEND_FROM_EMAIL || "",
     },
     sms: {
@@ -371,7 +371,7 @@ function build(): Config {
       secure: bool(env.SMTP_SECURE, false),
       user: env.SMTP_USER || "",
       pass: env.SMTP_PASS || "",
-      fromName: env.SMTP_FROM_NAME || "BloodOra",
+      fromName: env.SMTP_FROM_NAME || "BloodFerry",
       fromEmail: env.SMTP_FROM_EMAIL || "no-reply@bloodora.site",
     },
   };

@@ -1,3 +1,4 @@
+import { rbacService } from "./rbac.service.js";
 import { messageRepo } from "../repos/message.repo.js";
 import { userRepo } from "../repos/user.repo.js";
 import { activityRepo } from "../repos/activity.repo.js";
@@ -40,6 +41,12 @@ async function withNames(row: MessageRow): Promise<MessageView> {
     recipient_name:
       row.recipient_id === ADMIN_RECIPIENT ? "Admin" : recipient?.name ?? null,
   };
+}
+
+async function assertAccess(user: SafeUser, row: MessageRow, reply = false) {
+  if (row.sender_id === user.id || row.recipient_id === user.id) return;
+  if (row.recipient_id === ADMIN_RECIPIENT && await rbacService.can(user, reply ? "messages.reply" : "messages.view")) return;
+  throw ApiError.notFound("Message not found.", "MESSAGE_NOT_FOUND");
 }
 
 /**
@@ -87,6 +94,7 @@ export const messageService = {
   async read(user: SafeUser, id: string): Promise<MessageView> {
     const row = await messageRepo.findById(id);
     if (!row) throw ApiError.notFound("Message not found.", "MESSAGE_NOT_FOUND");
+    await assertAccess(user, row);
     if (row.recipient_id === user.id) {
       await messageRepo.markRead([id]);
       row.read_at = row.read_at ?? new Date().toISOString();
@@ -98,6 +106,7 @@ export const messageService = {
   async original(user: SafeUser, id: string): Promise<MessageView> {
     const row = await messageRepo.findById(id);
     if (!row) throw ApiError.notFound("Message not found.", "MESSAGE_NOT_FOUND");
+    await assertAccess(user, row);
     return withNames(row);
   },
 
@@ -107,7 +116,9 @@ export const messageService = {
     if (!text) throw ApiError.badRequest("Reply text is required.", "REPLY_REQUIRED");
     const original = await messageRepo.findById(id);
     if (!original) throw ApiError.notFound("Message not found.", "MESSAGE_NOT_FOUND");
-    await messageRepo.create(user.id, original.sender_id, `Re: ${original.subject}`, text, {
+    await assertAccess(user, original, true);
+    const recipient = original.sender_id === user.id ? original.recipient_id : original.sender_id;
+    await messageRepo.create(user.id, recipient, `Re: ${original.subject}`, text, {
       repliedTo: original.id,
       isAdminMessage: original.sender_id === ADMIN_RECIPIENT,
     });
@@ -129,6 +140,8 @@ export const messageService = {
     if (!text) throw ApiError.badRequest("Reply text is required.", "REPLY_REQUIRED");
     const original = await messageRepo.findById(id);
     if (!original) throw ApiError.notFound("Message not found.", "MESSAGE_NOT_FOUND");
+    await rbacService.require(actor, ["messages.reply"]);
+    if (original.recipient_id !== ADMIN_RECIPIENT) throw ApiError.notFound("Message not found.");
     const toUser = original.sender_id;
     await messageRepo.create(actor.id, toUser, `Re: ${original.subject}`, text, {
       isAdminMessage: true,

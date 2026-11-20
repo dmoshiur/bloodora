@@ -55,6 +55,10 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "chat.view", name: "View live chat", group: "communication", description: "See every live conversation." },
   { key: "chat.reply", name: "Reply in live chat", group: "communication", description: "Answer visitors and close conversations." },
 
+  // Institutional registry: memberships are entity-scoped, not global admin roles.
+  { key: "partners.view", name: "Review institutions", group: "institutions", description: "Inspect organization and hospital applications." },
+  { key: "partners.manage", name: "Manage institutions", group: "institutions", description: "Review applications and administer institutional memberships." },
+
   // ---- AI ----
   { key: "ai.use", name: "Use the AI assistant", group: "ai", description: "Ask the Live AI Help (every signed-in visitor)." },
   { key: "ai.configure", name: "Configure AI", group: "ai", description: "Change provider, model, persona and API key." },
@@ -78,6 +82,8 @@ export interface RoleDef {
 }
 
 const ADMIN_PERMISSIONS = [
+  "partners.view",
+  "partners.manage",
   "users.view",
   "users.verify",
   "content.view",
@@ -108,6 +114,11 @@ const ADMIN_PERMISSIONS = [
 ];
 
 export const ROLES: RoleDef[] = [
+  ...["donor", "recipient", "volunteer", "organization", "hospital"].map(key => ({
+    key, name: key[0].toUpperCase() + key.slice(1),
+    description: "Non-administrative account role. Institutional access requires a separate scoped membership.",
+    level: 1, permissions: ["ai.use"],
+  })),
   {
     key: "user",
     name: "User",

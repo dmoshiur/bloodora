@@ -1,0 +1,26 @@
+<section class="card border-0 shadow-sm mb-4"><div class="card-body">
+<h2 class="h5">Resend accounts, senders & SMS providers</h2>
+<p class="small text-muted">Save separate profiles for each account or verified sender. Saving does not activate a profile or verify its credentials. Resend requires a verified sending domain. Keys are write-only and encrypted in the database.</p>
+<form method="POST" action="/admin/delivery-profiles" class="row g-3">
+<div class="col-md-4"><label class="form-label">Profile label<input class="form-control" name="label" required maxlength="80"></label></div>
+<div class="col-md-4"><label class="form-label">Channel<select class="form-select" name="kind"><option value="email">Email</option><option value="sms">SMS</option></select></label></div>
+<div class="col-md-4"><label class="form-label">Provider<select class="form-select" name="provider"><option value="resend">Resend</option><option value="greenweb">GreenWeb</option><option value="sslwireless">SSL Wireless</option></select></label></div>
+<div class="col-md-6"><label class="form-label">API key<input class="form-control" type="password" name="api_key" autocomplete="new-password" required maxlength="512"></label></div>
+<div class="col-md-6"><label class="form-label">Email sender address<input class="form-control" type="email" name="sender_email" maxlength="160"></label></div>
+<div class="col-md-6"><label class="form-label">Email sender name<input class="form-control" name="sender_name" maxlength="80"></label></div>
+<div class="col-md-6"><label class="form-label">SSL Wireless sender ID<input class="form-control" name="sender_id" maxlength="80"></label></div>
+<div class="col-12"><button class="btn btn-danger">Save profile</button></div>
+</form>
+<div class="table-responsive mt-3"><table class="table table-sm"><thead><tr><th>Label</th><th>Provider</th><th>Sender</th><th>Default</th></tr></thead><tbody>
+<% for(const p of profiles){ %><tr><td><%= p.label %></td><td><%= p.provider %></td><td><%= p.sender_email || p.sender_id || 'Provider default' %></td><td><% if(p.is_default){ %>Active<% }else{ %><form method="POST" action="/admin/delivery-profiles/<%= p.id %>/activate"><button class="btn btn-sm btn-outline-danger">Use as default</button></form><% } %></td></tr><% } %>
+</tbody></table></div>
+<p class="small text-muted">Queued mail keeps its original profile. Create a replacement profile to rotate credentials; old profiles remain for queued retries. No automatic cross-account fallback.</p>
+</div></section>
+<section class="card border-0 shadow-sm mb-4"><div class="card-body">
+<h2 class="h5">Send an SMS manually</h2><p class="small text-muted">Paid send, limited to 10 submissions per hour per administrator. Use only for authorized operational messages to consenting recipients. Provider acceptance is not handset delivery.</p>
+<form method="POST" action="/admin/sms/send" class="row g-3">
+<div class="col-md-6"><label class="form-label">Bangladesh mobile<input class="form-control" name="to" type="tel" required maxlength="24"></label></div>
+<div class="col-md-6"><label class="form-label">Unique send reference<input class="form-control" name="request_key" required pattern="[A-Za-z0-9_-]{8,128}" minlength="8" maxlength="128"></label></div>
+<div class="col-12"><label class="form-label">Message<textarea class="form-control" name="body" required maxlength="480"></textarea></label></div>
+<div class="col-12"><button class="btn btn-danger">Send paid SMS</button></div>
+</form></div></section>

@@ -35,3 +35,16 @@ export function toSafeUser(row: UserRow): SafeUser {
     language: typeof safe.language === "string" && safe.language ? safe.language : "en",
   } as unknown as SafeUser;
 }
+
+/** Public directory projection: never publish contact, identity documents or payment details. */
+export function toPublicUser(row: UserRow, showContact = false): SafeUser {
+  const safe = toSafeUser(row);
+  return {
+    id: safe.id, name: safe.name, blood_group: safe.blood_group,
+    donation_role: safe.donation_role, division: safe.division, district: safe.district,
+    upazila: safe.upazila, image_file: safe.image_file, age: safe.age,
+    is_verified: safe.is_verified, can_donate: safe.can_donate, last_donation: safe.last_donation,
+    phone: showContact && safe.can_donate && safe.is_verified ? safe.phone : "",
+    email: showContact && safe.can_donate && safe.is_verified ? safe.email : "",
+  } as SafeUser;
+}

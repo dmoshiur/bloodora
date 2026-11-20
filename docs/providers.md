@@ -8,7 +8,7 @@ Resend is the primary provider when `RESEND_API_KEY` and a sender are configured
 
 ```dotenv
 RESEND_API_KEY=
-RESEND_FROM_NAME=BloodOra
+RESEND_FROM_NAME=BloodFerry
 RESEND_FROM_EMAIL=no-reply@your-verified-domain.example
 SMTP_ENABLED=0
 SMTP_HOST=
@@ -16,7 +16,7 @@ SMTP_PORT=587
 SMTP_SECURE=0
 SMTP_USER=
 SMTP_PASS=
-SMTP_FROM_NAME=BloodOra
+SMTP_FROM_NAME=BloodFerry
 SMTP_FROM_EMAIL=no-reply@your-domain.example
 SMTP_TIMEOUT_MS=2500
 ```

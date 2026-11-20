@@ -50,9 +50,9 @@ type Params = Record<string, string | number | null | undefined>;
 const CATALOG: Record<string, Record<Lang, string>> = {
   // ---------- auth ----------
   "auth.registered": {
-    en: "✅ Registration successful! Welcome to BloodOra, {name}.",
-    bn: "✅ নিবন্ধন সফল! BloodOra-তে স্বাগতম, {name}।",
-    ar: "✅ تم التسجيل بنجاح! أهلًا بك في BloodOra، {name}.",
+    en: "✅ Registration successful! Welcome to BloodFerry, {name}.",
+    bn: "✅ নিবন্ধন সফল! BloodFerry-তে স্বাগতম, {name}।",
+    ar: "✅ تم التسجيل بنجاح! أهلًا بك في BloodFerry، {name}.",
   },
   "auth.logged_in": {
     en: "👋 Welcome back, {name}!",
@@ -125,14 +125,14 @@ const CATALOG: Record<string, Record<Lang, string>> = {
     ar: "✅ تم التحقق من البريد الإلكتروني. شكرًا لك!",
   },
   "auth.security_password_reset": {
-    en: "Your BloodOra password was reset",
-    bn: "আপনার BloodOra পাসওয়ার্ড রিসেট করা হয়েছে",
-    ar: "تمت إعادة تعيين كلمة مرور BloodOra الخاصة بك",
+    en: "Your BloodFerry password was reset",
+    bn: "আপনার BloodFerry পাসওয়ার্ড রিসেট করা হয়েছে",
+    ar: "تمت إعادة تعيين كلمة مرور BloodFerry الخاصة بك",
   },
   "auth.security_password_changed": {
-    en: "Your BloodOra password was changed",
-    bn: "আপনার BloodOra পাসওয়ার্ড পরিবর্তন করা হয়েছে",
-    ar: "تم تغيير كلمة مرور BloodOra الخاصة بك",
+    en: "Your BloodFerry password was changed",
+    bn: "আপনার BloodFerry পাসওয়ার্ড পরিবর্তন করা হয়েছে",
+    ar: "تم تغيير كلمة مرور BloodFerry الخاصة بك",
   },
   "auth.security_new_login": {
     en: "A new login to your account",
@@ -358,23 +358,23 @@ const CATALOG: Record<string, Record<Lang, string>> = {
     ar: "هذه المحادثة مغلقة.",
   },
   "chat.greeting": {
-    en: "Assalamu alaikum! This is the BloodOra live support desk. A human from the admin team will answer — usually within a few minutes. For urgent blood, please also post a request.",
-    bn: "আসসালামু আলাইকুম! এটি BloodOra লাইভ সাপোর্ট ডেস্ক। অ্যাডমিন টিমের একজন সদস্য উত্তর দেবেন — সাধারণত কয়েক মিনিটের মধ্যে। জরুরি রক্তের জন্য একটি আবেদনও পোস্ট করুন।",
-    ar: "السلام عليكم! هذا مكتب الدعم المباشر في BloodOra. سيجيبك أحد أعضاء الفريق خلال دقائق عادةً. للدم العاجل يرجى نشر طلب أيضًا.",
+    en: "Assalamu alaikum! This is the BloodFerry live support desk. A human from the admin team will answer — usually within a few minutes. For urgent blood, please also post a request.",
+    bn: "আসসালামু আলাইকুম! এটি BloodFerry লাইভ সাপোর্ট ডেস্ক। অ্যাডমিন টিমের একজন সদস্য উত্তর দেবেন — সাধারণত কয়েক মিনিটের মধ্যে। জরুরি রক্তের জন্য একটি আবেদনও পোস্ট করুন।",
+    ar: "السلام عليكم! هذا مكتب الدعم المباشر في BloodFerry. سيجيبك أحد أعضاء الفريق خلال دقائق عادةً. للدم العاجل يرجى نشر طلب أيضًا.",
   },
 
   // ---------- email templates ----------
   // Subjects and bodies are translated; the reset link, order id and every
   // machine value are interpolated, never localized.
   "email.footer": {
-    en: "You are receiving this email because you have a BloodOra account.",
-    bn: "আপনার BloodOra অ্যাকাউন্ট থাকায় আপনি এই ইমেইলটি পেয়েছেন।",
-    ar: "تصلك هذه الرسالة لأن لديك حسابًا في BloodOra.",
+    en: "You are receiving this email because you have a BloodFerry account.",
+    bn: "আপনার BloodFerry অ্যাকাউন্ট থাকায় আপনি এই ইমেইলটি পেয়েছেন।",
+    ar: "تصلك هذه الرسالة لأن لديك حسابًا في BloodFerry.",
   },
   "email.welcome.subject": {
-    en: "Welcome to BloodOra, {name}",
-    bn: "BloodOra-তে স্বাগতম, {name}",
-    ar: "أهلًا بك في BloodOra، {name}",
+    en: "Welcome to BloodFerry, {name}",
+    bn: "BloodFerry-তে স্বাগতম, {name}",
+    ar: "أهلًا بك في BloodFerry، {name}",
   },
   "email.welcome.body": {
     en: "Your account is ready. You can now post blood requests, order from the medical shop and message the support desk.",
@@ -393,9 +393,9 @@ const CATALOG: Record<string, Record<Lang, string>> = {
   },
   "email.verify.cta": { en: "Verify email", bn: "ইমেইল যাচাই করুন", ar: "تحقق من البريد" },
   "email.reset.subject": {
-    en: "Reset your BloodOra password",
-    bn: "আপনার BloodOra পাসওয়ার্ড রিসেট করুন",
-    ar: "إعادة تعيين كلمة مرور BloodOra",
+    en: "Reset your BloodFerry password",
+    bn: "আপনার BloodFerry পাসওয়ার্ড রিসেট করুন",
+    ar: "إعادة تعيين كلمة مرور BloodFerry",
   },
   "email.reset.body": {
     en: "We received a request to reset your password. This link expires in {minutes} minutes and can be used once.",
@@ -414,17 +414,17 @@ const CATALOG: Record<string, Record<Lang, string>> = {
     ar: "تم تغيير كلمة مرورك",
   },
   "email.password_changed.body": {
-    en: "The password for your BloodOra account was changed on {date}. If this was not you, contact the support desk immediately.",
-    bn: "{date} তারিখে আপনার BloodOra অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তন করা হয়েছে। এটি আপনি না করে থাকলে এখনই সাপোর্ট ডেস্কে যোগাযোগ করুন।",
+    en: "The password for your BloodFerry account was changed on {date}. If this was not you, contact the support desk immediately.",
+    bn: "{date} তারিখে আপনার BloodFerry অ্যাকাউন্টের পাসওয়ার্ড পরিবর্তন করা হয়েছে। এটি আপনি না করে থাকলে এখনই সাপোর্ট ডেস্কে যোগাযোগ করুন।",
     ar: "تم تغيير كلمة مرور حسابك في {date}. إن لم يكن ذلك من فعلك فتواصل مع الدعم فورًا.",
   },
   "email.new_login.subject": { en: "A new sign-in to your account", bn: "আপনার অ্যাকাউন্টে নতুন লগইন", ar: "تسجيل دخول جديد إلى حسابك" },
   "email.new_login.body": {
-    en: "We saw a new sign-in to your BloodOra account on {date}.",
-    bn: "আমরা {date} তারিখে আপনার BloodOra অ্যাকাউন্টে একটি নতুন লগইন দেখেছি।",
+    en: "We saw a new sign-in to your BloodFerry account on {date}.",
+    bn: "আমরা {date} তারিখে আপনার BloodFerry অ্যাকাউন্টে একটি নতুন লগইন দেখেছি।",
     ar: "رصدنا تسجيل دخول جديدًا إلى حسابك في {date}.",
   },
-  "email.order.subject": { en: "BloodOra order {id}", bn: "BloodOra অর্ডার {id}", ar: "طلب BloodOra رقم {id}" },
+  "email.order.subject": { en: "BloodFerry order {id}", bn: "BloodFerry অর্ডার {id}", ar: "طلب BloodFerry رقم {id}" },
   "email.order.body": {
     en: "Thank you, {name}! Your order has been placed and is awaiting payment confirmation.",
     bn: "ধন্যবাদ, {name}! আপনার অর্ডারটি সম্পন্ন হয়েছে এবং পেমেন্ট নিশ্চিতকরণের অপেক্ষায় আছে।",
@@ -448,7 +448,7 @@ const CATALOG: Record<string, Record<Lang, string>> = {
     ar: "طلبك لـ {units} وحدة من فصيلة {group} أصبح مرئيًا للمتبرعين الموثّقين.",
   },
   "email.reply.subject": { en: "Reply to “{subject}”", bn: "“{subject}” বার্তার উত্তর", ar: "رد على «{subject}»" },
-  "email.admin.subject": { en: "[BloodOra] {title}", bn: "[BloodOra] {title}", ar: "[BloodOra] {title}" },
+  "email.admin.subject": { en: "[BloodFerry] {title}", bn: "[BloodFerry] {title}", ar: "[BloodFerry] {title}" },
 
   // ---------- generic ----------
   "error.not_found": { en: "Not found", bn: "পাওয়া যায়নি", ar: "غير موجود" },

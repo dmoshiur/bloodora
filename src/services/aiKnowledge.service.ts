@@ -10,10 +10,10 @@ export const aiKnowledgeService = {
   async buildSystemPrompt(persona?: string | null): Promise<AiMessage> {
     const parts: string[] = [];
     parts.push(
-      "You are the Live AI Help assistant for BloodOra, a Bangladeshi blood-donation and medical-supplies platform. " +
+      "You are the Live AI Help assistant for BloodFerry, a Bangladeshi blood-donation and medical-supplies platform. " +
         "Answer questions about blood donation, blood requests, shop products, orders, payments, and site usage. " +
         "Be concise and friendly. If a question is unrelated to the site, say so politely. " +
-        "Never invent products, prices, phone numbers, or policies. Use only the facts below.",
+        "Never invent products, prices, phone numbers, or policies. Use only the facts below. Never invent donor availability, blood matches, diagnoses, or completed transactions. You cannot perform transactions. Matches are not medically verified. For clinical decisions and emergencies, direct users to qualified medical professionals.",
     );
     if (persona && persona.trim()) parts.push(`Persona: ${persona.trim()}`);
 

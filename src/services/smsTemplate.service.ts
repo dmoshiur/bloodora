@@ -4,44 +4,44 @@ export type SMSTemplate = "otp" | "password_reset" | "security" | "urgent_blood"
 
 const TEMPLATES: Record<SMSTemplate, Record<Lang, string>> = {
   otp: {
-    en: "BloodOra verification code: {code}. Valid for {minutes} minutes. Never share this code.",
-    bn: "BloodOra যাচাইকরণ কোড: {code}। {minutes} মিনিটের জন্য বৈধ। কাউকে কোডটি দেবেন না।",
-    ar: "رمز التحقق من BloodOra: {code}. صالح لمدة {minutes} دقائق. لا تشارك الرمز مع أي شخص.",
+    en: "BloodFerry verification code: {code}. Valid for {minutes} minutes. Never share this code.",
+    bn: "BloodFerry যাচাইকরণ কোড: {code}। {minutes} মিনিটের জন্য বৈধ। কাউকে কোডটি দেবেন না।",
+    ar: "رمز التحقق من BloodFerry: {code}. صالح لمدة {minutes} دقائق. لا تشارك الرمز مع أي شخص.",
   },
   password_reset: {
-    en: "BloodOra password reset code: {code}. Valid for {minutes} minutes. If you did not request this, secure your account.",
-    bn: "BloodOra পাসওয়ার্ড রিসেট কোড: {code}। {minutes} মিনিটের জন্য বৈধ। আপনি অনুরোধ না করলে অ্যাকাউন্ট সুরক্ষিত করুন।",
-    ar: "رمز إعادة تعيين كلمة مرور BloodOra: {code}. صالح لمدة {minutes} دقائق. إذا لم تطلبه، فأمّن حسابك.",
+    en: "BloodFerry password reset code: {code}. Valid for {minutes} minutes. If you did not request this, secure your account.",
+    bn: "BloodFerry পাসওয়ার্ড রিসেট কোড: {code}। {minutes} মিনিটের জন্য বৈধ। আপনি অনুরোধ না করলে অ্যাকাউন্ট সুরক্ষিত করুন।",
+    ar: "رمز إعادة تعيين كلمة مرور BloodFerry: {code}. صالح لمدة {minutes} دقائق. إذا لم تطلبه، فأمّن حسابك.",
   },
   security: {
-    en: "BloodOra security alert: {detail}",
-    bn: "BloodOra নিরাপত্তা সতর্কতা: {detail}",
-    ar: "تنبيه أمان BloodOra: {detail}",
+    en: "BloodFerry security alert: {detail}",
+    bn: "BloodFerry নিরাপত্তা সতর্কতা: {detail}",
+    ar: "تنبيه أمان BloodFerry: {detail}",
   },
   urgent_blood: {
-    en: "URGENT BloodOra: {group} blood needed at {location}. Open BloodOra if you can help.",
-    bn: "জরুরি BloodOra: {location}-এ {group} রক্ত প্রয়োজন। সাহায্য করতে পারলে BloodOra খুলুন।",
-    ar: "عاجل BloodOra: مطلوب دم {group} في {location}. افتح BloodOra إذا كان بإمكانك المساعدة.",
+    en: "URGENT BloodFerry: {group} blood needed at {location}. Open BloodFerry if you can help.",
+    bn: "জরুরি BloodFerry: {location}-এ {group} রক্ত প্রয়োজন। সাহায্য করতে পারলে BloodFerry খুলুন।",
+    ar: "عاجل BloodFerry: مطلوب دم {group} في {location}. افتح BloodFerry إذا كان بإمكانك المساعدة.",
   },
   donor: {
-    en: "BloodOra donor notification: {detail}",
-    bn: "BloodOra রক্তদাতা বিজ্ঞপ্তি: {detail}",
-    ar: "إشعار المتبرع BloodOra: {detail}",
+    en: "BloodFerry donor notification: {detail}",
+    bn: "BloodFerry রক্তদাতা বিজ্ঞপ্তি: {detail}",
+    ar: "إشعار المتبرع BloodFerry: {detail}",
   },
   order: {
-    en: "BloodOra order {id}: {status}. Total ৳{total}.",
-    bn: "BloodOra অর্ডার {id}: {status}। মোট ৳{total}।",
-    ar: "طلب BloodOra {id}: {status}. الإجمالي ৳{total}.",
+    en: "BloodFerry order {id}: {status}. Total ৳{total}.",
+    bn: "BloodFerry অর্ডার {id}: {status}। মোট ৳{total}।",
+    ar: "طلب BloodFerry {id}: {status}. الإجمالي ৳{total}.",
   },
   payment: {
-    en: "BloodOra payment for order {id} is confirmed. Amount ৳{amount}.",
-    bn: "BloodOra অর্ডার {id}-এর পেমেন্ট নিশ্চিত হয়েছে। পরিমাণ ৳{amount}।",
-    ar: "تم تأكيد دفع طلب BloodOra {id}. المبلغ ৳{amount}.",
+    en: "BloodFerry payment for order {id} is confirmed. Amount ৳{amount}.",
+    bn: "BloodFerry অর্ডার {id}-এর পেমেন্ট নিশ্চিত হয়েছে। পরিমাণ ৳{amount}।",
+    ar: "تم تأكيد دفع طلب BloodFerry {id}. المبلغ ৳{amount}.",
   },
   admin: {
-    en: "BloodOra admin alert: {detail}",
-    bn: "BloodOra অ্যাডমিন সতর্কতা: {detail}",
-    ar: "تنبيه مسؤول BloodOra: {detail}",
+    en: "BloodFerry admin alert: {detail}",
+    bn: "BloodFerry অ্যাডমিন সতর্কতা: {detail}",
+    ar: "تنبيه مسؤول BloodFerry: {detail}",
   },
 };
 

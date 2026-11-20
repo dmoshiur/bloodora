@@ -47,11 +47,11 @@ router.post("/chat", async (req, res) => {
     message,
     conversation_id,
     language: lang,
-    user_id,
+    request_id: req.body?.request_id,
   };
 
   let lastError = null;
-  const maxRetries = 2;
+  const maxRetries = 0;
 
   for (let attempt = 0; attempt <= maxRetries; attempt++) {
     try {

@@ -41,7 +41,7 @@ export async function setPreferences(req: Request, res: Response): Promise<void>
 
 /** GET /api/users/:id — public profile. */
 export async function publicProfile(req: Request, res: Response): Promise<void> {
-  const user = await userService.publicProfile(req.params.id);
+  const user = await userService.publicProfile(req.params.id, req.user);
   res.json({ success: true, user });
 }
 

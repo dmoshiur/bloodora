@@ -1,3 +1,4 @@
+import { deliveryProfileService } from "./deliveryProfile.service.js";
 import { emailDeliveryService } from "./emailDelivery.service.js";
 import { outboxRepo } from "../repos/outbox.repo.js";
 import { contentRepo } from "../repos/content.repo.js";
@@ -63,7 +64,7 @@ export function layout({ lang, title, paragraphs, cta, table, footerNote }: Layo
     .join("");
   return `<div dir="${dir}" style="font-family:Georgia,'Noto Serif Bengali',serif;max-width:560px;margin:auto;border:1px solid #e2e8f0;border-radius:16px;overflow:hidden;background:#fff;">
     <div style="background:linear-gradient(135deg,#e31b23,#ff3340);color:#fff;padding:22px 26px;">
-      <div style="font-size:22px;font-weight:700;">BloodOra</div>
+      <div style="font-size:22px;font-weight:700;">BloodFerry</div>
       <div style="opacity:.9;">${escapeHtml(title)}</div>
     </div>
     <div style="padding:26px;color:#0f172a;text-align:${align};">
@@ -119,16 +120,20 @@ export const emailService = {
       return { queued: false, sent: false, reason: "EMAIL_NOT_CONFIGURED" };
     }
 
-    const id = await outboxRepo.enqueue({ to, subject: input.subject, html: input.html, text: input.text ?? null, dedupeKey: input.dedupeKey });
+    const profile = await deliveryProfileService.resolve("email");
+    const id = await outboxRepo.enqueue({ to, subject: input.subject, html: input.html, text: input.text ?? null, dedupeKey: input.dedupeKey, profileId: profile?.id });
     if (!id) return { queued: true, sent: false, reason: "DUPLICATE_SUPPRESSED" };
+    const [row] = await outboxRepo.claimNext(1, id);
+    if (!row?.claim_token) return { queued: true, sent: false, reason: "CLAIMED_BY_WORKER" };
     try {
-      const delivered = await emailDeliveryService.send({ to, subject: input.subject, html: input.html, text: input.text, idempotencyKey: id });
-      await outboxRepo.markSent(id, delivered.providerId);
+      const delivered = await emailDeliveryService.send({ to, subject: input.subject, html: input.html, text: input.text, idempotencyKey: id, profileId: row.profile_id });
+      if (!await outboxRepo.markSent(id, row.claim_token, delivered.providerId)) return {queued:true,sent:false,reason:"DELIVERY_UNCONFIRMED"};
       await contentRepo.logEmail(to, input.subject, "sent", null).catch(() => {});
       return { queued: true, sent: true };
     } catch (err) {
-      const message = (err as Error)?.message || String(err);
-      await outboxRepo.markFailed(id, message).catch(() => {});
+      const rawCode = (err as {code?:string})?.code;
+      const message = rawCode && /^[A-Z][A-Z0-9_]{1,63}$/.test(rawCode) ? rawCode : "EMAIL_DELIVERY_FAILED";
+      await outboxRepo.markFailed(row, (err as {code?:string})?.code || "EMAIL_DELIVERY_FAILED").catch(() => {});
       await contentRepo.logEmail(to, input.subject, "failed", message).catch(() => {});
       logger.warn("email: send failed — queued for retry", { to: maskEmail(to), subject: input.subject, err: message });
       return { queued: true, sent: false, reason: message };
@@ -151,13 +156,13 @@ export const emailService = {
     if (!status.configured) {
       return { attempted: 0, sent: 0, failed: 0, remaining: (await safeCounts()).pending, skipped: 0, stopped: null };
     }
-    const rows = await outboxRepo.claimNext(limit);
+    const count = Math.min(50, Math.max(1, Math.trunc(limit)));
     let sent = 0;
     let failed = 0;
     let attempted = 0;
     let stopped: FlushResult["stopped"] = null;
 
-    for (const row of rows) {
+    for (let i = 0; i < count; i++) {
       // Check BEFORE starting a send: a message we cannot finish would only burn
       // the time the response still needs. One send can legitimately take the
       // whole per-phase budget, so require that much before starting another.
@@ -165,23 +170,25 @@ export const emailService = {
         stopped = "budget";
         logger.warn("email: outbox flush stopped early — invocation budget nearly exhausted", {
           attempted,
-          queued: rows.length,
+          queued: count - attempted,
         });
         break;
       }
+      const [row] = await outboxRepo.claimNext(1);
+      if (!row?.claim_token) break;
       attempted += 1;
       try {
-        const delivered = await emailDeliveryService.send({ to: row.to_email, subject: row.subject, html: row.html, text: row.text ?? undefined, idempotencyKey: row.id });
-        await outboxRepo.markSent(row.id, delivered.providerId);
-        sent += 1;
+        const delivered = await emailDeliveryService.send({ to: row.to_email, subject: row.subject, html: row.html, text: row.text ?? undefined, idempotencyKey: row.id, profileId: row.profile_id });
+        if (await outboxRepo.markSent(row.id, row.claim_token, delivered.providerId)) sent += 1;
+        else failed += 1;
       } catch (err) {
-        await outboxRepo.markFailed(row.id, (err as Error)?.message || String(err)).catch(() => {});
+        await outboxRepo.markFailed(row, (err as {code?:string})?.code || "EMAIL_DELIVERY_FAILED").catch(() => {});
         failed += 1;
       }
     }
 
     const counts = await safeCounts();
-    return { attempted, sent, failed, remaining: counts.pending, skipped: rows.length - attempted, stopped };
+    return { attempted, sent, failed, remaining: counts.pending, skipped: stopped ? Math.min(count - attempted, counts.pending) : 0, stopped };
   },
 
   async stats() {

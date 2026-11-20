@@ -48,6 +48,13 @@ export async function loadSettings(): Promise<SiteSettings> {
   return s;
 }
 
+/** Explicitly remove internal provider settings from every public metadata response. */
+export function publicSettings(settings: SiteSettings): SiteSettings {
+  return Object.fromEntries(Object.entries(settings).filter(([key]) =>
+    !/^(smtp_|ai_api_key$|ai_base_url$|ai_persona$)/.test(key) && !/(password|secret|token|api_key)/i.test(key)
+  )) as unknown as SiteSettings;
+}
+
 export interface MetaResponse {
   site: {
     name: string;
@@ -85,6 +92,10 @@ const EVENT_PRESENTATION: Record<string, { tone: string; icon: string; label: st
   verify: { tone: "success", icon: "fa-circle-check", label: "Verification" },
 };
 
+function isPublicActivity(row: { type: string }): boolean {
+  return ["request_posted", "request_urgent", "request_fulfilled", "donation", "announcement", "notice", "verify"].includes(row.type);
+}
+
 function presentEvent(row: { id: string; type: string; message: string; meta: string | null; created_at: string }) {
   let detail: string | null = null;
   let link: string | null = null;
@@ -121,7 +132,7 @@ export const metaService = {
     return {
       site: {
         name: settings.site_name,
-        logo: settings.logo_file ? `/uploads/${settings.logo_file}` : null,
+        logo: settings.logo_file?.startsWith("/") ? settings.logo_file : settings.logo_file ? `/uploads/${settings.logo_file}` : null,
         footerNote: settings.footer_note,
         primaryColor: settings.brand_primary || settings.primary_color,
         fontStyle: settings.brand_font_style || settings.font_style,
@@ -164,7 +175,7 @@ export const metaService = {
 
   /** GET /api/meta/settings — raw settings object (original field names). */
   async settingsView() {
-    return { settings: await loadSettings() };
+    return { settings: publicSettings(await loadSettings()) };
   },
 
   /** GET /api/meta/home — homepage payload. */
@@ -199,7 +210,7 @@ export const metaService = {
       created_at: r.created_at,
     });
     return {
-      settings,
+      settings: publicSettings(settings),
       notice: notice?.content ?? null,
       total_donors: donors,
       urgent_requests: urgent,
@@ -212,7 +223,7 @@ export const metaService = {
   async activity(limit = 30) {
     const rows = await activityRepo.list(Math.min(100, Math.max(1, Number(limit) || 30)));
     return {
-      events: rows.map(presentEvent),
+      events: rows.filter(isPublicActivity).map(presentEvent),
       serverTime: new Date().toISOString(),
     };
   },
@@ -229,7 +240,7 @@ export const metaService = {
    */
   async activitySince(sinceIso: string) {
     const rows = await activityRepo.list(100);
-    return rows.filter((r) => isAfter(r.created_at, sinceIso)).map(presentEvent);
+    return rows.filter((r) => isPublicActivity(r) && isAfter(r.created_at, sinceIso)).map(presentEvent);
   },
 
   /** GET /api/meta/reviews — public review feed + summary. */

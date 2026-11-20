@@ -108,7 +108,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   const file = readUpload(req);
   const imageFile = file ? await uploadService.store(file) : null;
   // Original register: age comes from date_of_birth when present, else the
-  // explicit `age` field; 18+ users are auto-verified and can donate.
+  // explicit `age` field; donor verification requires administrator review.
   const dob = body.date_of_birth ?? null;
   let age: number | null = dob ? calculateAge(dob) : null;
   if (!age && body.age) {

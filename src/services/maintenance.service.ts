@@ -6,7 +6,6 @@ import { notificationRepo } from "../repos/notification.repo.js";
 import { auditRepo } from "../repos/audit.repo.js";
 import { transactionRepo } from "../repos/transaction.repo.js";
 import { activityRepo } from "../repos/activity.repo.js";
-import { aiMessageRepo } from "../repos/aiMessage.repo.js";
 import { logger } from "../utils/logger.js";
 import { budgetExhausted } from "../utils/deadline.js";
 
@@ -90,10 +89,7 @@ export const maintenanceService = {
     planned.push(["audit.prune", () => auditRepo.prune()]);
     planned.push(["transactions.prune", () => transactionRepo.prune()]);
     planned.push(["activity.prune", () => activityRepo.prune()]);
-    planned.push(["ai_messages.prune", async () => {
-      await aiMessageRepo.prune();
-      return 0;
-    }]);
+    // Conversation history is durable; no automatic transcript deletion.
 
     const skipped: string[] = [];
     for (const [name, fn] of planned) {

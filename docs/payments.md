@@ -2,7 +2,7 @@
 
 ## Current model: manual ledger
 
-BloodOra supports medical-supply orders with payment submissions that authorized admins review and confirm. It is **not** a hosted payment-gateway integration. There is no signed success callback, automatic settlement verification, or browser-return flow that can safely mark a transaction paid.
+BloodFerry supports medical-supply orders with payment submissions that authorized admins review and confirm. It is **not** a hosted payment-gateway integration. There is no signed success callback, automatic settlement verification, or browser-return flow that can safely mark a transaction paid.
 
 A transaction ID, screenshot, reference number, amount, success query parameter, or browser claim is evidence supplied by a user—not independent proof of settlement.
 

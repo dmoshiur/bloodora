@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { ah } from "../utils/async.js";
-import { requireAuth } from "../middleware/auth.js";
+import { requireAuth, optionalAuth } from "../middleware/auth.js";
 import { singleUpload } from "../uploads/uploads.js";
 import { listDonors, publicProfile, updateSelf, toggleStatus, applyVerification, dashboard, setPreferences } from "../controllers/users.controller.js";
 
@@ -20,8 +20,8 @@ userRouter.use(requireAuth);
 userRouter.get("/dashboard", ah(dashboard));
 
 // ---------- /api/users ----------
-router.get("/:id/public", ah(publicProfile)); // lightweight alias kept for the original contract
-router.get("/:id", ah(publicProfile));
+router.get("/:id/public", optionalAuth, ah(publicProfile)); // lightweight alias kept for the original contract
+router.get("/:id", optionalAuth, ah(publicProfile));
 router.put("/me", requireAuth, singleUpload("profile_pic"), ah(updateSelf));
 // Declared before `/:id` so "me" is never captured as a user id.
 router.patch("/me/preferences", requireAuth, ah(setPreferences));

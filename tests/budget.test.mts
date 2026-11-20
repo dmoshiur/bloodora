@@ -165,6 +165,7 @@ fs.mkdirSync(path.dirname(dbFile), { recursive: true });
 
 // Production mode: secure cookies, strict CORS, prod env validation — the real path.
 process.env.NODE_ENV = "production";
+process.env.AI_BASE_URL = `http://127.0.0.1:${providerPort}/v1`;
 process.env.LOG_LEVEL = process.env.LOG_LEVEL || "error";
 process.env.FRONTEND_URL = "http://localhost:3000";
 process.env.JWT_SECRET = "budget-test-secret-0123456789abcdef0123456789abcdef";

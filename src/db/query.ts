@@ -145,8 +145,8 @@ export interface TxExecutor {
  * deadline, so a transaction can never be the thing that leaves a request
  * pending forever.
  */
-export async function transaction<T>(fn: (tx: TxExecutor) => Promise<T>): Promise<T> {
-  const tx: Transaction = await guarded("open transaction", () => getClient().transaction("write"));
+export async function transaction<T>(fn: (tx: TxExecutor) => Promise<T>, mode: TransactionMode = "write"): Promise<T> {
+  const tx: Transaction = await guarded("open transaction", () => getClient().transaction(mode));
   const executor: TxExecutor = {
     async run(sql: string, args: unknown[] = []) {
       const r = (await guarded("tx statement", () => tx.execute(stmt(sql, args)))) as ResultSet;

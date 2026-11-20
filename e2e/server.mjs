@@ -29,6 +29,8 @@ await bootstrapDatabase();
 for (const [email, name] of [["superadmin@example.test", "Browser superadmin"], ["admin@example.test", "Browser admin"], ["user@example.test", "Browser user"]]) {
   await authService.register({ email, name, password: "test-only-password", phone: "01700000000", age: 30, bloodGroup: "O+", donationRole: "Both" });
 }
+const superadmin = await userRepo.findByEmail("superadmin@example.test");
+await userRepo.setRole(superadmin.id, "super_admin", true);
 const admin = await userRepo.findByEmail("admin@example.test");
 await userRepo.setRole(admin.id, "admin", true);
 const app = createApp();

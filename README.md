@@ -1,8 +1,12 @@
-# BloodOra
+# BloodFerry
 
-BloodOra is a unified blood-donation and medical-supply application: donor discovery, blood requests, shop and manual payments, notifications, messaging, live support, AI help, localized content, and a permission-based admin panel. The server-rendered site and JSON API run in the **same Express application and the same Vercel function**.
+**রক্ত বহনকারী — DONATE • TRANSFUSE • SAVE LIVES**
 
-**Stack:** Node.js 20+ · TypeScript (strict ESM) · Express 4 · EJS · Turso/libSQL · Turso-backed sessions · Zod · Multer · Vercel Blob · Resend/SMTP · GreenWeb/SSL Wireless · OpenAI-compatible AI · Playwright.
+See [the current engineering report](docs/bloodferry-report.md) for implemented repairs, test evidence, deployment steps and **incomplete production acceptance gates**. Historical verification documents are not proof of this release's live integrations.
+
+BloodFerry is a unified blood-donation and medical-supply application: donor discovery, blood requests, shop and manual payments, notifications, messaging, live support, AI help, localized content, and a permission-based admin panel. The server-rendered site and JSON API run in the **same Express application and the same Vercel function**.
+
+**Stack:** Node.js 22 · TypeScript (strict ESM) · Express 4 · EJS · Turso/libSQL · Turso-backed sessions · Zod · Multer · Vercel Blob · Resend/SMTP · GreenWeb/SSL Wireless · OpenAI-compatible AI · Playwright.
 
 ## Quick start
 
@@ -43,7 +47,7 @@ src/application.ts — Helmet, same-origin policy, sessions, CSRF, EJS + API rou
         ├── src/web/routes + views + public     (SSR and browser forms)
         └── src/routes → controllers → services → repositories → Turso
                                       ├── Vercel Blob / legacy Turso uploads
-                                      ├── Resend → SMTP fallback + outbox
+                                      ├── Resend outbox → SMTP only when Resend is unconfigured
                                       ├── SMS provider adapters + hashed OTP
                                       └── AI / notifications / bounded SSE
 ```
@@ -75,7 +79,7 @@ See [Storage](docs/storage.md).
 
 ## Email, SMS, and AI
 
-- **Email:** Resend is primary; configured SMTP can be selected or used after Resend failure. Messages are persisted in a durable outbox with dedupe keys and provider IDs. Unconfigured mail is reported honestly.
+- **Email:** An active Resend profile is primary. Legacy SMTP is a pre-send fallback only when Resend is not configured; an attempted Resend submission is retried, never moved to SMTP because delivery status is ambiguous. Messages persist in a durable outbox with dedupe keys, provider IDs and queued sender profiles. Unconfigured mail is reported honestly.
 - **SMS:** `disabled`, `greenweb`, and `sslwireless` adapters are available. Bangladesh numbers are normalized before use. A disabled provider returns `SMS_NOT_CONFIGURED`; tests never simulate paid delivery.
 - **AI:** Groq/OpenAI-compatible configuration is available through environment defaults and the admin panel. Stored admin AI settings take precedence. Calls have total interaction deadlines and controlled unconfigured/error responses.
 
@@ -83,7 +87,7 @@ Provider setup, test limitations, and operational endpoints are in [Providers](d
 
 ## Payments are manual verification
 
-BloodOra records payment submissions and an admin-reviewed ledger. It does **not** treat a browser return URL, screenshot, transaction ID, or client-provided amount as proof of payment. Prices are calculated server-side, and only an authorized admin can confirm a manual transaction. Hosted gateway signatures and automatic settlement are not implemented.
+BloodFerry records payment submissions and an admin-reviewed ledger. It does **not** treat a browser return URL, screenshot, transaction ID, or client-provided amount as proof of payment. Prices are calculated server-side, and only an authorized admin can confirm a manual transaction. Hosted gateway signatures and automatic settlement are not implemented.
 
 Admin payment listings use bounded SQL pagination, optional status filtering, joined usernames, and an actual total rather than N+1 lookups.
 

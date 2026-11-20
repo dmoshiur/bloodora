@@ -37,7 +37,7 @@ const RESET_BURST_WINDOW_MS = 15 * 60 * 1000;
 export function assertPasswordPolicy(password: unknown, lang?: string | null): void {
   const pw = typeof password === "string" ? password : "";
   if (pw.length < 8) throw ApiError.badRequest(translate(lang, "auth.password_short"), "PASSWORD_SHORT");
-  if (pw.length > 128) throw ApiError.badRequest("Password must be at most 128 characters.", "PASSWORD_LONG");
+  if (Buffer.byteLength(pw, "utf8") > 72) throw ApiError.badRequest("Password must be at most 72 UTF-8 bytes.", "PASSWORD_LONG");
 }
 
 /**
@@ -78,7 +78,7 @@ export interface RegisterInput {
 
 function signToken(user: UserRow): string {
   return jwt.sign(
-    { uid: user.id, sid: user.session_token, adm: user.role !== "user" },
+    { uid: user.id, sid: user.session_token, adm: Boolean(user.is_admin || user.is_super_admin) },
     config.jwtSecret,
     { expiresIn: `${config.jwtTtlDays}d` },
   );
@@ -137,12 +137,13 @@ export async function loginUser(row: UserRow, ctx: AuthCtx = {}): Promise<LoginR
 
 export const authService = {
   async register(input: RegisterInput): Promise<LoginResult> {
+    assertPasswordPolicy(input.password);
     const existing = await userRepo.findByEmail(input.email);
     if (existing) throw ApiError.conflict("An account with this email already exists", "EMAIL_TAKEN");
 
     const totalUsers = await userRepo.count();
-    const firstUser = totalUsers === 0;
-    // Original register: 18+ users are auto-verified and may donate.
+    const firstUser = !config.isProd && totalUsers === 0;
+    // Age is self-reported: availability is not verification or clinical eligibility.
     const adult = Boolean(input.age && input.age >= 18);
 
     const user: Omit<UserRow, "created_at"> = {
@@ -174,7 +175,7 @@ export const authService = {
       pathao_number: null,
       card_last_four: null,
       card_type: null,
-      is_verified: adult ? 1 : 0,
+      is_verified: 0,
       image_file: input.imageFile ?? null,
       session_token: null,
     };
@@ -192,7 +193,7 @@ export const authService = {
     await activityRepo.create(
       "register",
       user.id,
-      firstUser ? "The first account was created — it is now the super admin" : `${user.name} joined BloodOra`,
+      firstUser ? "The first account was created — it is now the super admin" : `${user.name} joined BloodFerry`,
       { email: maskEmail(user.email) },
     );
     logger.info("auth: registered", { user: maskEmail(user.email), firstUser });
@@ -477,7 +478,7 @@ export const authService = {
   async requireAdmin(userId: string, isAdminClaim: boolean): Promise<SafeUser> {
     const row = await userRepo.findById(userId);
     if (!row) throw ApiError.unauthorized("Account no longer exists", "USER_GONE");
-    if (!isAdminClaim || row.role === "user") {
+    if (!isAdminClaim || (!row.is_admin && !row.is_super_admin)) {
       throw ApiError.forbidden("Admin access required", "ADMIN_ONLY");
     }
     return toSafeUser(row);
@@ -495,7 +496,7 @@ export const authService = {
   /** Impersonate: switch the caller's JWT context to another user (admin only). */
   async impersonate(actorId: string, targetId: string): Promise<{ token: string; user: SafeUser }> {
     const actor = await userRepo.findById(actorId);
-    if (!actor || actor.role === "user") throw ApiError.forbidden("Admin access required", "ADMIN_ONLY");
+    if (!actor || (!actor.is_admin && !actor.is_super_admin)) throw ApiError.forbidden("Admin access required", "ADMIN_ONLY");
     const target = await userRepo.findById(targetId);
     if (!target) throw ApiError.notFound("User not found", "USER_NOT_FOUND");
     await activityRepo.create("impersonate", actorId, `${actor.name} started impersonating ${target.name}`, { target: targetId });
@@ -503,7 +504,7 @@ export const authService = {
     // the imp_by claim records the real admin so "switch back" can restore it.
     const fresh = (await userRepo.findById(targetId))!;
     const token = jwt.sign(
-      { uid: fresh.id, sid: fresh.session_token, adm: fresh.role !== "user", imp_by: actorId },
+      { uid: fresh.id, sid: fresh.session_token, adm: Boolean(fresh.is_admin || fresh.is_super_admin), imp_by: actorId },
       config.jwtSecret,
       { expiresIn: `${config.jwtTtlDays}d` },
     );
@@ -514,7 +515,7 @@ export const authService = {
   async switchBack(adminId: string): Promise<{ token: string; user: SafeUser }> {
     const row = await userRepo.findById(adminId);
     if (!row) throw ApiError.unauthorized("Account no longer exists", "USER_GONE");
-    if (row.role === "user") throw ApiError.forbidden("Admin access required", "ADMIN_ONLY");
+    if (!row.is_admin && !row.is_super_admin) throw ApiError.forbidden("Admin access required", "ADMIN_ONLY");
     const fresh = (await userRepo.findById(adminId))!;
     return { token: signToken(fresh), user: toSafeUser(fresh) };
   },

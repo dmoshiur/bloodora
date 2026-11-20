@@ -1,4 +1,4 @@
-// ==================== BloodOra Frontend - i18n (English / বাংলা / العربية) ====================
+// ==================== BloodFerry Frontend - i18n (English / বাংলা / العربية) ====================
 // A single dictionary drives the whole interface. The active language comes from
 // the `lang` cookie (falls back to the session, then the admin-configured
 // default). Arabic switches the document to right-to-left (RTL).
@@ -153,7 +153,7 @@ const dict = {
   home_urgent:     { en: "Urgent Cases",      bn: "জরুরি কেস",                ar: "حالات عاجلة" },
   home_districts:  { en: "Districts Covered", bn: "জেলা কভারেজ",              ar: "المناطق المغطاة" },
   home_groups:     { en: "Blood Groups",      bn: "রক্তের গ্রুপ",             ar: "فصائل الدم" },
-  home_how:        { en: "How BloodOra Works", bn: "যেভাবে কাজ করে",           ar: "كيف يعمل الموقع" },
+  home_how:        { en: "How BloodFerry Works", bn: "যেভাবে কাজ করে",           ar: "كيف يعمل الموقع" },
   home_recent_donors: { en: "Recent Verified Donors", bn: "সাম্প্রতিক যাচাইকৃত দাতা", ar: "أحدث المتبرعين الموثّقين" },
   home_urgent_requests: { en: "Urgent Blood Requests", bn: "জরুরি রক্তের আবেদন", ar: "طلبات دم عاجلة" },
   home_view_all:   { en: "View all",          bn: "সব দেখুন",                 ar: "عرض الكل" },
@@ -197,7 +197,7 @@ const dict = {
   auth_create_one: { en: "Create one",        bn: "তৈরি করুন",                ar: "أنشئ حسابًا" },
   auth_single_session:{ en: "Single-session security enabled", bn: "সিঙ্গল-সেশন নিরাপত্তা চালু", ar: "حماية الجلسة الواحدة مفعّلة" },
   auth_single_session_sub:{ en: "Logging in elsewhere will sign out other devices.", bn: "অন্য কোথাও লগইন করলে অন্য ডিভাইস থেকে লগআউট হয়ে যাবে।", ar: "تسجيل الدخول من مكان آخر سيُخرج الأجهزة الأخرى." },
-  auth_register_title:{ en: "Join BloodOra",  bn: "BloodOra-য় যোগ দিন",      ar: "انضم إلى BloodOra" },
+  auth_register_title:{ en: "Join BloodFerry",  bn: "BloodFerry-য় যোগ দিন",      ar: "انضم إلى BloodFerry" },
   auth_register_sub:{ en: "Create your account in under a minute", bn: "এক মিনিটেই অ্যাকাউন্ট খুলুন", ar: "أنشئ حسابك في أقل من دقيقة" },
   auth_full_name:  { en: "Full Name",         bn: "পুরো নাম",                  ar: "الاسم الكامل" },
   auth_age:        { en: "Age",               bn: "বয়স",                      ar: "العمر" },
@@ -305,7 +305,7 @@ const dict = {
   req_other:       { en: "Other",             bn: "অন্যান্য",                    ar: "أخرى" },
   req_requested_by:{ en: "Requested by:",     bn: "আবেদনকারী:",                 ar: "مقدم الطلب:" },
   req_mark_fulfilled:{ en: "Mark as Fulfilled", bn: "পূরণ হয়েছে চিহ্নিত করুন", ar: "تحديد كمكتمل" },
-  req_disclaimer:  { en: "Please verify before donation. Bring NID and be 18+. Contact the person directly — BloodOra only connects.", bn: "রক্তদানের আগে যাচাই করুন। এনআইডি সাথে রাখুন ও ১৮+ হতে হবে। সরাসরি যোগাযোগ করুন — BloodOra কেবল সংযোগ তৈরি করে।", ar: "يرجى التحقق قبل التبرع. أحضر الهوية ويجب أن تكون 18+. تواصل مع الشخص مباشرة — BloodOra وسيط فقط." },
+  req_disclaimer:  { en: "Please verify before donation. Bring NID and be 18+. Contact the person directly — BloodFerry only connects.", bn: "রক্তদানের আগে যাচাই করুন। এনআইডি সাথে রাখুন ও ১৮+ হতে হবে। সরাসরি যোগাযোগ করুন — BloodFerry কেবল সংযোগ তৈরি করে।", ar: "يرجى التحقق قبل التبرع. أحضر الهوية ويجب أن تكون 18+. تواصل مع الشخص مباشرة — BloodFerry وسيط فقط." },
   req_cancel:      { en: "Cancel Request",    bn: "আবেদন বাতিল করুন",           ar: "إلغاء الطلب" },
   reqd_title:      { en: "Request Details",   bn: "আবেদনের বিস্তারিত",           ar: "تفاصيل الطلب" },
 
@@ -456,7 +456,7 @@ const dict = {
   rev_write:       { en: "Write a Review",    bn: "রিভিউ লিখুন",               ar: "اكتب تقييمًا" },
   rev_all:         { en: "All",               bn: "সব",                        ar: "الكل" },
   rev_product:     { en: "Product Reviews",   bn: "পণ্য রিভিউ",                ar: "تقييمات المنتجات" },
-  rev_site:        { en: "BloodOra Testimonials", bn: "BloodOra প্রশংসাপত্র",  ar: "شهادات الموقع" },
+  rev_site:        { en: "BloodFerry Testimonials", bn: "BloodFerry প্রশংসাপত্র",  ar: "شهادات الموقع" },
   rev_avg:         { en: "Average rating",    bn: "গড় রেটিং",                  ar: "متوسط التقييم" },
   rev_count:       { en: "reviews",           bn: "টি রিভিউ",                  ar: "تقييمًا" },
   rev_rating:      { en: "Rating",            bn: "রেটিং",                     ar: "التقييم" },
@@ -471,7 +471,7 @@ const dict = {
   rev_pending_note:{ en: "Published after admin approval.", bn: "অ্যাডমিন অনুমোদনের পর প্রকাশ পাবে।", ar: "يُنشر التقييم بعد موافقة المشرف." },
   rev_approved:    { en: "Approved",          bn: "অনুমোদিত",                   ar: "معتمد" },
   rev_rejected:    { en: "Rejected",          bn: "প্রত্যাখ্যাত",               ar: "مرفوض" },
-  rev_official:    { en: "Official reply from BloodOra", bn: "BloodOra-র অফিসিয়াল উত্তর", ar: "رد رسمي من BloodOra" },
+  rev_official:    { en: "Official reply from BloodFerry", bn: "BloodFerry-র অফিসিয়াল উত্তর", ar: "رد رسمي من BloodFerry" },
   rev_none:        { en: "No reviews published yet — be the first to share your experience!", bn: "এখনো কোনো রিভিউ নেই — প্রথম আপনার অভিজ্ঞতা জানান!", ar: "لا توجد تقييمات بعد — كن أول من يشارك تجربته!" },
   rev_login_first: { en: "Log in to post a review", bn: "রিভিউ দিতে লগইন করুন", ar: "سجّل الدخول لكتابة تقييم" },
   rev_mine_empty:  { en: "You have not written any reviews yet.", bn: "আপনি এখনো কোনো রিভিউ লেখেননি।", ar: "لم تكتب أي تقييمات بعد." },
@@ -487,7 +487,7 @@ const dict = {
   chat_ai:         { en: "Ask AI",            bn: "এআই সহায়ক",                ar: "اسأل المساعد الذكي" },
   chat_offline:    { en: "The assistant is currently offline. Please try again in a moment.", bn: "সহায়কটি বর্তমানে অফলাইন। অনুগ্রহ করে কিছুক্ষণ পরে চেষ্টা করুন।", ar: "المساعد غير متصل حاليًا. يرجى المحاولة بعد قليل." },
   chat_you:        { en: "You",               bn: "আপনি",                      ar: "أنت" },
-  chat_support:    { en: "BloodOra Support",  bn: "BloodOra সাপোর্ট",          ar: "فريق الدعم" },
+  chat_support:    { en: "BloodFerry Support",  bn: "BloodFerry সাপোর্ট",          ar: "فريق الدعم" },
   chat_sending:    { en: "sending…",          bn: "পাঠানো হচ্ছে…",             ar: "جارٍ الإرسال…" },
   chat_failed:     { en: "Message failed",    bn: "বার্তা পাঠানো যায়নি",       ar: "تعذّر إرسال الرسالة" },
   chat_copy:       { en: "Copy",              bn: "কপি",                       ar: "نسخ" },
@@ -583,7 +583,7 @@ const dict = {
   guide_who_can_1: { en: "Age 18-60, weight ≥45kg", bn: "বয়স ১৮-৬০, ওজন ≥ ৪৫ কেজি", ar: "العمر 18-60، الوزن ≥ 45 كجم" },
   guide_who_can_2: { en: "Hemoglobin ≥12.5 g/dL, not donated in last 90 days", bn: "হিমোগ্লোবিন ≥ ১২.৫ g/dL, গত ৯০ দিনে রক্ত দেননি", ar: "الهيموغلوبين ≥ 12.5، لم يتبرع خلال آخر 90 يومًا" },
   guide_who_can_3: { en: "Healthy, no fever/cold, no recent surgery", bn: "সুস্থ, জ্বর/সর্দি নেই, সাম্প্রতিক কোনো অস্ত্রোপচার নেই", ar: "صحي ومعافى، لا حمى أو زكام، لا جراحة حديثة" },
-  guide_who_can_4: { en: "Verified by BloodOra admin", bn: "BloodOra অ্যাডমিন কর্তৃক যাচাইকৃত", ar: "موثّق من قِبل مشرف BloodOra" },
+  guide_who_can_4: { en: "Verified by BloodFerry admin", bn: "BloodFerry অ্যাডমিন কর্তৃক যাচাইকৃত", ar: "موثّق من قِبل مشرف BloodFerry" },
   guide_who_cannot:{ en: "Who Cannot Donate?", bn: "কারা রক্ত দিতে পারবেন না?", ar: "من لا يمكنه التبرع؟" },
   guide_who_cannot_1:{ en: "Under 18, pregnant or breastfeeding", bn: "১৮ বছরের কম, গর্ভবতী বা স্তন্যদানকারী", ar: "أقل من 18 عامًا، الحوامل والمرضعات" },
   guide_who_cannot_2:{ en: "Recent tattoo or piercing (within 6 months), active infections, chronic illness", bn: "সাম্প্রতিক ট্যাটু/পিয়ার্সিং (৬ মাসের মধ্যে), সংক্রমণ বা দীর্ঘস্থায়ী রোগ", ar: "وشم أو ثقب حديث (خلال 6 أشهر)، عدوى أو مرض مزمن" },
@@ -594,7 +594,7 @@ const dict = {
   guide_need_help_text:{ en: "Have questions about eligibility or donation safety? Contact our clinical support team.", bn: "যোগ্যতা বা রক্তদানের নিরাপত্তা নিয়ে প্রশ্ন আছে? আমাদের ক্লিনিক্যাল সাপোর্ট টিমের সাথে যোগাযোগ করুন।", ar: "هل لديك استفسار حول الأهلية أو السلامة؟ تواصل مع فريق الدعم لدينا." },
 
   // ---------- FAQ items ----------
-  faq_q1:          { en: "Is BloodOra free to use?", bn: "BloodOra কি ফ্রি?",   ar: "هل BloodOra مجاني للاستخدام؟" },
+  faq_q1:          { en: "Is BloodFerry free to use?", bn: "BloodFerry কি ফ্রি?",   ar: "هل BloodFerry مجاني للاستخدام؟" },
   faq_a1:          { en: "Yes. Searching donors and posting blood requests are completely free. For shop orders, delivery inside Kalai is a flat ৳10, payable via bKash, Nagad, Rocket, Upay, Pathao Pay, card, or cash on delivery.", bn: "হ্যাঁ। রক্তদাতা খোঁজা এবং রক্তের আবেদন পোস্ট করা সম্পূর্ণ বিনামূল্যে। দোকানের অর্ডারের ক্ষেত্রে কলাই উপজেলার ভেতরে ডেলিভারি চার্জ মাত্র ১০ টাকা।", ar: "نعم. البحث عن المتبرعين ونشر طلبات الدم مجاني بالكامل. لطلبات المتجر، التوصيل داخل كالاي بسعر ثابت ৳10." },
   faq_q2:          { en: "Why only Kalai for delivery?", bn: "ডেলিভারি শুধু কলাইতে কেন?", ar: "لماذا التوصيل في كالاي فقط؟" },
   faq_a2:          { en: "Pilot delivery is Kalai only (৳10 flat). We validate Upazila on both client and server to prevent mistakes.", bn: "আমাদের পাইলট হোম ডেলিভারি সেবা বর্তমানে শুধুমাত্র জয়পুরহাটের কলাই উপজেলায় চালু রয়েছে।", ar: "خدمة التوصيل التجريبية متاحة حاليًا في ناحية كالاي فقط (৳10 ثابت)." },
@@ -686,8 +686,8 @@ const dict = {
   adm_bill_to:     { en: "Bill To",           bn: "বিল প্রাপক",                ar: "فاتورة إلى" },
   adm_payment_info:{ en: "Payment Info",      bn: "পেমেন্ট তথ্য",              ar: "معلومات الدفع" },
   adm_paid_status: { en: "PAID: {status}",    bn: "পরিশোধ: {status}",          ar: "الدفع: {status}" },
-  adm_invoice_title:{ en: "BloodOra — Invoice", bn: "BloodOra — ইনভয়েস",      ar: "BloodOra — فاتورة" },
-  adm_invoice_thank:{ en: "Thank you for shopping with BloodOra • Delivery only in Kalai • Support: {upa} ৳10", bn: "BloodOra থেকে কেনাকাটা করার জন্য ধন্যবাদ • শুধু কলাইতে ডেলিভারি • সাপোর্ট: {upa} ৳১০", ar: "شكرًا لتسوقك مع BloodOra • التوصيل في كالاي فقط • الدعم: {upa} ৳10" },
+  adm_invoice_title:{ en: "BloodFerry — Invoice", bn: "BloodFerry — ইনভয়েস",      ar: "BloodFerry — فاتورة" },
+  adm_invoice_thank:{ en: "Thank you for shopping with BloodFerry • Delivery only in Kalai • Support: {upa} ৳10", bn: "BloodFerry থেকে কেনাকাটা করার জন্য ধন্যবাদ • শুধু কলাইতে ডেলিভারি • সাপোর্ট: {upa} ৳১০", ar: "شكرًا لتسوقك مع BloodFerry • التوصيل في كالاي فقط • الدعم: {upa} ৳10" },
 
   // ---------- footer ----------
   site_meta_description:{ en: "Bangladesh blood donation network and medical shop.", bn: "বাংলাদেশের রক্তদান নেটওয়ার্ক ও মেডিকেল দোকান।", ar: "شبكة التبرع بالدم والمتجر الطبي في بنغلاديش." },

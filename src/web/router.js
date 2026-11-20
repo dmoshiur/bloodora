@@ -27,7 +27,7 @@ function renderError(req, res, status, view, extra = {}) {
   const titles = { 400: "Bad Request", 403: "Forbidden", 404: "Not Found", 500: "Server Error" };
   res.status(status);
   res.render(view, {
-    title: `${status} ${titles[status] || ""} - ${res.locals.siteName || "BloodOra"}`,
+    title: `${status} ${titles[status] || ""} - ${res.locals.siteName || "BloodFerry"}`,
     requestPath: req.originalUrl,
     ...extra,
   }, (error, html) => {

@@ -9,14 +9,15 @@ import { SMSProviderError, type SMSMessage, type SMSProvider, type SMSProviderRe
  * Official package: https://github.com/bdgreenweb/Laravel-sms-package-for-bdbulksms.net-SMS-API
  */
 export class GreenWebSMSProvider implements SMSProvider {
+  constructor(private readonly settings = config.sms) {}
   readonly name = "greenweb" as const;
-  configured(): boolean { return Boolean(config.sms.apiKey); }
+  configured(): boolean { return Boolean(this.settings.apiKey); }
 
   async send(message: SMSMessage): Promise<SMSProviderResult> {
     const to = bangladeshPhoneLocal(message.to);
     if (!to || !this.configured()) throw new SMSProviderError("GreenWeb requires a valid Bangladesh recipient and SMS_API_KEY.", "SMS_CONFIG", false);
-    const form = new URLSearchParams({ token: config.sms.apiKey, to, message: message.body });
-    const endpoint = new URL(smsApiUrl("https://api.bdbulksms.net/api.php"));
+    const form = new URLSearchParams({ token: this.settings.apiKey, to, message: message.body });
+    const endpoint = new URL(smsApiUrl("https://api.bdbulksms.net/api.php", this.settings.apiUrl));
     // The documented JSON-output variant; custom provider paths are preserved.
     if (!endpoint.searchParams.has("json")) endpoint.searchParams.set("json", "");
     const response = await postSms(endpoint.toString(), {
