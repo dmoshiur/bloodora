@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <%
   const _s = (typeof settings !== 'undefined' && settings) ? settings : {};
   // EJS's escaped output tag escapes exactly once. The old local escaper ran on
@@ -172,4 +172,4 @@
 })();
 </script>
 
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

@@ -14,6 +14,7 @@ import { str, toBool } from "../utils/validate.js";
 import { normalizeLang } from "../i18n/index.js";
 import { LANGUAGES } from "../data/constants.js";
 import { toSafeUser, toPublicUser } from "../utils/userShape.js";
+import { uploadService } from "./upload.service.js";
 import { nowIso } from "../utils/time.js";
 import { normalizeBangladeshPhone } from "../integrations/sms/phone.js";
 import type { SafeUser, UserRow } from "../types.js";
@@ -187,6 +188,7 @@ export const userService = {
     const row = await userRepo.findById(userId);
     if (!row) throw ApiError.notFound("User not found", "USER_NOT_FOUND");
     await userRepo.updateProfile(userId, { image_file: imageFile });
+    await uploadService.removeReplaced(row.image_file, imageFile);
     const fresh = (await userRepo.findById(userId))!;
     return toSafeUser(fresh);
   },
@@ -258,6 +260,7 @@ export const userService = {
       ...(fields.date_of_birth ? { date_of_birth: dob, age } : {}),
       ...(imageFile ? { image_file: imageFile } : {}),
     });
+    if (imageFile) await uploadService.removeReplaced(row.image_file, imageFile);
     const fresh = (await userRepo.findById(userId))!;
     return { user: normalizeFlags(fresh), message: "✅ Profile updated successfully!" };
   },

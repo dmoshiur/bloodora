@@ -241,8 +241,14 @@ export const rbacService = {
     if (target.id === actor.id && role.level < ((await roleRepo.getRole(actor.role || "user"))?.level ?? 9)) {
       throw ApiError.badRequest("You cannot downgrade your own account.", "SELF_DEMOTE");
     }
-    if (target.is_super_admin === 1 && roleKey !== "super_admin" && actor.role !== "super_admin") {
-      throw ApiError.forbidden("Only a super admin may change another super admin.", "SUPER_ADMIN_ONLY");
+    if (target.is_super_admin === 1 && roleKey !== "super_admin") {
+      if (actor.role !== "super_admin") {
+        throw ApiError.forbidden("Only a super admin may change another super admin.", "SUPER_ADMIN_ONLY");
+      }
+      const others = await userRepo.countActiveSuperAdminsExcluding(target.id);
+      if (others < 1) {
+        throw ApiError.badRequest("The last active Super Admin cannot be demoted.", "LAST_SUPER_ADMIN");
+      }
     }
 
     const before = target.role;

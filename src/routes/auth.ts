@@ -20,6 +20,7 @@ import {
   requestVerification,
   verifyEmail,
 } from "../controllers/auth.controller.js";
+import { acceptInvite, validateInvite } from "../controllers/adminAccounts.controller.js";
 
 /** The submitted email, so a credential-stuffing attempt is bucketed per account. */
 const byEmail = (req: Request): string | undefined => str((req.body as Record<string, unknown> | undefined)?.email);
@@ -60,6 +61,14 @@ router.post("/verify-email", rateLimit({ scope: "verify-email", windowMs: 15 * 6
 // Account-scoped phone verification with per-IP and per-number throttling.
 router.post("/phone/request", requireAuth, rateLimit({ scope: "phone-otp", windowMs: 15 * 60 * 1000, max: 5, shared: true, keyBy: (req) => req.user?.phone }), ah(requestPhoneCode));
 router.post("/phone/verify", requireAuth, rateLimit({ scope: "phone-otp-verify", windowMs: 15 * 60 * 1000, max: 10, shared: true, keyBy: (req) => req.user?.phone }), ah(verifyPhoneCode));
+
+// ---- admin invitation acceptance (public door, single-use token) ----
+router.get("/accept-invite/validate", rateLimit({ scope: "invite-validate", windowMs: 15 * 60 * 1000, max: 30, shared: true }), ah(validateInvite));
+router.post(
+  "/accept-invite",
+  rateLimit({ scope: "invite-accept", windowMs: 15 * 60 * 1000, max: 10, shared: true }),
+  ah(acceptInvite),
+);
 
 // requireAuth first: logout revokes the caller's session, so the caller must
 // be resolved (cookie OR bearer) before we can revoke anything.

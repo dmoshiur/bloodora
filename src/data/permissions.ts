@@ -25,6 +25,12 @@ export const PERMISSIONS: PermissionDef[] = [
   { key: "users.role.assign", name: "Assign roles", group: "users", description: "Promote, demote and change an account's role." },
   { key: "users.create_admin", name: "Create admins", group: "users", description: "Provision a new admin account." },
   { key: "users.impersonate", name: "Impersonate users", group: "users", description: "Sign in as another account for support." },
+  { key: "users.suspend", name: "Suspend accounts", group: "users", description: "Deactivate and reactivate non-admin accounts." },
+  { key: "admins.manage", name: "Manage admin accounts", group: "users", description: "Invite, deactivate and revoke sessions of admin accounts." },
+  { key: "roles.manage", name: "Manage roles", group: "users", description: "Create, edit and delete custom roles and their permission grants." },
+  { key: "donors.manage", name: "Manage donors", group: "donors", description: "Verify and moderate donor accounts and availability." },
+  { key: "notifications.manage", name: "Manage notifications", group: "communication", description: "Send and administer broadcast notifications." },
+  { key: "audit_logs.view", name: "View audit logs", group: "system", description: "Read the administrative audit trail (read-only, tamper-evident by redaction)." },
 
   // ---- content & navigation ----
   { key: "content.view", name: "View content", group: "content", description: "Read Anti-D entries and educational resources." },
@@ -111,6 +117,10 @@ const ADMIN_PERMISSIONS = [
   "settings.branding",
   "settings.smtp",
   "system.audit.view",
+  "audit_logs.view",
+  "donors.manage",
+  "notifications.manage",
+  "users.suspend",
 ];
 
 export const ROLES: RoleDef[] = [
@@ -138,7 +148,7 @@ export const ROLES: RoleDef[] = [
     name: "Super Admin",
     description: "Full control, including account administration, roles, refunds and system tools.",
     level: 9,
-    permissions: [...ADMIN_PERMISSIONS, "users.manage", "users.delete", "users.role.assign", "users.create_admin", "users.impersonate", "payments.refund", "system.backup", "system.maintenance"],
+    permissions: [...ADMIN_PERMISSIONS, "users.manage", "users.delete", "users.role.assign", "users.create_admin", "users.impersonate", "payments.refund", "system.backup", "system.maintenance", "admins.manage", "roles.manage"],
   },
 ];
 

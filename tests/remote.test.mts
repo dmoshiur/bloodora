@@ -341,10 +341,22 @@ step("image upload stores a BLOB through the HTTP transport", uploadRes?.status 
 if (uploaded) {
   const served = await fetch(`${warmInstance.base}/uploads/${uploaded}`, { signal: AbortSignal.timeout(DEADLINE) }).catch(() => null);
   const bytes = served ? Buffer.from(await served.arrayBuffer()) : Buffer.alloc(0);
+  // Since the centralized storage service landed, uploads are normalized to a
+  // sharp-optimized WebP before they are persisted (Cloudinary is signed with
+  // f_auto/q_auto and the database fallback stores binary WebP) — the old
+  // byte-for-byte passthrough of the original PNG no longer exists by design.
+  // What must hold: a 200, a decodable WebP payload, the right MIME, and the
+  // same pixel dimensions as the source image.
+  const { default: sharp } = await import("sharp");
+  let meta: { width?: number; height?: number } | null = null;
+  try { meta = await sharp(bytes).metadata(); } catch { meta = null; }
   step(
-    "the stored BLOB is served back byte-for-byte (ArrayBuffer path)",
-    served?.status === 200 && bytes.length === png.length && bytes.equals(png),
-    `${served?.status} ${bytes.length}/${png.length} bytes, content-length=${served?.headers.get("content-length")}`,
+    "the stored image is served back as a decodable WebP (normalized at write time)",
+    served?.status === 200
+      && (served?.headers.get("content-type") || "").includes("image/webp")
+      && bytes.length > 0
+      && meta?.width === 1 && meta?.height === 1,
+    `${served?.status} ${bytes.length} bytes webp ${meta?.width}x${meta?.height}, content-length=${served?.headers.get("content-length")}`,
   );
 }
 

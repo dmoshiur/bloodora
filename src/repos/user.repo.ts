@@ -257,6 +257,22 @@ export const userRepo = {
     );
   },
 
+  async setActive(id: string, active: boolean): Promise<void> {
+    // Deactivation also rotates the session token: every issued JWT dies now,
+    // not when it expires. Reactivation does not resurrect old tokens.
+    await run(`UPDATE users SET is_active = ?, session_token = ? WHERE id = ?`, [active ? 1 : 0, randomId(24), id]);
+  },
+
+  async countActiveSuperAdmins(): Promise<number> {
+    const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM users WHERE is_super_admin = 1 AND is_active = 1`);
+    return row?.n ?? 0;
+  },
+
+  async countActiveSuperAdminsExcluding(id: string): Promise<number> {
+    const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM users WHERE is_super_admin = 1 AND is_active = 1 AND id != ?`, [id]);
+    return row?.n ?? 0;
+  },
+
   async setPassword(id: string, passwordHash: string): Promise<void> {
     await run(`UPDATE users SET password_hash = ? WHERE id = ?`, [passwordHash, id]);
   },
@@ -293,6 +309,16 @@ export const userRepo = {
 
   async count(): Promise<number> {
     const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM users`);
+    return row?.n ?? 0;
+  },
+
+  async countActive(): Promise<number> {
+    const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM users WHERE is_active = 1`);
+    return row?.n ?? 0;
+  },
+
+  async countAvailableDonors(): Promise<number> {
+    const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM users WHERE can_donate = 1 AND is_active = 1`);
     return row?.n ?? 0;
   },
 

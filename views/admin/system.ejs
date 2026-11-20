@@ -1,0 +1,109 @@
+<%- include('_head') %>
+<%
+  const r = (typeof report === 'object' && report) ? report : null;
+  const okBadge = (ok) => ok ? '<span class="badge bg-success rounded-pill">OK</span>' : '<span class="badge bg-danger rounded-pill">FAILING</span>';
+  const storage = r && r.storage ? r.storage : {};
+  const mail = r && r.mail ? r.mail : {};
+  const sms = r && r.sms ? r.sms : {};
+  const ai = r && r.ai ? r.ai : {};
+  const db = r && r.database ? r.database : {};
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-heart-pulse text-danger me-2"></i>System Health</h2>
+      <small class="text-muted">Live probes — database, storage, mail, SMS, AI and process. Refreshed on each visit; secrets are never shown.</small>
+    </div>
+    <div class="d-flex align-items-center gap-2">
+      <% if (r) { %><span class="badge <%= r.status === 'ok' ? 'bg-success' : 'bg-warning text-dark' %> rounded-pill" style="font-size:.8rem;"><%= String(r.status).toUpperCase() %></span><% } %>
+      <a href="/admin/system" class="btn btn-outline-dark btn-sm rounded-pill"><i class="fas fa-rotate me-1"></i>Refresh</a>
+    </div>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'system' }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <% if (!r) { %>
+        <div class="alert alert-warning">The health report could not be generated. Check the server logs (admin-only view).</div>
+      <% } else { %>
+      <div class="row g-3 mb-3">
+        <div class="col-md-3 col-6"><div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:18px;"><div class="small text-muted">Environment</div><div class="fw-bold"><%= r.environment %></div></div></div>
+        <div class="col-md-3 col-6"><div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:18px;"><div class="small text-muted">Uptime</div><div class="fw-bold"><%= Math.round((r.uptime_seconds || 0) / 60) %> min</div></div></div>
+        <div class="col-md-3 col-6"><div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:18px;"><div class="small text-muted">Memory (RSS)</div><div class="fw-bold"><%= r.memory ? r.memory.rss_mb : '—' %> MB</div></div></div>
+        <div class="col-md-3 col-6"><div class="card border-0 shadow-sm text-center p-3 h-100" style="border-radius:18px;"><div class="small text-muted">Node</div><div class="fw-bold"><%= r.node %></div></div></div>
+      </div>
+
+      <div class="row g-3">
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start"><h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="fas fa-database me-1"></i>Database</h6><%- okBadge(db.ok) %></div>
+              <div class="small">Round-trip: <strong><%= db.latency_ms ?? '—' %> ms</strong></div>
+              <div class="small">Breaker: <strong><%= db.breaker || 'unknown' %></strong> (<%= db.breaker_failures ?? 0 %> recent failure(s))</div>
+              <div class="small text-muted"><%= db.detail || '' %></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-body">
+              <div class="d-flex justify-content-between align-items-start"><h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="fas fa-image me-1"></i>Image storage</h6><%- okBadge(Boolean(storage.webp_fallback_ready)) %></div>
+              <div class="small">Primary: <strong><%= storage.configured ? 'Cloudinary' : 'Database (optimized WebP)' %></strong></div>
+              <div class="small">Fallback ready: <strong><%= storage.webp_fallback_ready ? 'yes — sharp WebP encode verified' : 'NO' %></strong></div>
+              <div class="small">Catalogued media: <strong><%= storage.media_assets ?? '—' %></strong> (cloudinary: <%= storage.media_assets_cloudinary ?? '—' %>)</div>
+              <div class="small text-muted"><%= storage.reason || '' %><%= storage.webp_fallback_error ? (' · ' + storage.webp_fallback_error) : '' %></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-body">
+              <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="fas fa-envelope me-1"></i>Mail</h6>
+              <div class="small">Configured: <strong><%= mail.configured ? 'yes' : 'no' %></strong><%= mail.provider ? (' · ' + mail.provider) : '' %></div>
+              <div class="small">Outbox: <strong><%= mail.pending ?? 0 %></strong> pending · <%= mail.sent ?? 0 %> sent · <%= mail.failed ?? 0 %> failed</div>
+              <div class="small text-muted">Unconfigured mail never fails user-facing flows; messages queue for a configured provider.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-body">
+              <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="fas fa-comment-sms me-1"></i>SMS</h6>
+              <div class="small">Configured: <strong><%= sms.configured ? 'yes' : 'no' %></strong><%= sms.provider ? (' · ' + sms.provider) : '' %></div>
+              <% if (sms.reason) { %><div class="small text-warning"><%= sms.reason %></div><% } %>
+              <div class="small text-muted">No billable test is sent from this page.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-body">
+              <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="fas fa-robot me-1"></i>AI assistant</h6>
+              <div class="small">Configured: <strong><%= ai.configured ? 'yes' : 'no' %></strong></div>
+              <div class="small">Provider/model: <strong><%= ai.provider || '—' %></strong> · <%= ai.model || '—' %></div>
+              <div class="small text-muted">Enabled: <%= ai.enabled ? 'yes' : 'no' %></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-4 col-md-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-body">
+              <h6 class="text-uppercase small fw-bold text-muted mb-2"><i class="fas fa-gauge-high me-1"></i>Report</h6>
+              <div class="small">Generated in <strong><%= r.report_ms %> ms</strong></div>
+              <div class="small text-muted"><%= r.generated_at %></div>
+              <div class="small text-muted mt-2">Storage backend status is also shown on the Integrations page. Cloudinary credentials live in environment variables only.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <% } %>
+    </main>
+  </div>
+</div>
+<%- include('_tail') %>

@@ -1,0 +1,68 @@
+<%- include('_head') %>
+<%
+  const entries = Array.isArray(auditEntries) ? auditEntries : [];
+  const fmtDate = (v) => { if (!v) return '—'; const s = String(v); const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z'); return isNaN(d) ? s.slice(0, 19).replace('T', ' ') : d.toLocaleString(); };
+  const totalN = Number(total) || 0;
+  const limitN = Number(limit) || 50;
+  const offsetN = Number(offset) || 0;
+  const page = Math.floor(offsetN / limitN) + 1;
+  const pages = Math.max(1, Math.ceil(totalN / limitN));
+  const actionsList = Array.isArray(actions) ? actions : [];
+  const q = (extra) => new URLSearchParams({ ...(filterAction ? { action: filterAction } : {}), ...(filterEntity ? { entity_type: filterEntity } : {}), limit: limitN, offset: offsetN, ...extra }).toString();
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-clipboard-list text-danger me-2"></i>Audit Logs <span class="badge bg-secondary rounded-pill align-middle"><%= totalN %></span></h2>
+      <small class="text-muted">Tamper-resistant administrative trail — actor, action, resource, time, outcome metadata (secrets are redacted at write time).</small>
+    </div>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'audit' }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <form method="GET" action="/admin/audit-logs" class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+        <div class="card-body py-2 d-flex flex-wrap gap-2 align-items-center">
+          <label class="visually-hidden" for="filter-action">Action</label>
+          <select id="filter-action" name="action" class="form-select" style="width:auto;">
+            <option value="">All actions</option>
+            <% actionsList.forEach(a => { %><option value="<%= a %>" <%= a === filterAction ? 'selected' : '' %>><%= a %></option><% }) %>
+          </select>
+          <label class="visually-hidden" for="filter-entity">Entity</label>
+          <input id="filter-entity" name="entity_type" class="form-control" style="width:auto;" placeholder="entity type (user, role, …)" value="<%= filterEntity || '' %>">
+          <button class="btn btn-dark btn-sm rounded-pill"><i class="fas fa-filter me-1"></i>Filter</button>
+          <% if (filterAction || filterEntity) { %><a class="btn btn-outline-secondary btn-sm rounded-pill" href="/admin/audit-logs">Clear</a><% } %>
+        </div>
+      </form>
+
+      <div class="card border-0 shadow-sm" style="border-radius:18px;">
+        <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+          <thead><tr><th>When</th><th>Actor</th><th>Role</th><th>Action</th><th>Summary</th><th>IP</th></tr></thead>
+          <tbody>
+            <% entries.forEach(e => { %>
+              <tr>
+                <td class="small text-nowrap"><%= fmtDate(e.created_at) %></td>
+                <td class="small text-muted"><%= e.actor_id ? String(e.actor_id).slice(0, 10) + '…' : '—' %></td>
+                <td class="small"><%= e.actor_role || '—' %></td>
+                <td><span class="badge bg-light text-dark border"><%= e.action %></span></td>
+                <td class="small" style="max-width:420px;"><%= e.summary || '' %></td>
+                <td class="small text-muted"><%= e.ip || '—' %></td>
+              </tr>
+            <% }) %>
+            <% if (!entries.length) { %><tr><td colspan="6" class="text-center text-muted py-4">No audit entries match.</td></tr><% } %>
+          </tbody>
+        </table></div></div>
+      </div>
+
+      <div class="d-flex justify-content-between align-items-center mt-3">
+        <span class="small text-muted">Page <%= page %> of <%= pages %> · <%= totalN %> entries</span>
+        <div class="btn-group">
+          <% if (offsetN > 0) { %><a class="btn btn-outline-secondary btn-sm" href="/admin/audit-logs?<%= q({ offset: Math.max(0, offsetN - limitN) }) %>"><i class="fas fa-arrow-left"></i> Newer</a><% } %>
+          <% if (offsetN + limitN < totalN) { %><a class="btn btn-outline-secondary btn-sm" href="/admin/audit-logs?<%= q({ offset: offsetN + limitN }) %>">Older <i class="fas fa-arrow-right"></i></a><% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<%- include('_tail') %>

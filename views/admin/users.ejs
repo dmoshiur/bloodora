@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <%
   const _t2 = (typeof t === 'function') ? t : (k) => k;
   // EJS's escaped output tag escapes exactly once. The old local escaper ran on
@@ -10,8 +10,9 @@
 <div class="container mt-4 mb-5">
   <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
     <div>
-      <h2 class="fw-bold mb-0"><i class="fas fa-users-gear text-danger me-2"></i><%= _t2('adm_users') %> <span class="badge bg-secondary rounded-pill align-middle"><%= _num(all_users.length) %></span></h2>
+      <h2 class="fw-bold mb-0"><i class="fas fa-users-gear text-danger me-2"></i><%= _t2('adm_users') %> <span class="badge bg-secondary rounded-pill align-middle"><%= _num((stats && stats.total_users) ? stats.total_users : all_users.length) %></span></h2>
       <small class="text-muted"><%= _t2('adm_users_sub') %></small>
+      <% if (stats && stats.total_users > all_users.length) { %><small class="text-warning d-block"><i class="fas fa-triangle-exclamation me-1"></i>Showing the newest <%= _num(all_users.length) %> of <%= _num(stats.total_users) %> accounts (server-side cap).</small><% } %>
     </div>
   </div>
 
@@ -264,4 +265,4 @@
 })();
 </script>
 
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

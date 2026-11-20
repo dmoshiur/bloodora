@@ -1,0 +1,115 @@
+<%- include('_head') %>
+<%
+  const _t2 = (typeof t === 'function') ? t : (k) => k;
+  const isSuper = !!(typeof currentUser !== 'undefined' && currentUser && currentUser.is_super_admin);
+  const rows = Array.isArray(admins) ? admins : [];
+  const fmtDate = (v) => { if (!v) return '—'; const s = String(v); const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z'); return isNaN(d) ? s.slice(0, 16).replace('T', ' ') : d.toLocaleString(); };
+  const roleBadge = (r) => r === 'super_admin' ? 'bg-dark' : r === 'admin' ? 'bg-danger' : 'bg-secondary';
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-user-shield text-danger me-2"></i>Admin Team <span class="badge bg-secondary rounded-pill align-middle"><%= rows.length %></span></h2>
+      <small class="text-muted">Multi-admin management — invite, activate, deactivate and review sessions. The last active Super Admin is protected.</small>
+    </div>
+    <span class="badge text-bg-light border"><i class="fas fa-lock me-1"></i><%= activeSuperAdmins %> active super admin(s)</span>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'admins' }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-4">
+        <div class="col-12">
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-users text-danger me-2"></i>Administrative accounts</h6></div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table align-middle mb-0">
+              <thead><tr><th>Name</th><th>Email</th><th>Role</th><th>Status</th><th>Last sign-in</th><th class="text-end">Actions</th></tr></thead>
+              <tbody>
+                <% rows.forEach((a) => { %>
+                  <tr>
+                    <td class="fw-bold"><%= a.name %><% if (String(a.id) === String(currentUser && currentUser.id)) { %> <span class="badge bg-light text-dark border ms-1">you</span><% } %></td>
+                    <td class="small text-muted"><%= a.email %></td>
+                    <td><span class="badge <%= roleBadge(a.role) %> rounded-pill"><%= a.role %></span></td>
+                    <td><% if (a.is_active) { %><span class="badge bg-success rounded-pill">Active</span><% } else { %><span class="badge bg-warning text-dark rounded-pill">Pending / Deactivated</span><% } %></td>
+                    <td class="small text-muted"><%= fmtDate(a.last_login_at) %></td>
+                    <td class="text-end">
+                      <div class="d-inline-flex gap-1 flex-wrap justify-content-end">
+                        <form method="POST" action="/admin/admins/<%= a.id %>/revoke-sessions" class="d-inline" onsubmit="return confirm('Revoke every session of this account?')"><button class="btn btn-outline-secondary btn-sm rounded-pill" title="Revoke all sessions"><i class="fas fa-right-from-bracket"></i></button></form>
+                        <% if (a.is_active) { %>
+                          <form method="POST" action="/admin/admins/<%= a.id %>/deactivate" class="d-inline" onsubmit="return confirm('Deactivate this account? All sessions will be revoked immediately.')"><button class="btn btn-outline-danger btn-sm rounded-pill" title="Deactivate"><i class="fas fa-user-slash"></i></button></form>
+                        <% } else { %>
+                          <form method="POST" action="/admin/admins/<%= a.id %>/activate" class="d-inline"><button class="btn btn-outline-success btn-sm rounded-pill" title="Activate"><i class="fas fa-user-check"></i></button></form>
+                        <% } %>
+                        <% if (isSuper && Array.isArray(assignableRoles) && assignableRoles.length) { %>
+                          <form method="POST" action="/admin/admins/<%= a.id %>/role" class="d-inline">
+                            <select name="role" class="form-select form-select-sm d-inline-block" style="width:auto; border-radius:999px;" onchange="this.form.submit()">
+                              <% assignableRoles.forEach(r => { %><option value="<%= r.key %>" <%= r.key === a.role ? 'selected' : '' %>><%= r.name %></option><% }) %>
+                            </select>
+                          </form>
+                        <% } %>
+                      </div>
+                    </td>
+                  </tr>
+                <% }) %>
+                <% if (!rows.length) { %><tr><td colspan="6" class="text-center text-muted py-4">No administrative accounts found.</td></tr><% } %>
+              </tbody>
+            </table></div></div>
+          </div>
+          <div class="small text-muted mt-2"><i class="fas fa-circle-info me-1"></i>Deactivating an account revokes every session immediately. The last active Super Admin can never be deactivated or demoted. Role changes rotate the target's sessions.</div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-envelope-open-text text-danger me-2"></i>Invite an admin</h6></div>
+            <div class="card-body">
+              <% if (!canManage) { %>
+                <p class="text-muted small mb-0">You do not hold the <code>admins.manage</code> permission. Accounts with that grant may invite new admins.</p>
+              <% } else { %>
+              <p class="small text-muted">A single-use invitation link (valid 7 days) is issued. If email is configured the link is emailed; otherwise it is shown once here for secure hand-off. No public admin registration exists.</p>
+              <form method="POST" action="/admin/admins/invite" class="d-grid gap-2">
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="inv-name">Name</label><input id="inv-name" name="name" class="form-control" required minlength="2" maxlength="80" autocomplete="off"></div>
+                  <div class="col-md-6"><label class="form-label small" for="inv-email">Email</label><input id="inv-email" name="email" type="email" class="form-control" required autocomplete="off"></div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="inv-phone">Phone (optional)</label><input id="inv-phone" name="phone" class="form-control" placeholder="01XXXXXXXXX" autocomplete="off"></div>
+                  <div class="col-md-6"><label class="form-label small" for="inv-role">Role</label><select id="inv-role" name="role" class="form-select">
+                    <% assignableRoles.forEach(r => { %><option value="<%= r.key %>" <%= r.key === 'admin' ? 'selected' : '' %>><%= r.name %></option><% }) %>
+                  </select></div>
+                </div>
+                <button class="btn btn-dark rounded-pill"><i class="fas fa-paper-plane me-1"></i>Send invitation</button>
+              </form>
+              <% } %>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm h-100" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-user-plus text-danger me-2"></i>Create admin directly</h6></div>
+            <div class="card-body">
+              <% if (!isSuper) { %>
+                <p class="text-muted small mb-0">Direct creation is limited to Super Admins.</p>
+              <% } else { %>
+              <p class="small text-muted">Creates an active admin immediately with the password you choose. Prefer invitations when the person is not in the room — the password is visible while you type it.</p>
+              <form method="POST" action="/admin/create-admin" class="d-grid gap-2">
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="ca-name">Name</label><input id="ca-name" name="name" class="form-control" required minlength="2" maxlength="80"></div>
+                  <div class="col-md-6"><label class="form-label small" for="ca-email">Email</label><input id="ca-email" name="email" type="email" class="form-control" required></div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="ca-phone">Phone</label><input id="ca-phone" name="phone" class="form-control" placeholder="01XXXXXXXXX"></div>
+                  <div class="col-md-6"><label class="form-label small" for="ca-pass">Temporary password</label><input id="ca-pass" name="password" type="password" class="form-control" required minlength="8" autocomplete="new-password"></div>
+                </div>
+                <button class="btn btn-outline-dark rounded-pill"><i class="fas fa-user-shield me-1"></i>Create admin</button>
+              </form>
+              <% } %>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<%- include('_tail') %>

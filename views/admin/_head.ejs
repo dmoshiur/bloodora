@@ -1,0 +1,82 @@
+<%
+  // Dedicated Admin Panel document shell — deliberately independent of the
+  // public website chrome. No public navbar, footer, AI widget or pagination.
+  const tAdmin = (typeof t === 'function') ? t : (k) => k;
+  const site = (typeof siteName !== 'undefined') ? siteName : 'BloodFerry';
+  const logo = '/assets/brand/bloodferry-logo.png';
+  const admUser = (typeof currentUser !== 'undefined') ? currentUser : null;
+  const adminTitle = (typeof title !== 'undefined' && title) ? String(title).split(' - ')[0] : 'Admin';
+  const admPrimary = (typeof siteBranding !== 'undefined' && siteBranding && siteBranding.brand_primary) ? siteBranding.brand_primary : '#e31b23';
+%><!DOCTYPE html>
+<html lang="<%= typeof lang !== 'undefined' ? lang : 'en' %>" dir="<%= typeof dir !== 'undefined' ? dir : 'ltr' %>">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title><%= adminTitle %> — <%= site %> Admin</title>
+  <meta name="theme-color" content="#0f172a">
+  <meta name="robots" content="noindex, nofollow">
+  <link rel="icon" href="<%= logo %>" type="image/png">
+  <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
+  <script>
+    // Same-origin mutating fetches carry the synchronizer token; HTML forms get
+    // their hidden token injected server-side. Never expose the token elsewhere.
+    (() => {
+      const nativeFetch = window.fetch.bind(window);
+      window.fetch = (input, init = {}) => {
+        const method = String(init.method || (input instanceof Request ? input.method : 'GET')).toUpperCase();
+        const url = new URL(typeof input === 'string' ? input : input.url, location.href);
+        if (!['GET','HEAD','OPTIONS'].includes(method) && url.origin === location.origin) {
+          const headers = new Headers(init.headers || (input instanceof Request ? input.headers : undefined));
+          const token = document.querySelector('meta[name="csrf-token"]')?.content;
+          if (token) headers.set('X-CSRF-Token', token);
+          init = { ...init, headers };
+        }
+        return nativeFetch(input, init);
+      };
+    })();
+  </script>
+  <link href="/fonts/fonts.css" rel="stylesheet">
+  <link href="/vendor/bootstrap/bootstrap.min.css" rel="stylesheet">
+  <link href="/vendor/fontawesome/css/all.min.css" rel="stylesheet">
+  <style>
+    :root{ --primary:<%= admPrimary %>; --accent:#ff3340; --font-display:'Cormorant Garamond','Noto Serif Bengali','Aref Ruqaa',Georgia,serif; }
+    *{ box-sizing:border-box; }
+    body.admin-body{ background:#f1f5f9; font-family:'Inter','Hind Siliguri',system-ui,sans-serif; color:#0f172a; min-height:100vh; }
+    .admin-topbar{ display:flex; align-items:center; justify-content:space-between; gap:1rem; background:#0f172a; color:#e2e8f0; padding:.55rem 1.1rem; position:sticky; top:0; z-index:1030; box-shadow:0 1px 0 rgba(255,255,255,.06), 0 8px 24px rgba(2,6,23,.35); }
+    .admin-topbar .brand{ display:flex; align-items:center; gap:.7rem; color:#fff; text-decoration:none; font-family:var(--font-display); font-weight:700; letter-spacing:.02em; }
+    .admin-topbar .brand img{ height:34px; width:auto; }
+    .admin-topbar .brand .badge{ background:var(--primary); font-size:.62rem; letter-spacing:.18em; padding:.32rem .5rem; border-radius:.4rem; vertical-align:middle; }
+    .admin-topbar .right{ display:flex; align-items:center; gap:.5rem; flex-wrap:wrap; }
+    .admin-topbar a.visit,.admin-topbar button.logout{ display:inline-flex; align-items:center; gap:.4rem; border-radius:.55rem; padding:.42rem .75rem; font-size:.82rem; font-weight:600; text-decoration:none; border:1px solid rgba(255,255,255,.16); color:#e2e8f0; background:transparent; }
+    .admin-topbar a.visit:hover,.admin-topbar button.logout:hover{ background:rgba(255,255,255,.08); color:#fff; }
+    .admin-topbar .who{ font-size:.78rem; color:#94a3b8; max-width:180px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+    @media(max-width:575px){ .admin-topbar .who{ display:none; } }
+    .admin-wrapper{ display:flex; min-width:0; }
+    .dash-wrapper, .admin-wrapper{ min-width:0; }
+  </style>
+</head>
+<body class="admin-body">
+  <header class="admin-topbar" role="banner">
+    <a class="brand" href="/admin" title="Admin">
+      <img src="<%= logo %>" alt="<%= site %>">
+      <span><%= site %> <span class="badge">ADMIN</span></span>
+    </a>
+    <div class="right">
+      <a class="visit" href="/" target="_blank" rel="noopener"><i class="fas fa-arrow-up-right-from-square"></i><%= tAdmin('adm_view_site') || 'View site' %></a>
+      <% if (admUser) { %><span class="who" title="<%= admUser.email %>"><i class="fas fa-user-shield me-1"></i><%= admUser.name %></span><% } %>
+      <form method="POST" action="/logout" style="margin:0"><button type="submit" class="logout"><i class="fas fa-right-from-bracket"></i>Logout</button></form>
+    </div>
+  </header>
+  <!-- load + flash feedback for the admin shell (public header is never rendered here) -->
+  <% if (typeof loadError !== 'undefined' && loadError) { %>
+    <div class="container mt-3"><div class="alert alert-warning" role="alert">Some data failed to load. <a href="<%= typeof currentPath !== 'undefined' ? currentPath : '/admin' %>">Retry</a></div></div>
+  <% } %>
+  <% if (typeof flash !== 'undefined' && flash) { %>
+    <div class="container mt-3">
+      <div class="alert alert-<%= flash.type==='danger'?'danger':flash.type==='success'?'success':flash.type==='warning'?'warning':'info' %> alert-dismissible fade show shadow-sm border-0" role="alert" style="border-radius:14px;">
+        <i class="fas fa-<%= flash.type==='success'?'check-circle':flash.type==='danger'?'exclamation-triangle':flash.type==='warning'?'exclamation-circle':'info-circle' %> me-2"></i>
+        <%= flash.message %>
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    </div>
+  <% } %>

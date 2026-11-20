@@ -13,8 +13,11 @@ export async function upload(req: Request, res: Response): Promise<void> {
   if (!req.user) throw ApiError.unauthorized("Login required to upload", "LOGIN_REQUIRED");
   const file = readUpload(req);
   if (!file) throw ApiError.badRequest("No file uploaded (field name: file)", "NO_FILE");
-  const filename = await uploadService.store(file);
-  res.status(201).json({ filename, url: `/uploads/${filename}`, size: file.data.length });
+  // Report the provider that actually persisted the bytes — never the
+  // configured primary — so a Cloudinary outage shows up truthfully as
+  // "database" rather than a claimed remote write that never happened.
+  const stored = await uploadService.storeWithMeta(file, req.user.id);
+  res.status(201).json({ filename: stored.filename, url: `/uploads/${stored.filename}`, size: file.data.length, storage: stored.provider });
 }
 
 /**
@@ -67,7 +70,7 @@ export async function replaceLogo(req: Request, res: Response): Promise<void> {
   if (!req.user) throw ApiError.unauthorized();
   const file = readUpload(req);
   if (!file) throw ApiError.badRequest("No logo uploaded (field name: logo)", "NO_FILE");
-  const filename = await uploadService.store(file);
+  const filename = await uploadService.store(file, req.user.id);
   const settings = await settingsService.replaceLogo(req.user, filename);
   res.json({ settings });
 }

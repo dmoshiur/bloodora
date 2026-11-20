@@ -18,11 +18,13 @@ import { randomId } from "../utils/errors.js";
  *    so only the most recent email link works.
  */
 
-export type TokenPurpose = "password_reset" | "email_verify";
+export type TokenPurpose = "password_reset" | "email_verify" | "admin_invite" | "account_delete";
 
 export const TOKEN_TTL_MS: Record<TokenPurpose, number> = {
   password_reset: 30 * 60 * 1000,
   email_verify: 48 * 60 * 60 * 1000,
+  admin_invite: 7 * 24 * 60 * 60 * 1000, // an invited admin has a week to set a password
+  account_delete: 7 * 24 * 60 * 60 * 1000, // deletion request confirmation link
 };
 
 export interface AuthTokenRow {

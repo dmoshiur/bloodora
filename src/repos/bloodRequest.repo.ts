@@ -164,6 +164,11 @@ export const bloodRequestRepo = {
     return row?.n ?? 0;
   },
 
+  async countPending(): Promise<number> {
+    const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM blood_requests WHERE is_fulfilled = 0 AND status != 'cancelled'`);
+    return row?.n ?? 0;
+  },
+
   async countAll(): Promise<number> {
     const row = await get<{ n: number }>(`SELECT COUNT(*) AS n FROM blood_requests`);
     return row?.n ?? 0;

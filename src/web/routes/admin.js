@@ -33,13 +33,13 @@ router.get("/", requireAdmin, async (req, res) => {
       title: `${req.t("adm_dashboard")} - ${res.locals.siteName}`,
       all_users: allUsers, stats: d.stats || {}, overviewOk,
       current_notice: d.current_notice || "", settings: d.settings || res.locals.branding, now: new Date(),
+      recent_registrations: d.recent_registrations || allUsers,
       // real aggregates for the side panels:
       recent_orders: ordersR.__err ? { ok: false, list: [] } : { ok: true, list: (ordersR.orders || []).slice(0, 5), revenue: (ordersR.orders || []).reduce((s, o) => s + (Number(o.total_amount) || 0), 0), paid: (ordersR.orders || []).filter((o) => String(o.payment_status || "").toLowerCase() === "confirmed").length },
       activity: activityR.__err ? { ok: false, list: [] } : { ok: true, list: (activityR.events || []).slice(0, 8) },
       support: supportR.__err ? { ok: false, sessions: [], unread: 0 } : { ok: true, sessions: (supportR.sessions || []).slice(0, 5), unread: supportR.unread_total || 0 },
       admin_messages: messagesR.__err ? { ok: false, unread: 0 } : { ok: true, unread: messagesR.unread || 0 },
-      // recent registrations: real users sorted by created_at (API order)
-      recent_registrations: allUsers.slice(0, 5),
+      // recent registrations come from the API (already sliced); the full list is only used by /admin/users
     });
   } catch (e) {
     console.error(e.message);
@@ -471,6 +471,214 @@ router.post("/activity/announce", requireAdmin, async (req, res) => {
   try { flashFrom(req, await apiPost("/api/admin/activity/announce", req.body, req.session.token)); }
   catch (e) { req.session.flash = { type: "danger", message: e.message || "\u274c Failed." }; }
   res.redirect("/admin/activity");
+});
+
+
+// ============================================================================
+//  Admin Team  (/admin/admins) — invite, activate/deactivate, revoke sessions
+// ============================================================================
+router.get("/admins", requireAdmin, async (req, res) => {
+  const token = req.session.token;
+  let admins = [], activeSuperAdmins = 0, roles = [], permissions = [];
+  try {
+    const d = await apiGet("/api/admin/admins", token);
+    admins = d.admins || []; activeSuperAdmins = d.active_super_admins || 0;
+  } catch (e) { res.locals.loadError = true; }
+  try { roles = (await apiGet("/api/admin/roles", token)).roles || []; } catch (e) { res.locals.loadError = true; }
+  try { permissions = (await apiGet("/api/rbac/me", token)).permissions || []; } catch {}
+  const canManage = permissions.includes("admins.manage");
+  const assignableRoles = roles.filter((r) => Number(r.level) >= 5).sort((a, b) => Number(b.level) - Number(a.level));
+  const allRoles = [...roles].sort((a, b) => Number(b.level) - Number(a.level));
+  res.render("admin/admins", {
+    title: `Admin Team - ${res.locals.siteName}`,
+    admins, activeSuperAdmins, assignableRoles: allRoles.length ? allRoles : assignableRoles,
+    canManage, active: "admins",
+  });
+});
+
+router.post("/admins/invite", requireAdmin, async (req, res) => {
+  try {
+    const d = await apiPost("/api/admin/admins/invite", { name: req.body.name, email: req.body.email, phone: req.body.phone, role: req.body.role }, req.session.token);
+    flashFrom(req, d, "✅ Invitation created.");
+    if (d.invite_url && !d.invite_email_sent) {
+      // The raw link appears exactly once, in this flash; it is never stored or logged.
+      req.session.flash = { type: "warning", message: `Email not configured — share this single-use link securely: ${d.invite_url}` };
+    }
+  } catch (e) {
+    req.session.flash = { type: "danger", message: e.message || "❌ Could not create the invitation." };
+  }
+  res.redirect("/admin/admins");
+});
+
+router.post("/admins/:id/activate", requireAdmin, async (req, res) => {
+  try { flashFrom(req, await apiPost(`/api/admin/admins/${encodeURIComponent(req.params.id)}/activate`, {}, req.session.token)); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Could not activate." }; }
+  res.redirect("/admin/admins");
+});
+
+router.post("/admins/:id/deactivate", requireAdmin, async (req, res) => {
+  try { flashFrom(req, await apiPost(`/api/admin/admins/${encodeURIComponent(req.params.id)}/deactivate`, {}, req.session.token)); }
+  catch (e) { req.session.flash = { type: "warning", message: e.message || "❌ Could not deactivate." }; }
+  res.redirect("/admin/admins");
+});
+
+router.post("/admins/:id/revoke-sessions", requireAdmin, async (req, res) => {
+  try { flashFrom(req, await apiPost(`/api/admin/admins/${encodeURIComponent(req.params.id)}/revoke-sessions`, {}, req.session.token)); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Could not revoke sessions." }; }
+  res.redirect("/admin/admins");
+});
+
+router.post("/admins/:id/role", requireAdmin, async (req, res) => {
+  try { flashFrom(req, await apiPost(`/api/admin/users/${encodeURIComponent(req.params.id)}/role`, { role: req.body.role }, req.session.token), "✅ Role updated."); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Could not assign the role." }; }
+  res.redirect("/admin/admins");
+});
+
+// ============================================================================
+//  Roles & Permissions  (/admin/roles)
+// ============================================================================
+router.get("/roles", requireAdmin, async (req, res) => {
+  const token = req.session.token;
+  let roles = [], permissions = [];
+  try { roles = (await apiGet("/api/admin/roles", token)).roles || []; } catch (e) { res.locals.loadError = true; }
+  try { permissions = (await apiGet("/api/admin/permissions", token)).permissions || []; } catch (e) { res.locals.loadError = true; }
+  res.render("admin/roles", {
+    title: `Roles & Permissions - ${res.locals.siteName}`,
+    roles, permissions, active: "roles",
+  });
+});
+
+router.post("/roles", requireAdmin, async (req, res) => {
+  const permissions = [].concat(req.body.permissions || []).filter(Boolean);
+  try {
+    flashFrom(req, await apiPost("/api/admin/roles", { key: req.body.key, name: req.body.name, description: req.body.description, level: req.body.level, permissions }, req.session.token), "✅ Role created.");
+  } catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Could not create the role." }; }
+  res.redirect("/admin/roles");
+});
+
+router.post("/roles/:key/update", requireAdmin, async (req, res) => {
+  const permissions = [].concat(req.body.permissions || []).filter(Boolean);
+  try {
+    flashFrom(req, await apiPut(`/api/admin/roles/${encodeURIComponent(req.params.key)}`, { permissions }, req.session.token), "✅ Permissions updated.");
+  } catch (e) { req.session.flash = { type: "warning", message: e.message || "❌ Could not update permissions." }; }
+  res.redirect("/admin/roles");
+});
+
+router.post("/roles/:key/delete", requireAdmin, async (req, res) => {
+  try { flashFrom(req, await apiDel(`/api/admin/roles/${encodeURIComponent(req.params.key)}`, req.session.token), "✅ Role deleted."); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Could not delete the role." }; }
+  res.redirect("/admin/roles");
+});
+
+// ============================================================================
+//  Audit Logs  (/admin/audit-logs)
+// ============================================================================
+router.get("/audit-logs", requireAdmin, async (req, res) => {
+  const limit = Math.min(Math.max(parseInt(String(req.query.limit || "50"), 10) || 50, 1), 200);
+  const offset = Math.max(parseInt(String(req.query.offset || "0"), 10) || 0, 0);
+  const filterAction = String(req.query.action || "").trim();
+  const filterEntity = String(req.query.entity_type || "").trim();
+  let auditEntries = [], total = 0, actions = [];
+  try {
+    const d = await apiGet("/api/admin/audit", req.session.token, {
+      limit, offset,
+      ...(filterAction ? { action: filterAction } : {}),
+      ...(filterEntity ? { entity_type: filterEntity } : {}),
+    });
+    auditEntries = d.entries || []; total = d.total || 0; actions = d.actions || [];
+  } catch (e) {
+    res.locals.loadError = true;
+  }
+  res.render("admin/audit_logs", {
+    title: `Audit Logs - ${res.locals.siteName}`,
+    auditEntries, total, limit, offset, filterAction, filterEntity, actions, active: "audit",
+  });
+});
+
+// ============================================================================
+//  System Health  (/admin/system) — live probes, admin-only
+// ============================================================================
+router.get("/system", requireAdmin, async (req, res) => {
+  let report = null;
+  try { report = await apiGet("/api/admin/system/health", req.session.token); }
+  catch (e) { res.locals.loadError = true; }
+  res.render("admin/system", { title: `System Health - ${res.locals.siteName}`, report, active: "system" });
+});
+
+// ============================================================================
+//  Notifications  (/admin/notifications) — own in-app feed
+// ============================================================================
+router.get("/notifications", requireAdmin, async (req, res) => {
+  let notifications = [], unread = 0;
+  try {
+    const d = await apiGet("/api/notifications", req.session.token, { limit: 50 });
+    notifications = d.notifications || []; unread = d.unread || 0;
+  } catch (e) { res.locals.loadError = true; }
+  res.render("admin/notifications", {
+    title: `Notifications - ${res.locals.siteName}`,
+    notifications, unread, active: "notifications",
+  });
+});
+
+router.post("/notifications/read-all", requireAdmin, async (req, res) => {
+  try { flashFrom(req, await apiPost("/api/notifications/read-all", {}, req.session.token), "✅ All notifications marked as read."); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Failed." }; }
+  res.redirect("/admin/notifications");
+});
+
+router.post("/notifications/:id/read", requireAdmin, async (req, res) => {
+  try { await apiPost(`/api/notifications/${encodeURIComponent(req.params.id)}/read`, {}, req.session.token); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Failed." }; }
+  res.redirect("/admin/notifications");
+});
+
+router.post("/notifications/:id/delete", requireAdmin, async (req, res) => {
+  try { await apiDel(`/api/notifications/${encodeURIComponent(req.params.id)}`, req.session.token); }
+  catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Failed." }; }
+  res.redirect("/admin/notifications");
+});
+
+// ============================================================================
+//  My Admin Profile  (/admin/profile)
+// ============================================================================
+router.get("/profile", requireAdmin, async (req, res) => {
+  let loginHistory = [], historyUnavailable = false;
+  try {
+    const d = await apiGet("/api/admin/audit", req.session.token, { actor_id: req.user.id, limit: 15 });
+    loginHistory = d.entries || [];
+  } catch (e) {
+    historyUnavailable = true; // missing audit permission — the rest of the page still works
+  }
+  res.render("admin/profile", {
+    title: `My Profile - ${res.locals.siteName}`,
+    loginHistory, historyUnavailable, active: "profile",
+  });
+});
+
+router.post("/profile/password", requireAdmin, async (req, res) => {
+  const current = String(req.body.current || "");
+  const next = String(req.body.next || "");
+  const confirm = String(req.body.confirm || "");
+  if (next !== confirm) {
+    req.session.flash = { type: "warning", message: "Passwords do not match." };
+    return res.redirect("/admin/profile");
+  }
+  try {
+    const d = await apiPost("/api/auth/password", { current, next }, req.session.token);
+    flashFrom(req, d, "✅ Password updated.");
+  } catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Failed to change password." }; }
+  res.redirect("/admin/profile");
+});
+
+router.post("/profile/revoke-sessions", requireAdmin, async (req, res) => {
+  try {
+    await apiPost(`/api/admin/admins/${encodeURIComponent(req.user.id)}/revoke-sessions`, {}, req.session.token);
+    req.session.flash = { type: "info", message: "All sessions were revoked. Sign in again to continue." };
+  } catch (e) { req.session.flash = { type: "danger", message: e.message || "❌ Could not revoke sessions." }; }
+  delete req.session.token;
+  delete req.session.userCache;
+  delete req.session.userId;
+  res.redirect("/login");
 });
 
 export default router;

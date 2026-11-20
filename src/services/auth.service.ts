@@ -178,6 +178,7 @@ export const authService = {
       is_verified: 0,
       image_file: input.imageFile ?? null,
       session_token: null,
+      is_active: 1,
     };
 
     try {
@@ -231,6 +232,22 @@ export const authService = {
         })
         .catch(() => {});
       throw ApiError.unauthorized(translate(ctx.lang, "auth.bad_credentials"), "BAD_CREDENTIALS");
+    }
+    if (row.is_active === 0) {
+      // Same envelope as bad credentials: never reveal which check failed.
+      await auditRepo
+        .create({
+          actorId: row.id,
+          actorRole: row.role,
+          action: "auth.login.blocked",
+          entityType: "user",
+          entityId: row.id,
+          summary: `Blocked login for a deactivated account (${maskEmail(row.email)})`,
+          ip: ctx.ip ?? null,
+          userAgent: ctx.userAgent ?? null,
+        })
+        .catch(() => {});
+      throw ApiError.unauthorized(translate(ctx.lang, "auth.bad_credentials"), "ACCOUNT_DEACTIVATED");
     }
     const ok = await bcrypt.compare(password, row.password_hash);
     if (!ok) {
@@ -459,6 +476,7 @@ export const authService = {
     const row = await userRepo.findById(String(payload.uid));
     if (!row) return null;
     if (row.session_token !== payload.sid) return null; // logged out elsewhere
+    if (row.is_active === 0) return null; // deactivated account — sessions are dead
     return toSafeUser(row);
   },
 

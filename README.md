@@ -71,7 +71,7 @@ See [Security](docs/security.md).
 
 ## Storage and uploads
 
-Set `BLOB_READ_WRITE_TOKEN` to store new public objects in Vercel Blob. Without it, development and legacy installations retain the Turso BLOB fallback. Upload metadata is stored in Turso either way. Stable `/uploads/:filename` URLs serve local rows or redirect to remote objects, so existing content does not need a URL rewrite. Deletion and branding replacement coordinate metadata and remote-object cleanup.
+Image storage is centralized and Cloudinary-first: set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` to store uploads as optimized WebP on Cloudinary. Without them — or whenever Cloudinary is unreachable or rejects an upload — the same image is normalized locally with Sharp and stored as binary WebP in the database; `/uploads/:filename` stays stable either way, deletion coordinates metadata and remote-object cleanup, and integrity metadata (bytes, dimensions, SHA-256) is tracked per image. See `docs/storage.md`.
 
 Blob is **not** a private-media access-control layer: uploaded objects are public by design. Keep the token server-side and do not upload secrets or sensitive documents.
 

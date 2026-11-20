@@ -35,9 +35,12 @@ const DDL: string[] = [
     is_verified INTEGER NOT NULL DEFAULT 0,
     image_file TEXT,
     session_token TEXT,
+    is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
   `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_admin ON users(is_admin, is_active)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)`,
   `CREATE INDEX IF NOT EXISTS idx_users_verified ON users(is_verified)`,
   `CREATE INDEX IF NOT EXISTS idx_users_blood ON users(blood_group)`,
   `CREATE INDEX IF NOT EXISTS idx_users_district ON users(district)`,
@@ -239,6 +242,26 @@ const DDL: string[] = [
     value TEXT
   )`,
 
+  `CREATE TABLE IF NOT EXISTS media_assets (
+    id TEXT PRIMARY KEY,
+    owner_id TEXT,
+    purpose TEXT NOT NULL DEFAULT 'upload',
+    filename TEXT NOT NULL UNIQUE,
+    mime TEXT NOT NULL,
+    bytes INTEGER NOT NULL,
+    width INTEGER,
+    height INTEGER,
+    checksum TEXT NOT NULL,
+    provider TEXT NOT NULL,
+    external_url TEXT,
+    public_id TEXT,
+    original_name TEXT,
+    data BLOB,
+    created_at TEXT NOT NULL,
+    updated_at TEXT
+  )`,
+  `CREATE INDEX IF NOT EXISTS idx_media_owner ON media_assets(owner_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_media_created ON media_assets(created_at)`,
   `CREATE TABLE IF NOT EXISTS uploads (
     id TEXT PRIMARY KEY,
     filename TEXT NOT NULL UNIQUE,
@@ -664,6 +687,7 @@ const MIGRATIONS: Array<[string, string, string]> = [
   ["messages", "subject", "TEXT NOT NULL DEFAULT ''"],
   ["messages", "is_admin_message", "INTEGER NOT NULL DEFAULT 0"],
   ["messages", "replied_to", "TEXT"],
+  ["users", "is_active", "INTEGER NOT NULL DEFAULT 1"],
   ["blood_requests", "institution_id", "TEXT REFERENCES organizations(id)"],
   // blood_requests (v2: original request form fields)
   ["blood_requests", "patient_name", "TEXT"],
@@ -853,5 +877,6 @@ export const TABLES = [
   "email_outbox",
   "delivery_profiles",
   "sms_deliveries",
+  "media_assets",
   "phone_otps",
 ];

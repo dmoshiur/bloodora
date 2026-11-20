@@ -92,7 +92,7 @@ export async function listAdminProducts(_req: Request, res: Response): Promise<v
 export async function createProduct(req: Request, res: Response): Promise<void> {
   if (!req.user) throw ApiError.unauthorized();
   const file = readUpload(req);
-  const imageFile = file ? await uploadService.store(file) : null;
+  const imageFile = file ? await uploadService.store(file, req.user?.id ?? null) : null;
   const out = await shopService.adminProductCreate(req.user, req.body as Record<string, unknown>, imageFile);
   res.json({ success: true, ...out });
 }
@@ -101,7 +101,7 @@ export async function createProduct(req: Request, res: Response): Promise<void> 
 export async function updateProduct(req: Request, res: Response): Promise<void> {
   if (!req.user) throw ApiError.unauthorized();
   const file = readUpload(req);
-  const imageFile = file ? await uploadService.store(file) : null;
+  const imageFile = file ? await uploadService.store(file, req.user?.id ?? null) : null;
   const message = await shopService.adminProductUpdate(req.user, req.params.id, req.body as Record<string, unknown>, imageFile);
   res.json({ success: true, message });
 }

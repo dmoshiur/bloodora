@@ -47,7 +47,6 @@
     <%- link('livechat', '/admin/live-chat', 'fa-comments', _t2('adm_livechat')) %>
     <%- link('messages', '/messages/admin/messages', 'fa-envelope', _t2('adm_messages'), _st.unread_messages, 'bg-danger') %>
     <%- link('request-blood', '/request-blood', 'fa-plus-circle', _t2('nav_request')) %>
-    <%- link('profile', '/profile', 'fa-user', _t2('nav_my_profile')) %>
     <%- link('requests', '/blood-requests', 'fa-tint', _t2('adm_requests'), _st.urgent_requests, 'bg-danger') %>
 
     <div class="side-label"><%= _t2('adm_site') %></div>
@@ -57,6 +56,14 @@
     <%- link('integrations', '/admin/integrations', 'fa-plug-circle-check', 'Integrations & SMS') %>
     <%- link('ai', '/admin/ai', 'fa-robot', _t2('adm_ai')) %>
     <%- link('settings', '/admin/settings', 'fa-gear', _t2('adm_settings')) %>
+
+    <div class="side-label">Administration</div>
+    <%- link('admins', '/admin/admins', 'fa-user-shield', 'Admin Team') %>
+    <%- link('roles', '/admin/roles', 'fa-layer-group', 'Roles & Permissions') %>
+    <%- link('audit', '/admin/audit-logs', 'fa-clipboard-list', 'Audit Logs') %>
+    <%- link('notifications', '/admin/notifications', 'fa-bell', _t2('nav_notifications')) %>
+    <%- link('system', '/admin/system', 'fa-heart-pulse', 'System Health') %>
+    <%- link('profile', '/admin/profile', 'fa-id-badge', 'My Profile') %>
   </nav>
   <hr style="border-color:rgba(255,255,255,.08);">
   <div class="d-grid gap-2">

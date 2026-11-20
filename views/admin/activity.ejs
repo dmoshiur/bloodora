@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <%
   const _ev = (typeof events !== 'undefined' && events) ? events : [];
   // EJS's escaped output tag escapes exactly once. The old local escaper ran on
@@ -80,4 +80,4 @@
   </div>
 </div>
 
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

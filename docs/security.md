@@ -32,7 +32,7 @@ Passwords are hashed with bcrypt. Password recovery and account verification use
 
 ## Uploads and provider secrets
 
-Upload size is bounded and storage aliases are server-controlled. Blob objects are public and must not contain sensitive documents. `BLOB_READ_WRITE_TOKEN`, Turso tokens, Resend/SMTP/SMS/AI keys, OTP peppers, session/JWT secrets, and Vercel bypass secrets are server-only.
+Upload size is bounded and storage aliases are server-controlled. Blob objects are public and must not contain sensitive documents. `CLOUDINARY_API_SECRET`, Turso tokens, Resend/SMTP/SMS/AI keys, OTP peppers, session/JWT secrets, and Vercel bypass secrets are server-only.
 
 Admin integration/storage status reports configuration and masked metadata, not credentials. Do not log request bodies, cookies, authorization headers, provider payloads containing OTPs, or reset URLs with tokens.
 
