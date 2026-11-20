@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <%
   const _t2 = (typeof t === 'function') ? t : (k) => k;
   // EJS's escaped output tag escapes exactly once. The old local escaper ran on
@@ -48,6 +48,14 @@
         <div class="col-6 col-lg-3"><a href="/blood-requests?urgent=true" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_urgent_reqs') %></span><span class="badge bg-danger rounded-pill"><%= _num(stats.urgent_requests) %></span></div></a></div>
         <div class="col-6 col-lg-3"><a href="/messages/admin/messages" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_unread_messages') %></span><span class="badge bg-danger rounded-pill"><%= _num(admin_messages && admin_messages.ok ? admin_messages.unread : stats.unread_messages) %></span></div></a></div>
         <div class="col-6 col-lg-3"><a href="/admin/live-chat" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold"><%= _t2('adm_support_inbox') %></span><span class="badge <%= _su.unread ? 'bg-danger' : 'bg-secondary' %> rounded-pill"><%= _su.ok ? _num(_su.unread) : '—' %></span></div></a></div>
+      </div>
+
+      <!-- Live operational counters — all read from the database on every load; revenue counts only confirmed payments -->
+      <div class="row g-3 mb-4">
+        <div class="col-6 col-lg-3"><a href="/blood-requests" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold">Pending requests</span><span class="badge bg-warning text-dark rounded-pill"><%= _num(stats.pending_requests) %></span></div></a></div>
+        <div class="col-6 col-lg-3"><div class="card border-0 shadow-sm p-3" style="border-radius:16px;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold">Donations recorded</span><span class="badge bg-success rounded-pill"><%= _num(stats.donations_recorded) %></span></div></div></div>
+        <div class="col-6 col-lg-3"><a href="/shop/admin/orders?status=processing" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold">Verified revenue</span><span class="badge bg-dark rounded-pill">৳<%= _num(Math.round(Number(stats.revenue_verified) || 0)) %></span></div></a></div>
+        <div class="col-6 col-lg-3"><a href="/shop/admin/orders?status=pending" class="card border-0 shadow-sm text-decoration-none p-3" style="border-radius:16px; color:inherit;"><div class="d-flex justify-content-between align-items-center"><span class="small text-muted fw-bold">Payment verifications</span><span class="badge <%= stats.pending_payment_verifications ? 'bg-danger' : 'bg-secondary' %> rounded-pill"><%= _num(stats.pending_payment_verifications) %></span></div></a></div>
       </div>
 
       <div class="row g-3">
@@ -228,4 +236,4 @@
   </div>
 </div>
 
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

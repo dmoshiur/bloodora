@@ -146,6 +146,9 @@ test("Bangla/English account pages stay within mobile, tablet, laptop and deskto
         await expect(page.getByRole("heading", { name: tr(key, { name: displayName }), exact: false })).toBeVisible();
         await noOverflow(page);
       }
+      // Admin pages intentionally have no public navbar (isolated admin shell),
+      // so check the public account menu from a public page instead.
+      await page.goto("/dashboard");
       await menu(page);
       await expect(page.locator('#navMain a[href="/profile"]')).toBeVisible();
     }

@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <%
   const _rs = (typeof reviews !== 'undefined' && reviews) ? reviews : [];
   const _c  = (typeof counts !== 'undefined' && counts) ? counts : { pending:0, approved:0, rejected:0 };
@@ -91,4 +91,4 @@
   </div>
 </div>
 
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

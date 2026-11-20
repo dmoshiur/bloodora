@@ -42,6 +42,7 @@ export interface UserRow {
   is_verified: number;
   image_file: string | null;
   session_token: string | null;
+  is_active: number;
   created_at: string;
   /**
    * v3 columns (added by `MIGRATIONS`). Declared optional so the pre-v3
@@ -86,6 +87,7 @@ export type SafeUser = Omit<
   | "notify_inapp"
   | "notify_sms"
   | "phone_verified"
+  | "is_active"
 > & {
   is_admin: boolean;
   is_super_admin: boolean;
@@ -97,6 +99,8 @@ export type SafeUser = Omit<
   notify_inapp: boolean;
   notify_sms: boolean;
   phone_verified: boolean;
+  /** Defaults to true when the column is absent (legacy row). */
+  is_active: boolean;
 };
 
 export interface ProductRow {

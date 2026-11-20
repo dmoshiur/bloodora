@@ -45,7 +45,7 @@ No destructive table rename or upload-data rewrite is required. Session invalida
 - Create a new preview deployment from the unified branch without promoting it.
 - Use a preview Turso database or an explicitly approved isolated schema/data copy.
 - Set `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `JWT_SECRET`, and canonical preview `FRONTEND_URL`.
-- Set `BLOB_READ_WRITE_TOKEN` only on the intended preview project; use a provider test mode where available.
+- Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` only on the intended target; use a provider test mode where available.
 - Keep SMS disabled and email unconfigured until delivery recipients and costs are approved.
 - Verify `/health`, `/api/health`, SSR login/registration, CSRF rejection, user/admin RBAC, logout, old upload aliases, multipart upload, storage metadata, and admin integrations.
 - Inspect Vercel logs for bootstrap, deadline clamps, provider failures, and missing assets.

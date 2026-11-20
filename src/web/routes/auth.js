@@ -123,6 +123,39 @@ router.post("/reset-password", async (req, res) => {
   }
 });
 
+// GET Accept admin invitation (public door — token is the credential)
+router.get("/accept-invite", async (req, res) => {
+  const token = String(req.query.token || "");
+  if (!token) {
+    req.session.flash = { type: "warning", message: "The invitation link is missing its token." };
+    return res.redirect("/login");
+  }
+  try {
+    const invitee = await apiGet("/api/auth/accept-invite/validate", null, { token });
+    res.render("accept_invite", { title: `Accept invitation - ${res.locals.siteName}`, token, invitee });
+  } catch (e) {
+    req.session.flash = { type: "danger", message: e.message || "This invitation link is invalid, used or expired." };
+    return res.redirect("/login");
+  }
+});
+
+// POST Accept admin invitation
+router.post("/accept-invite", async (req, res) => {
+  const token = String(req.body.token || "");
+  if (String(req.body.password || "").length < 8) {
+    req.session.flash = { type: "warning", message: "Your password must be at least 8 characters." };
+    return res.redirect(`/accept-invite?token=${encodeURIComponent(token)}`);
+  }
+  try {
+    const d = await apiPost("/api/auth/accept-invite", { token, name: req.body.name, password: req.body.password });
+    req.session.flash = { type: "success", message: d.message || "Your admin account is ready. Sign in now." };
+    res.redirect("/login");
+  } catch (e) {
+    req.session.flash = { type: "danger", message: e.message || "This invitation link is invalid, used or expired." };
+    res.redirect(`/accept-invite?token=${encodeURIComponent(token)}`);
+  }
+});
+
 router.get("/verify-email", async (req, res) => {
   try {
     const d = await apiGet("/api/auth/verify-email", null, { token: req.query.token });

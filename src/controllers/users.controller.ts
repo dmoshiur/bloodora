@@ -49,7 +49,7 @@ export async function publicProfile(req: Request, res: Response): Promise<void> 
 export async function updateSelf(req: Request, res: Response): Promise<void> {
   if (!req.user) throw new Error("LOGIN_REQUIRED");
   const file = readUpload(req);
-  const imageFile = file ? await uploadService.store(file) : null;
+  const imageFile = file ? await uploadService.store(file, req.user?.id ?? null) : null;
   const out = await userService.selfUpdate(
     req.user.id,
     {

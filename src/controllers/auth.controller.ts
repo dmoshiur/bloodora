@@ -106,7 +106,7 @@ export async function register(req: Request, res: Response): Promise<void> {
   const body = parse(registerSchema, req.body);
   // multipart: optional profile_pic uploaded via the frontend form.
   const file = readUpload(req);
-  const imageFile = file ? await uploadService.store(file) : null;
+  const imageFile = file ? await uploadService.store(file, req.user?.id) : null;
   // Original register: age comes from date_of_birth when present, else the
   // explicit `age` field; donor verification requires administrator review.
   const dob = body.date_of_birth ?? null;
@@ -275,7 +275,7 @@ export async function setProfileImage(req: Request, res: Response): Promise<void
   if (!req.user) throw ApiError.unauthorized();
   const file = readUpload(req);
   if (!file) throw ApiError.badRequest("No image uploaded (field name: image)", "NO_IMAGE");
-  const filename = await uploadService.store(file);
+  const filename = await uploadService.store(file, req.user?.id);
   const user = await userService.setProfileImage(req.user.id, filename);
   res.json({ user, image: `/uploads/${filename}` });
 }

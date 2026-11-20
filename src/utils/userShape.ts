@@ -32,6 +32,7 @@ export function toSafeUser(row: UserRow): SafeUser {
     notify_inapp: safe.notify_inapp === undefined ? true : Boolean(safe.notify_inapp),
     notify_sms: safe.notify_sms === undefined ? false : Boolean(safe.notify_sms),
     phone_verified: Boolean(safe.phone_verified),
+    is_active: safe.is_active === undefined ? true : Boolean(safe.is_active),
     language: typeof safe.language === "string" && safe.language ? safe.language : "en",
   } as unknown as SafeUser;
 }

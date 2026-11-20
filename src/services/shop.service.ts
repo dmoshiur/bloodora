@@ -1,4 +1,5 @@
 import { productRepo } from "../repos/product.repo.js";
+import { uploadService } from "./upload.service.js";
 import { orderRepo, OutOfStockError } from "../repos/order.repo.js";
 import { userRepo } from "../repos/user.repo.js";
 import { activityRepo } from "../repos/activity.repo.js";
@@ -568,6 +569,7 @@ export const shopService = {
     if (str("is_available") !== "") updates.is_active = ["1", "true", "yes"].includes(str("is_available").toLowerCase()) ? 1 : 0;
     if (imageFile) updates.image_file = imageFile;
     if (Object.keys(updates).length) await productRepo.update(id, updates);
+    if (imageFile) await uploadService.removeReplaced(existing.image_file, imageFile);
     await activityRepo.create("product", actor.id, `Product "${existing.name}" updated`);
     return "✅ Product updated successfully!";
   },
@@ -576,6 +578,7 @@ export const shopService = {
     const existing = await productRepo.findById(id);
     if (!existing) throw ApiError.notFound("Product not found.", "PRODUCT_NOT_FOUND");
     await productRepo.delete(id);
+    await uploadService.removeReplaced(existing.image_file);
     await activityRepo.create("product", actor.id, `Product "${existing.name}" deleted`);
     return "✅ Product deleted.";
   },

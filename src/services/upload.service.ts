@@ -1,46 +1,49 @@
-import { uploadRepo } from "../repos/upload.repo.js";
-import { randomId } from "../utils/errors.js";
-import { extFromMime, newFilename, type UploadedImage } from "../uploads/uploads.js";
-import { logger } from "../utils/logger.js";
-import { objectStorageService } from "./objectStorage.service.js";
+import { imageStorageService } from "./imageStorage.service.js";
+import type { UploadedImage } from "../uploads/uploads.js";
 
+/**
+ * Legacy facade over the centralized image storage service. Every upload
+ * feature in the app keeps calling `uploadService`; the storage decision
+ * itself (Cloudinary primary, database WebP fallback) lives in exactly one
+ * place — `imageStorageService`.
+ *
+ * The returned value stays the stable `/uploads/:filename` filename, never a
+ * provider URL, so no client-side rewrite is ever required.
+ */
 export const uploadService = {
-  status: () => objectStorageService.status(),
+  status: () => imageStorageService.status(),
 
-  /**
-   * Return the legacy stable filename, never a provider URL that would require a
-   * production data rewrite. Vercel Blob is used when configured; Turso BLOBs
-   * remain the development and backward-compatible storage path.
-   */
-  async store(img: UploadedImage): Promise<string> {
-    const filename = newFilename(img.ext || extFromMime(img.mime));
-    const id = randomId();
-    if (configBlobEnabled()) {
-      const externalUrl = await objectStorageService.put(filename, img.data, img.mime);
-      await uploadRepo.insertRemote(id, filename, img.originalName, img.mime, img.data.length, externalUrl);
-    } else {
-      await uploadRepo.insert(id, filename, img.originalName, img.mime, img.data);
-    }
-    logger.info("upload: stored", { filename, bytes: img.data.length, provider: configBlobEnabled() ? "vercel-blob" : "turso" });
-    return filename;
+  async store(img: UploadedImage, ownerId?: string | null): Promise<string> {
+    const stored = await imageStorageService.store(img, { ownerId: ownerId ?? null });
+    return stored.filename;
+  },
+
+  /** Same as store(), but reports the provider that ACTUALLY persisted the
+   *  bytes (never the configured primary) for honest caller-side reporting. */
+  async storeWithMeta(img: UploadedImage, ownerId?: string | null): Promise<{ filename: string; provider: "cloudinary" | "database" }> {
+    const stored = await imageStorageService.store(img, { ownerId: ownerId ?? null });
+    return { filename: stored.filename, provider: stored.provider };
   },
 
   async read(filename: string): Promise<{ mime: string; data?: Uint8Array; externalUrl?: string } | null> {
-    const row = await uploadRepo.findByFilename(filename);
-    if (!row) return null;
-    if (row.external_url) return { mime: row.mime, externalUrl: row.external_url };
-    const data = row.data instanceof Uint8Array ? row.data : new Uint8Array(row.data as ArrayBuffer);
-    return { mime: row.mime, data };
+    return imageStorageService.read(filename);
   },
 
   async remove(filename: string): Promise<void> {
-    const row = await uploadRepo.findByFilename(filename);
-    if (!row) return;
-    if (row.external_url) await objectStorageService.remove(row.external_url);
-    await uploadRepo.delete(filename);
+    await imageStorageService.remove(filename);
+  },
+
+  /**
+   * Best-effort cleanup of the image a write just replaced. Never deletes the
+   * seeded shared default avatar, never deletes a file identical to its
+   * replacement, and never fails the caller (a leaked object is better than a
+   * failed save). Skips folder-style values like '/assets/...' which are not
+   * stored uploads at all.
+   */
+  async removeReplaced(oldFilename?: string | null, newFilename?: string | null): Promise<void> {
+    const old = String(oldFilename || "").trim();
+    if (!old || old === "default.jpg" || old.startsWith("/")) return;
+    if (newFilename && old === String(newFilename).trim()) return;
+    await this.remove(old).catch(() => {});
   },
 };
-
-function configBlobEnabled(): boolean {
-  return objectStorageService.status().object_storage_configured;
-}

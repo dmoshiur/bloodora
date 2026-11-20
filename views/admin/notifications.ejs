@@ -1,0 +1,43 @@
+<%- include('_head') %>
+<%
+  const items = Array.isArray(notifications) ? notifications : [];
+  const fmtDate = (v) => { if (!v) return '—'; const s = String(v); const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z'); return isNaN(d) ? s.slice(0, 19).replace('T', ' ') : d.toLocaleString(); };
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-bell text-danger me-2"></i>Notifications <% if (unread) { %><span class="badge bg-danger rounded-pill align-middle"><%= unread %> unread</span><% } %></h2>
+      <small class="text-muted">Your in-app notifications (admin desk events included). Stored in the database — nothing here is fabricated.</small>
+    </div>
+    <form method="POST" action="/admin/notifications/read-all"><button class="btn btn-outline-dark btn-sm rounded-pill"><i class="fas fa-check-double me-1"></i>Mark all read</button></form>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'notifications' }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="card border-0 shadow-sm" style="border-radius:18px;">
+        <div class="list-group list-group-flush" style="border-radius:18px; overflow:hidden;">
+          <% items.forEach(n => { %>
+            <div class="list-group-item d-flex justify-content-between align-items-start gap-2 <%= n.is_read ? '' : 'bg-light' %>">
+              <div class="d-flex gap-2">
+                <i class="fas <%= n.is_read ? 'fa-envelope-open text-muted' : 'fa-envelope text-danger' %> mt-1"></i>
+                <div>
+                  <div class="fw-semibold"><%= n.title || n.type %></div>
+                  <% if (n.body) { %><div class="small text-muted"><%= n.body %></div><% } %>
+                  <div class="small text-muted"><%= fmtDate(n.created_at) %></div>
+                </div>
+              </div>
+              <div class="d-flex gap-1">
+                <% if (!n.is_read) { %><form method="POST" action="/admin/notifications/<%= n.id %>/read"><button class="btn btn-outline-secondary btn-sm" title="Mark read"><i class="fas fa-check"></i></button></form><% } %>
+                <form method="POST" action="/admin/notifications/<%= n.id %>/delete" onsubmit="return confirm('Delete this notification?')"><button class="btn btn-outline-danger btn-sm" title="Delete"><i class="fas fa-trash"></i></button></form>
+              </div>
+            </div>
+          <% }) %>
+          <% if (!items.length) { %><div class="list-group-item text-center text-muted py-5"><i class="fas fa-inbox d-block mb-2" style="font-size:1.6rem;"></i>You're all caught up.</div><% } %>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<%- include('_tail') %>

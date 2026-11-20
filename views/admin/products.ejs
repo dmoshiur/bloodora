@@ -1,7 +1,7 @@
 <%
   const _t = (typeof t === 'function') ? t : (k) => k;
 %>
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <div class="container mt-4">
   <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-2">
     <h2 class="fw-bold mb-0"><i class="fas fa-box text-danger me-2"></i><%= _t('adm_products') %></h2>
@@ -37,4 +37,4 @@
     <div class="card border-0 shadow-sm text-center p-5" style="border-radius:18px;"><i class="fas fa-box-open fa-3x mb-3" style="color:#94a3b8;"></i><h5><%= _t('shop_no_products') %></h5><a href="/shop/admin/product/add" class="btn btn-danger rounded-pill mt-2"><%= _t('adm_add_product') %></a></div>
   <% } %>
 </div>
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

@@ -108,7 +108,11 @@ export const settingsService = {
       return this.publicView();
     }
 
+    const replacedMedia = ["logo_file", "favicon_file"].filter((k) => changes[k] !== undefined && String(changes[k] ?? "") !== String(current[k as keyof typeof current] ?? ""));
     await settingsRepo.setMany(changes);
+    for (const key of replacedMedia) {
+      await uploadService.removeReplaced(current[key as keyof typeof current] as string | null, changes[key]);
+    }
     const touched = Object.keys(changes).filter((k) => !["smtp_pass", "ai_api_key"].includes(k));
     if (touched.length > 0) {
       await activityRepo.create("settings", actor.id, `Site settings updated: ${touched.join(", ")}`, { keys: touched });

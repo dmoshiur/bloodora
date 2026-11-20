@@ -1,0 +1,91 @@
+<%- include('_head') %>
+<%
+  const isSuper = !!(typeof currentUser !== 'undefined' && currentUser && currentUser.is_super_admin);
+  const roleList = Array.isArray(roles) ? roles : [];
+  const groups = {};
+  (permissions || []).forEach(p => { const g = p.group || 'other'; (groups[g] = groups[g] || []).push(p); });
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-layer-group text-danger me-2"></i>Roles &amp; Permissions</h2>
+      <small class="text-muted">Database-driven RBAC. Effective permissions are resolved from the database on every request — revocations apply immediately.</small>
+    </div>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'roles' }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-4">
+        <div class="col-12">
+          <% roleList.forEach(role => { %>
+            <div class="card border-0 shadow-sm mb-3" style="border-radius:18px;">
+              <div class="card-header bg-white border-0 pt-3 pb-0">
+                <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+                  <div>
+                    <h6 class="fw-bold mb-0"><%= role.name %> <code class="ms-1"><%= role.key %></code>
+                      <% if (role.is_system) { %><span class="badge bg-light text-dark border ms-1">built-in</span><% } %>
+                      <span class="badge bg-secondary rounded-pill ms-1">level <%= role.level %></span>
+                      <span class="badge bg-info text-dark rounded-pill ms-1"><%= role.users %> user(s)</span>
+                    </h6>
+                    <% if (role.description) { %><small class="text-muted"><%= role.description %></small><% } %>
+                  </div>
+                  <% if (!role.is_system) { %>
+                    <form method="POST" action="/admin/roles/<%= role.key %>/delete" onsubmit="return confirm('Delete role <%= role.key %>?')"><button class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-trash me-1"></i>Delete</button></form>
+                  <% } %>
+                </div>
+              </div>
+              <div class="card-body">
+                <form method="POST" action="/admin/roles/<%= role.key %>/update">
+                  <div class="row g-2">
+                    <% Object.keys(groups).sort().forEach(group => { %>
+                      <div class="col-md-4">
+                        <div class="small text-uppercase fw-bold text-muted mb-1"><%= group %></div>
+                        <% groups[group].forEach(p => { const checked = (role.permissions || []).includes(p.key); %>
+                          <div class="form-check form-check-sm">
+                            <input class="form-check-input" type="checkbox" name="permissions" value="<%= p.key %>" id="perm-<%= role.key %>-<%= p.key %>" <%= checked ? 'checked' : '' %>>
+                            <label class="form-check-label small" for="perm-<%= role.key %>-<%= p.key %>" title="<%= p.description %>"><%= p.name %></label>
+                          </div>
+                        <% }) %>
+                      </div>
+                    <% }) %>
+                  </div>
+                  <button class="btn btn-dark btn-sm rounded-pill mt-3"><i class="fas fa-floppy-disk me-1"></i>Save grants for <%= role.name %></button>
+                </form>
+              </div>
+            </div>
+          <% }) %>
+          <% if (!roleList.length) { %><div class="alert alert-warning">Role catalogue unavailable.</div><% } %>
+        </div>
+
+        <div class="col-lg-6">
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-plus-circle text-danger me-2"></i>Create a custom role</h6></div>
+            <div class="card-body">
+              <p class="small text-muted">Custom roles are stored in the database and can be granted to accounts from the Admins page. Built-in roles cannot be deleted.</p>
+              <form method="POST" action="/admin/roles" class="d-grid gap-2">
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="role-key">Key</label><input id="role-key" name="key" class="form-control" placeholder="support_lead" pattern="[a-z0-9_]{2,40}" required></div>
+                  <div class="col-md-6"><label class="form-label small" for="role-name">Display name</label><input id="role-name" name="name" class="form-control" placeholder="Support Lead" required maxlength="80"></div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-9"><label class="form-label small" for="role-desc">Description</label><input id="role-desc" name="description" class="form-control" maxlength="200"></div>
+                  <div class="col-md-3"><label class="form-label small" for="role-level">Level</label><input id="role-level" name="level" type="number" min="1" max="8" class="form-control" value="2"></div>
+                </div>
+                <label class="form-label small mb-1">Initial permissions</label>
+                <div class="row g-1" style="max-height:280px; overflow:auto; border:1px solid #e2e8f0; border-radius:12px; padding:.5rem;">
+                  <% (permissions || []).forEach(p => { %>
+                    <div class="col-md-6"><div class="form-check"><input class="form-check-input" type="checkbox" name="permissions" value="<%= p.key %>" id="newperm-<%= p.key %>"><label class="form-check-label small" for="newperm-<%= p.key %>" title="<%= p.description %>"><%= p.name %></label></div></div>
+                  <% }) %>
+                </div>
+                <button class="btn btn-dark rounded-pill"><i class="fas fa-plus me-1"></i>Create role</button>
+              </form>
+            </div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<%- include('_tail') %>

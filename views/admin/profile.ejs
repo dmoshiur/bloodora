@@ -1,0 +1,81 @@
+<%- include('_head') %>
+<%
+  const u = (typeof currentUser !== 'undefined' && currentUser) ? currentUser : {};
+  const entries = Array.isArray(loginHistory) ? loginHistory : [];
+  const fmtDate = (v) => { if (!v) return '—'; const s = String(v); const d = new Date(s.includes('T') ? s : s.replace(' ', 'T') + 'Z'); return isNaN(d) ? s.slice(0, 19).replace('T', ' ') : d.toLocaleString(); };
+%>
+<div class="container mt-4 mb-5">
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h2 class="fw-bold mb-0"><i class="fas fa-id-badge text-danger me-2"></i>My Admin Profile</h2>
+      <small class="text-muted">Your administrative identity, password and session security. Changes apply to the account you are signed in with.</small>
+    </div>
+  </div>
+
+  <div class="admin-wrapper gap-4">
+    <%- include('_sidebar', { active: 'profile' }) %>
+
+    <main class="flex-grow-1" style="min-width:0;">
+      <div class="row g-4">
+        <div class="col-lg-5">
+          <div class="card border-0 shadow-sm text-center p-4 h-100" style="border-radius:18px;">
+            <% if (u.image_file && u.image_file !== 'default.jpg') { %><img src="/uploads/<%= u.image_file %>" alt="<%= u.name %>" class="rounded-circle mx-auto" style="width:110px;height:110px;object-fit:cover;border:4px solid #fff;box-shadow:0 10px 30px rgba(15,23,42,.12);"><% } else { %><img src="https://ui-avatars.com/api/?name=<%= encodeURIComponent(u.name || 'Admin') %>&background=e31b23&color=fff&bold=true&size=256" alt="<%= u.name %>" class="rounded-circle mx-auto" style="width:110px;height:110px;object-fit:cover;"><% } %>
+            <h4 class="fw-bold mt-3 mb-1"><%= u.name %></h4>
+            <div class="mb-2">
+              <% if (u.is_super_admin) { %><span class="badge bg-dark rounded-pill">Super Admin</span><% } else if (u.is_admin) { %><span class="badge bg-danger rounded-pill">Admin</span><% } %>
+              <span class="badge bg-light text-dark border rounded-pill"><%= u.role || 'user' %></span>
+            </div>
+            <div class="small text-muted"><%= u.email %></div>
+            <div class="small text-muted"><%= u.phone || '' %></div>
+            <div class="small text-muted mt-2">Member since <%= u.created_at ? String(u.created_at).slice(0, 10) : '—' %></div>
+            <div class="d-grid gap-2 mt-3">
+              <a href="/profile/edit" class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-pen me-1"></i>Edit name / photo / phone</a>
+              <div class="small text-muted">Email changes require a Super Admin (verification workflow); contact one from the Admins page.</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="col-lg-7">
+          <div class="card border-0 shadow-sm mb-4" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-key text-danger me-2"></i>Change password</h6></div>
+            <div class="card-body">
+              <form method="POST" action="/admin/profile/password" class="d-grid gap-2">
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="prof-cur">Current password</label><input id="prof-cur" type="password" name="current" class="form-control" required autocomplete="current-password"></div>
+                  <div class="col-md-6"><label class="form-label small" for="prof-new">New password</label><input id="prof-new" type="password" name="next" class="form-control" required minlength="8" autocomplete="new-password"></div>
+                </div>
+                <div class="row g-2">
+                  <div class="col-md-6"><label class="form-label small" for="prof-conf">Confirm new password</label><input id="prof-conf" type="password" name="confirm" class="form-control" required minlength="8" autocomplete="new-password"></div>
+                  <div class="col-md-6 d-flex align-items-end"><button class="btn btn-dark rounded-pill w-100"><i class="fas fa-rotate me-1"></i>Update password</button></div>
+                </div>
+                <div class="small text-muted"><i class="fas fa-circle-info me-1"></i>A password change signs out every other session immediately.</div>
+              </form>
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm mb-4" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
+              <h6 class="fw-bold mb-0"><i class="fas fa-shield-halved text-danger me-2"></i>Sessions</h6>
+              <form method="POST" action="/admin/profile/revoke-sessions" onsubmit="return confirm('Revoke ALL your sessions, including this one? You will need to sign in again.')"><button class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-right-from-bracket me-1"></i>Revoke all sessions</button></form>
+            </div>
+            <div class="card-body small text-muted">
+              This platform uses a single active session per account. Revoking rotates your session token — every issued token dies at once. Sign back in with your email and password.
+            </div>
+          </div>
+
+          <div class="card border-0 shadow-sm" style="border-radius:18px;">
+            <div class="card-header bg-white border-0 pt-3"><h6 class="fw-bold mb-0"><i class="fas fa-clock-rotate-left text-danger me-2"></i>Your recent sign-in activity</h6></div>
+            <div class="card-body p-0"><div class="table-responsive"><table class="table table-sm align-middle mb-0">
+              <thead><tr><th>When</th><th>Action</th><th>IP</th></tr></thead>
+              <tbody>
+                <% entries.forEach(e => { %><tr><td class="small text-nowrap"><%= fmtDate(e.created_at) %></td><td><span class="badge bg-light text-dark border"><%= e.action %></span></td><td class="small text-muted"><%= e.ip || '—' %></td></tr><% }) %>
+                <% if (!entries.length) { %><tr><td colspan="3" class="text-center text-muted py-3"><%= historyUnavailable ? 'Sign-in history requires the audit log permission.' : 'No sign-in entries recorded yet.' %></td></tr><% } %>
+              </tbody>
+            </table></div></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>
+</div>
+<%- include('_tail') %>

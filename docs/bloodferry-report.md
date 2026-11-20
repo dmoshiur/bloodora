@@ -238,7 +238,7 @@ Copy `.env.example` locally; enter real secrets only in protected environment se
 - AI: `AI_API_KEY` or compatible legacy `GROQ_API_KEY`; `AI_PROVIDER`, `AI_MODEL`, `AI_BASE_URL`, optional `AI_ALLOWED_HOSTS`. Saved admin AI settings override defaults. Review old stored values before testing. Use HTTPS.
 - Email: `RESEND_API_KEY`, verified `RESEND_FROM_EMAIL`, optional sender name; or complete existing `SMTP_*` configuration.
 - SMS: configured `SMS_PROVIDER`, `SMS_API_KEY`, provider-required secret/sender settings; optional OTP pepper and provider URL.
-- Files: `BLOB_READ_WRITE_TOKEN` for durable production uploads.
+- Files: `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY` and `CLOUDINARY_API_SECRET` for Cloudinary-backed production uploads (binary WebP in the database is the automatic fallback).
 - Payments: operator-confirmed merchant numbers in protected admin settings; the existing ledger remains manual review.
 
 ## 14. Safe deployment and recovery procedure

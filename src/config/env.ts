@@ -51,6 +51,7 @@ export interface Config {
 
   tursoDatabaseUrl: string;
   tursoAuthToken: string;
+  cloudinary: { cloudName: string; apiKey: string; apiSecret: string; apiBase: string };
 
   /**
    * The platform's hard limit for ONE invocation, in ms.
@@ -155,7 +156,6 @@ export interface Config {
   /** Max size of a single uploaded image, in MB (multer `fileSize` limit). */
   maxUploadMb: number;
   /** Optional Vercel Blob token. Without it, legacy/development uploads stay in Turso. */
-  blobReadWriteToken: string;
   uploadTimeoutMs: number;
 
   aiProvider: string;
@@ -315,6 +315,13 @@ function build(): Config {
     port: int(env.PORT, 4000),
     logLevel: env.LOG_LEVEL || "info",
     productionConfigMissing: [],
+    cloudinary: {
+      cloudName: env.CLOUDINARY_CLOUD_NAME || "",
+      apiKey: env.CLOUDINARY_API_KEY || "",
+      apiSecret: env.CLOUDINARY_API_SECRET || "",
+      // Test/operator override (the stub test points this at a local server).
+      apiBase: env.CLOUDINARY_API_BASE || "https://api.cloudinary.com/v1_1",
+    },
     tursoDatabaseUrl: env.TURSO_DATABASE_URL || "",
     tursoAuthToken: env.TURSO_AUTH_TOKEN || "",
     functionMaxDurationMs,
@@ -386,7 +393,6 @@ function build(): Config {
     // Keep the application-level limit below that platform ceiling so clients
     // receive our JSON upload error instead of an opaque platform response.
     maxUploadMb: Math.min(4, Math.max(1, int(env.MAX_UPLOAD_MB, 4))),
-    blobReadWriteToken: env.BLOB_READ_WRITE_TOKEN || "",
     uploadTimeoutMs: deadline(
       "UPLOAD_TIMEOUT_MS",
       rawUploadTimeoutMs,

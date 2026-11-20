@@ -5,6 +5,8 @@ import { BLOOD_GROUPS } from "../data/constants.js";
 import { userRepo } from "../repos/user.repo.js";
 import { productRepo } from "../repos/product.repo.js";
 import { orderRepo } from "../repos/order.repo.js";
+import { donationRepo } from "../repos/donation.repo.js";
+import { transactionRepo } from "../repos/transaction.repo.js";
 import { bloodRequestRepo } from "../repos/bloodRequest.repo.js";
 import { activityRepo } from "../repos/activity.repo.js";
 import { messageRepo } from "../repos/message.repo.js";
@@ -83,13 +85,16 @@ export const adminService = {
 
   /** GET /api/admin/dashboard — original contract shape. */
   async dashboard() {
-    const users = await userRepo.listAll();
+    const users = await userRepo.listAll(500);
     const [
-      totalUsers, totalDonors, admins, unreadMessages,
+      totalUsers, activeUsers, availableDonors, totalDonors, admins, unreadMessages,
       pendingVerifications, urgentRequests, totalProducts,
-      totalOrders, pendingOrders,
+      totalOrders, pendingOrders, totalRequests, pendingRequests, fulfilledRequests,
+      donationsRecorded, revenueVerified, pendingPayments, recentUsers,
     ] = await Promise.all([
       userRepo.count(),
+      userRepo.countActive(),
+      userRepo.countAvailableDonors(),
       userRepo.countVerifiedDonors(),
       userRepo.countByRole("admin"),
       messageRepo.unreadAdmin(),
@@ -98,6 +103,13 @@ export const adminService = {
       productRepo.countAll(),
       orderRepo.countAll(),
       orderRepo.countByStatus("pending"),
+      bloodRequestRepo.countAll(),
+      bloodRequestRepo.countPending(),
+      bloodRequestRepo.countByStatus("fulfilled"),
+      donationRepo.count(),
+      transactionRepo.sumByStatus("successful"),
+      transactionRepo.countByStatus("pending"),
+      userRepo.list(5),
     ]);
     const notice = await contentRepo.activeNotice();
     const settings = await loadSettings();
@@ -106,7 +118,9 @@ export const adminService = {
       all_users: users.map(userView),
       stats: {
         total_users: totalUsers,
+        active_users: activeUsers,
         total_donors: totalDonors,
+        available_donors: availableDonors,
         admins,
         unread_messages: unreadMessages,
         pending_verifications: pendingVerifications,
@@ -114,7 +128,14 @@ export const adminService = {
         total_products: totalProducts,
         total_orders: totalOrders,
         pending_orders: pendingOrders,
+        total_requests: totalRequests,
+        pending_requests: pendingRequests,
+        fulfilled_requests: fulfilledRequests,
+        donations_recorded: donationsRecorded,
+        revenue_verified: revenueVerified,
+        pending_payment_verifications: pendingPayments,
       },
+      recent_registrations: recentUsers.map(userView),
       current_notice: notice?.content || "",
       settings: settingsForAdmin(settings),
     };
@@ -199,12 +220,12 @@ export const adminService = {
     };
     const bits: string[] = [];
     if (files.logo) {
-      const file = await uploadService.store(files.logo);
+      const file = await uploadService.store(files.logo, actor.id);
       changes.logo_file = file;
       bits.push("logo");
     }
     if (files.favicon) {
-      const file = await uploadService.store(files.favicon);
+      const file = await uploadService.store(files.favicon, actor.id);
       changes.favicon_file = file;
       bits.push("favicon");
     }
@@ -547,6 +568,7 @@ export const adminService = {
       last_donation: null,
       image_file: null,
       session_token: randomId(),
+      is_active: 1,
     });
     return { success: true, message: `✅ New admin '${name}' created!` };
   },

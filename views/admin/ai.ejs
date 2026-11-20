@@ -1,4 +1,4 @@
-<%- include('../partials/header') %>
+<%- include('_head') %>
 <%
   const _s = (typeof settings !== 'undefined' && settings) ? settings : {};
   const _models = (typeof models !== 'undefined' && models) ? models : [];
@@ -215,4 +215,4 @@
 })();
 </script>
 
-<%- include('../partials/footer') %>
+<%- include('_tail') %>

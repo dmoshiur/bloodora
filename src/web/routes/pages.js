@@ -198,13 +198,14 @@ router.get("/health", async (req, res) => {
 });
 
 // ------------------------------------------------- notifications (real only)
-// JSON for the navbar bell: the ONLY real notification source the backend has
-// today is the unread inbox count from /api/messages. No fake feeds.
+// Browser compatibility route for the navbar bell. The real feed lives at
+// /api/notifications/unread (the API router is mounted before the web router,
+// so this handler is only a fallback contract) — it answers { success, unread }.
 router.get("/api/notifications/unread", async (req, res) => {
   if (!req.user) return res.json({ success: true, unread: 0 });
   try {
-    const d = await apiGet("/api/messages", req.session.token);
-    res.json({ success: true, unread: d.unread_count || 0 });
+    const d = await apiGet("/api/notifications/unread", req.session.token);
+    res.json({ success: true, unread: Number(d.unread) || 0 });
   } catch (e) {
     res.json({ success: false, unread: 0 });
   }

@@ -290,6 +290,7 @@ export async function seedSuperAdmin(): Promise<void> {
       is_verified: 1,
       image_file: null,
       session_token: null,
+      is_active: 1,
     });
     logger.info("db: super admin ready", { email });
   } catch (err) {
