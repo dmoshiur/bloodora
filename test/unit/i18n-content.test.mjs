@@ -494,3 +494,23 @@ test("every EJS template compiles — including the ones behind login", async ()
   assert.ok(files.length > 50, `expected the whole view tree, found ${files.length}`);
   assert.deepEqual(broken, [], `templates that do not compile:\n${broken.join("\n")}`);
 });
+
+// 5. API rows with null fields (e.g. `rating: null` on a product with no
+// reviews) must not recurse forever — localizeFromSource used to overflow the
+// stack via localizeContent(null, null, …) → localizeContent(null, …).
+test("localizeFromSource resolves an API row that contains null fields", () => {
+  const row = {
+    id: "oxy-1001",
+    name: "Portable Oxygen Cylinder",
+    category: null,
+    description: "Portable compressed oxygen cylinder.",
+    rating: null,
+    reviews: [],
+    is_available: 1,
+  };
+  const out = localize.localizeFromSource(row, null, "en");
+  assert.equal(out.id, "oxy-1001");
+  assert.equal(out.category, null);
+  assert.equal(out.rating, null);
+  assert.equal(out.name, "Portable Oxygen Cylinder");
+});
