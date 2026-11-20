@@ -89,11 +89,11 @@
                       <div class="d-flex flex-wrap gap-1">
                         <% if(!u.is_verified && u.age>=18){ %><form method="POST" action="/admin/verify-donor/<%= u.id %>"><button class="btn btn-sm btn-success rounded-pill" title="<%= _t2('adm_verify') %>"><i class="fas fa-check"></i></button></form><% } %>
                         <% if (isSuper) { %>
-                          <button class="btn btn-sm btn-outline-dark rounded-pill" onclick="openEdit(<%= u.id %>)" title="<%= _t2('common_edit') %>"><i class="fas fa-edit"></i></button>
+                          <button class="btn btn-sm btn-outline-dark rounded-pill js-edit-user" data-user-id="<%= u.id %>" title="<%= _t2('common_edit') %>"><i class="fas fa-edit"></i></button>
                           <% if(!u.is_super_admin && u.id!==currentUser.id){ %>
                             <% if(!u.is_admin){ %><form method="POST" action="/admin/promote/<%= u.id %>" class="d-inline"><button class="btn btn-sm btn-primary rounded-pill" title="<%= _t2('adm_promote') %>"><i class="fas fa-arrow-up"></i></button></form><% } else { %><form method="POST" action="/admin/demote/<%= u.id %>" class="d-inline"><button class="btn btn-sm btn-warning rounded-pill" title="<%= _t2('adm_demote') %>"><i class="fas fa-arrow-down"></i></button></form><% } %>
                             <form method="POST" action="/admin/impersonate/<%= u.id %>" class="d-inline"><button class="btn btn-sm btn-dark rounded-pill" title="<%= _t2('adm_impersonate') %>"><i class="fas fa-mask"></i></button></form>
-                            <form method="POST" action="/admin/delete/<%= u.id %>" class="d-inline" onsubmit="return confirm('<%= _t2('adm_confirm_delete') %>')"><button class="btn btn-sm btn-danger rounded-pill" title="<%= _t2('adm_delete_user') %>"><i class="fas fa-trash"></i></button></form>
+                            <form method="POST" action="/admin/delete/<%= u.id %>" class="d-inline" data-confirm="<%= _t2('adm_confirm_delete') %>"><button class="btn btn-sm btn-danger rounded-pill" title="<%= _t2('adm_delete_user') %>"><i class="fas fa-trash"></i></button></form>
                           <% } %>
                         <% } %>
                         <a href="/donors/profile/view/<%= u.id %>" class="btn btn-sm btn-light border rounded-pill" title="<%= _t2('common_view') %>"><i class="fas fa-eye"></i></a>
@@ -145,7 +145,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 (function(){
   // ---- search + filters + pagination over the REAL all_users payload ----
   var PAGE = 20, page = 1;
@@ -201,6 +201,13 @@
   apply();
 
   // ---- edit modal: backend details are the single source of truth ----
+  document.addEventListener('click', function (event) {
+    var btn = event.target.closest('.js-edit-user');
+    if (!btn) return;
+    // User ids are opaque hex strings, not numbers.
+    var id = (btn.getAttribute('data-user-id') || '').trim();
+    if (id) window.openEdit(id);
+  });
   window.openEdit = function(id){
     var form = document.getElementById('editForm');
     var errBox = document.getElementById('editError');

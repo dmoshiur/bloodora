@@ -60,7 +60,7 @@
                   <div class="input-group">
                     <span class="input-group-text bg-white"><i class="fas fa-key text-muted"></i></span>
                     <input name="ai_api_key" id="ai_key" type="password" class="form-control" value="<%= _s.ai_api_key %>" placeholder="gsk_…" autocomplete="new-password">
-                    <button class="btn btn-light border" type="button" onclick="var p=document.getElementById('ai_key'); p.type = p.type==='password'?'text':'password';"><i class="fas fa-eye"></i></button>
+                    <button class="btn btn-light border" type="button" id="toggle-ai-key"><i class="fas fa-eye"></i></button>
                   </div>
                   <div class="form-text">
                     <%= _s.ai_api_key_set ? 'A key is stored. Leave the field unchanged to keep it; clear it to remove it.' : 'No key stored yet — the widget will show a friendly "not configured" notice until you add one.' %>
@@ -151,8 +151,13 @@
   </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 (function(){
+  var toggleKey = document.getElementById('toggle-ai-key');
+  if (toggleKey) toggleKey.addEventListener('click', function(){
+    var p = document.getElementById('ai_key');
+    p.type = p.type === 'password' ? 'text' : 'password';
+  });
   function toast(msg, ok){
     var el = document.createElement('div');
     el.className = 'alert ' + (ok === false ? 'alert-danger' : 'alert-success') + ' border-0 shadow rounded-4 small';

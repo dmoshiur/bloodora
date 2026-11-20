@@ -39,7 +39,7 @@
           </div>
 
           <div class="form-check p-3 rounded-4 mb-3" style="background:#fff7ed; border:1px solid #ffedd5;">
-            <input class="form-check-input" type="checkbox" name="is_urgent" value="1" id="is_urgent" onchange="document.getElementById('urgent_reason_wrap').classList.toggle('d-none', !this.checked)">
+            <input class="form-check-input" type="checkbox" name="is_urgent" value="1" id="is_urgent">
             <label class="form-check-label fw-bold" for="is_urgent"><i class="fas fa-bolt text-danger me-2"></i><%= _t('req_mark_urgent') %></label>
           </div>
           <div id="urgent_reason_wrap" class="mb-3 d-none"><label class="form-label"><%= _t('req_urgent_reason') %></label><textarea name="urgent_reason" class="form-control" rows="2"></textarea></div>
@@ -53,7 +53,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
   var SEL_D='<option value=""><%= _t('auth_select') %></option>';
   var SEL_U='<option value=""><%= _t('auth_select') %></option>';
   const bdData = {
@@ -67,6 +67,10 @@
     "Mymensingh":{"Jamalpur":["Baksiganj","Dewanganj","Islampur","Jamalpur Sadar","Madarganj","Melandaha","Sarishabari"],"Mymensingh":["Bhaluka","Dhobaura","Fulbaria","Gaffargaon","Gauripur","Haluaghat","Ishwarganj","Mymensingh Sadar","Muktagachha","Nandail","Phulpur","Trishal"],"Netrokona":["Atpara","Barhatta","Durgapur","Khaliajuri","Kalmakanda","Madan","Mohanganj","Netrokona Sadar","Purbadhala"],"Sherpur":["Jhenaigati","Nakla","Nalitabari","Sherpur Sadar","Sreebardi"]}
   };
   document.addEventListener('DOMContentLoaded', ()=>{
+    const urgentToggle = document.getElementById('is_urgent');
+    if (urgentToggle) urgentToggle.addEventListener('change', function(){
+      document.getElementById('urgent_reason_wrap').classList.toggle('d-none', !this.checked);
+    });
     const divSel=document.getElementById('division'), distSel=document.getElementById('district'), upaSel=document.getElementById('upazila');
     Object.keys(bdData).forEach(d=>{ const o=document.createElement('option'); o.value=d; o.textContent=d; divSel.appendChild(o); });
     divSel.addEventListener('change', function(){

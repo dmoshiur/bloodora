@@ -108,27 +108,45 @@ export function bootstrapDatabase(): Promise<void> {
  * behaviour: it burns the platform's concurrent-instance budget serving waits
  * instead of fast 503s.
  *
- * After a failure we refuse to *start* another attempt for `BOOT_RETRY_BACKOFF_MS`
- * and reject immediately. An in-flight attempt is never cancelled or duplicated.
+ * After a failure we refuse to *start* another attempt until a bounded
+ * exponential backoff has elapsed: `BOOT_RETRY_BACKOFF_MS` doubled per
+ * consecutive failure, capped at `BOOT_RETRY_BACKOFF_MAX_MS`. The backoff
+ * resets after any success. An in-flight attempt is never cancelled or
+ * duplicated; there is no retry storm and no unbounded wait.
  */
-const BOOT_RETRY_BACKOFF_MS = 5_000;
+const BOOT_RETRY_BACKOFF_MS = 2_000;
+const BOOT_RETRY_BACKOFF_MAX_MS = 60_000;
 let lastFailureAt = 0;
+let consecutiveFailures = 0;
+
+/** Milliseconds the caller should wait before the next bootstrap attempt. */
+function retryBackoffMs(): number {
+  if (lastFailureAt <= 0) return 0;
+  const exponent = Math.min(Math.max(consecutiveFailures - 1, 0), 8);
+  return Math.min(BOOT_RETRY_BACKOFF_MS * 2 ** exponent, BOOT_RETRY_BACKOFF_MAX_MS);
+}
 
 function startBootstrap(): Promise<void> {
   if (!bootstrapping) {
     const sinceFailure = Date.now() - lastFailureAt;
-    if (lastFailureAt > 0 && sinceFailure < BOOT_RETRY_BACKOFF_MS) {
+    if (lastFailureAt > 0 && sinceFailure < retryBackoffMs()) {
       return Promise.reject(
         Object.assign(new Error("Database is not ready"), {
           status: 503,
           code: "DB_NOT_READY",
-          retryAfterMs: BOOT_RETRY_BACKOFF_MS - sinceFailure,
+          retryAfterMs: Math.max(0, Math.round(retryBackoffMs() - sinceFailure)),
         }),
       );
     }
     bootstrapping = bootstrap().catch((err) => {
       bootstrapping = null; // allow a later retry after the backoff
       lastFailureAt = Date.now();
+      consecutiveFailures += 1;
+      logger.warn("db: bootstrap failed — backing off before the next attempt", {
+        attempt: consecutiveFailures,
+        backoffMs: retryBackoffMs(),
+        err: String((err as Error)?.message ?? err),
+      });
       throw err;
     });
   }
@@ -193,6 +211,7 @@ async function bootstrap(): Promise<void> {
   await settingsRepo.set(BOOTSTRAP_MARKER, fingerprint);
 
   lastFailureAt = 0; // the breaker is closed again
+  consecutiveFailures = 0;
   logger.info("[BOOT] database: ready", {
     schemaMs,
     totalMs: Date.now() - started,

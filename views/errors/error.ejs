@@ -20,6 +20,7 @@
     ['/reviews', 'fa-star', _t('nav_reviews')],
   ];
 %>
+<style>.js-ai-suggestion:hover { border-color: <%= _p %> !important; }</style>
 <div class="container py-5">
   <div class="row justify-content-center">
     <div class="col-lg-8">
@@ -59,9 +60,9 @@
               <a href="/" class="btn btn-danger"><i class="fas fa-home me-1"></i><%= _t('err_home') %></a>
               <a href="/shop" class="btn btn-light border"><i class="fas fa-shopping-bag me-1"></i><%= _t('err_shop') %></a>
               <% if (_code === 403) { %><a href="/login" class="btn btn-outline-danger"><i class="fas fa-sign-in-alt me-1"></i><%= _t('err_login') %></a><% } %>
-              <% if (_code === 500) { %><button class="btn btn-outline-danger" onclick="location.reload()"><i class="fas fa-rotate me-1"></i><%= _t('common_retry') %></button><% } %>
+              <% if (_code === 500) { %><button type="button" class="btn btn-outline-danger js-reload"><i class="fas fa-rotate me-1"></i><%= _t('common_retry') %></button><% } %>
               <% if ((typeof branding === 'undefined') || branding.ai_enabled !== false) { %>
-                <button class="btn btn-outline-primary" style="border-color:#c7d2fe; color:#4338ca;" onclick="document.getElementById('bo-ai-fab')?.click()"><i class="fas fa-robot me-1"></i><%= _t('err_ai') %></button>
+                <button type="button" class="btn btn-outline-primary js-open-ai" style="border-color:#c7d2fe; color:#4338ca;"><i class="fas fa-robot me-1"></i><%= _t('err_ai') %></button>
               <% } %>
             </div>
           </div>
@@ -71,7 +72,7 @@
             <div class="row g-2">
               <% _quick.forEach(function(q){ %>
                 <div class="col-6 col-md-4">
-                  <a href="<%= q[0] %>" class="d-flex align-items-center gap-2 p-3 rounded-4 text-decoration-none" style="background:#fff; border:1px solid #e2e8f0; color:#0f172a; transition:all .2s;" onmouseover="this.style.borderColor='<%= _p %>'" onmouseout="this.style.borderColor='#e2e8f0'">
+                  <a href="<%= q[0] %>" class="d-flex align-items-center gap-2 p-3 rounded-4 text-decoration-none js-ai-suggestion" style="background:#fff; border:1px solid #e2e8f0; color:#0f172a; transition:all .2s;">
                     <i class="fas <%= q[1] %> text-danger"></i><span class="small fw-bold"><%= q[2] %></span>
                   </a>
                 </div>

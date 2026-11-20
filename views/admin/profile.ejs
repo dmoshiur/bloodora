@@ -56,7 +56,7 @@
           <div class="card border-0 shadow-sm mb-4" style="border-radius:18px;">
             <div class="card-header bg-white border-0 pt-3 d-flex justify-content-between align-items-center">
               <h6 class="fw-bold mb-0"><i class="fas fa-shield-halved text-danger me-2"></i>Sessions</h6>
-              <form method="POST" action="/admin/profile/revoke-sessions" onsubmit="return confirm('Revoke ALL your sessions, including this one? You will need to sign in again.')"><button class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-right-from-bracket me-1"></i>Revoke all sessions</button></form>
+              <form method="POST" action="/admin/profile/revoke-sessions" data-confirm="Revoke ALL your sessions, including this one? You will need to sign in again."><button class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-right-from-bracket me-1"></i>Revoke all sessions</button></form>
             </div>
             <div class="card-body small text-muted">
               This platform uses a single active session per account. Revoking rotates your session token — every issued token dies at once. Sign back in with your email and password.

@@ -32,7 +32,7 @@
                     <% if (role.description) { %><small class="text-muted"><%= role.description %></small><% } %>
                   </div>
                   <% if (!role.is_system) { %>
-                    <form method="POST" action="/admin/roles/<%= role.key %>/delete" onsubmit="return confirm('Delete role <%= role.key %>?')"><button class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-trash me-1"></i>Delete</button></form>
+                    <form method="POST" action="/admin/roles/<%= role.key %>/delete" data-confirm="Delete role <%= role.key %>?"><button class="btn btn-outline-danger btn-sm rounded-pill"><i class="fas fa-trash me-1"></i>Delete</button></form>
                   <% } %>
                 </div>
               </div>

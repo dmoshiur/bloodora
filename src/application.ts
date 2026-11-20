@@ -1,4 +1,5 @@
 import express from "express";
+import crypto from "node:crypto";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import compression from "compression";
@@ -20,6 +21,7 @@ import { requestContext } from "./middleware/requestId.js";
 import { responseEnvelope } from "./middleware/envelope.js";
 import { csrfProtection } from "./middleware/csrf.js";
 import { ah } from "./utils/async.js";
+import { liveness as liveProbe, readiness as readyProbe } from "./controllers/health.controller.js";
 // The SSR layer is intentionally plain JavaScript: it preserves the canonical
 // EJS application's tested routes while the domain core remains strict TS.
 // @ts-ignore runtime JavaScript module
@@ -96,7 +98,7 @@ export function isProbePath(req: {
   url?: string;
 }): boolean {
   const url = String(req.originalUrl ?? req.url ?? "").split("?")[0];
-  return url === "/health" || url === "/api/health" || url.endsWith("/health");
+  return /^\/(api\/)?health(\/(live|ready))?$/.test(url) || url.endsWith("/health");
 }
 
 function createApp(): express.Express {
@@ -174,6 +176,14 @@ function createApp(): express.Express {
     });
   };
   app.get("/health", liveness);
+  // Separate probes, per the deployment contract: `/health/live` answers as
+  // long as the process can serve (used to detect a dead instance), while
+  // `/health/ready` answers 200 only when the database operations the site
+  // needs succeed right now (used to gate traffic and deploy health). Both
+  // bypass sessions/CSRF/bootstrap; /health/ready performs read-only checks
+  // and never migrates, seeds or recreates a database.
+  app.get("/health/live", liveProbe);
+  app.get("/health/ready", ah(readyProbe));
 
   stage("registering middleware");
 
@@ -190,33 +200,58 @@ function createApp(): express.Express {
     ),
   );
 
+  // Content Security Policy — per-request NONCE, set here (not via helmet).
+  //
+  // helmet's CSP directives are static configuration fixed at startup, and a
+  // nonce must be unique per response — a static one would whitelist inline
+  // scripts forever for anyone who can view any single page. helmet therefore
+  // keeps every other protection and yields CSP to this middleware, which:
+  //
+  //   1. mints a fresh `cspNonce` per request, exposed to EJS as `cspNonce`
+  //      (every inline <script nonce="…"> relies on it matching the header);
+  //   2. allows ONLY same-origin scripts plus nonced inline scripts — no
+  //      'unsafe-inline' in script-src, and script-src-attr stays 'none'
+  //      (helmet's default, restated explicitly), so inline event-handler
+  //      attributes are dead on arrival;
+  //   3. keeps every other directive equivalent to the previous policy.
+  //
+  // Nothing in the page may execute that this policy does not name. No
+  // external stylesheets or fonts are used anywhere in the app (all assets
+  // are self-hosted under /vendor), so style-src/font-src stay at 'self'
+  // (+ 'unsafe-inline' styles, which the design system relies on for
+  // style="" attributes and inline <style> blocks). Images keep https:
+  // because user-hosted/branding images may live on external hosts.
+  app.use((req, res, next) => {
+    const cspNonce = crypto.randomBytes(16).toString("base64");
+    res.locals.cspNonce = cspNonce;
+    const directives = [
+      "default-src 'self'",
+      `script-src 'self' 'nonce-${cspNonce}'`,
+      "script-src-attr 'none'",
+      "style-src 'self' 'unsafe-inline'",
+      "font-src 'self' data:",
+      "img-src 'self' data: blob: https:",
+      "connect-src 'self'",
+      "object-src 'none'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "frame-ancestors 'none'",
+      ...(config.isProd ? ["upgrade-insecure-requests"] : []),
+    ];
+    res.setHeader("Content-Security-Policy", directives.join("; "));
+    next();
+  });
   app.use(
     helmet({
-      contentSecurityPolicy: {
-        directives: {
-          defaultSrc: ["'self'"],
-          scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: [
-            "'self'",
-            "'unsafe-inline'",
-            "https://fonts.googleapis.com",
-          ],
-          fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
-          imgSrc: ["'self'", "data:", "blob:", "https:"],
-          connectSrc: ["'self'"],
-          objectSrc: ["'none'"],
-          baseUri: ["'self'"],
-          formAction: ["'self'"],
-          frameAncestors: ["'none'"],
-          upgradeInsecureRequests: config.isProd ? [] : null,
-        },
-      },
+      contentSecurityPolicy: false, // per-request nonce policy above
       crossOriginEmbedderPolicy: false,
       crossOriginResourcePolicy: { policy: "cross-origin" },
       // Fetch serializes Origin as "null" for native non-CORS form POSTs from
       // no-referrer documents. same-origin still sends no referrer cross-site,
       // while preserving the real origin required by our CSRF/CORS checks.
       referrerPolicy: { policy: "same-origin" },
+      // Match the CSP frame-ancestors 'none': no page may be framed, anywhere.
+      frameguard: { action: "deny" },
     }),
   );
 

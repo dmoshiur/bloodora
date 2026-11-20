@@ -39,7 +39,7 @@
   <meta name="description" content="<%= _b.site_description || _t('site_meta_description') %>">
   <meta name="theme-color" content="<%= _p %>">
   <meta name="csrf-token" content="<%= typeof csrfToken !== 'undefined' ? csrfToken : '' %>">
-  <script>
+  <script nonce="<%= cspNonce %>">
     // Add the synchronizer token to same-origin mutating AJAX calls. Ordinary
     // HTML forms receive a hidden token during SSR instead.
     (() => {
@@ -279,7 +279,7 @@
            renders the image alone — a separate name beside it was a duplicate.
            `_name` stays as the image's alt/title text for screen readers. -->
       <a class="navbar-brand d-flex align-items-center" href="/" title="<%= _name %>">
-        <img src="<%= _logo %>" alt="<%= _name %>" onerror="this.style.display='none'">
+        <img src="<%= _logo %>" alt="<%= _name %>" data-img-fallback="hide">
         <% if (_tag) { %><span class="brand-stack"><span class="brand-tag d-none d-xl-inline"><%= _tag %></span></span><% } %>
       </a>
       <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMain" aria-controls="navMain" aria-expanded="false" aria-label="<%= _t('nav_menu') %>">

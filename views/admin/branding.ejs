@@ -38,7 +38,7 @@
                   <label class="form-label">Site logo <span class="text-muted small">(PNG / SVG / JPG — a transparent square works best)</span></label>
                   <input type="file" name="logo" accept="image/png,image/jpeg,image/webp,image/svg+xml" class="form-control">
                   <div class="mt-2 p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                    <img id="logo-preview" src="/<%= _s.logo_file || 'logo.png' %>" style="max-height:64px; max-width:100%;" onerror="this.style.opacity=.25">
+                    <img id="logo-preview" src="/<%= _s.logo_file || 'logo.png' %>" style="max-height:64px; max-width:100%;" data-img-fallback="dim">
                     <div class="small text-muted mt-1">Current: <code><%= _s.logo_file || 'logo.png' %></code></div>
                   </div>
                 </div>
@@ -47,7 +47,7 @@
                   <label class="form-label">Favicon <span class="text-muted small">(square, 32–512px)</span></label>
                   <input type="file" name="favicon" accept="image/png,image/x-icon,image/svg+xml,image/jpeg" class="form-control">
                   <div class="mt-2 p-3 rounded-4 text-center" style="background:#f8fafc; border:1px solid #e2e8f0;">
-                    <img id="fav-preview" src="/<%= _s.favicon_file || 'favicon.ico' %>" style="width:48px; height:48px; object-fit:contain;" onerror="this.style.opacity=.25">
+                    <img id="fav-preview" src="/<%= _s.favicon_file || 'favicon.ico' %>" style="width:48px; height:48px; object-fit:contain;" data-img-fallback="dim">
                     <div class="small text-muted mt-1">Current: <code><%= _s.favicon_file || 'favicon.ico' %></code></div>
                   </div>
                 </div>
@@ -105,7 +105,7 @@
               <h6 class="fw-bold mb-3"><i class="fas fa-eye me-2 text-danger"></i>How it will look</h6>
               <div class="rounded-4 p-3 mb-3" style="background:#fff; border:1px solid #e2e8f0;">
                 <div class="d-flex align-items-center gap-2 pb-2" style="border-bottom:1px solid #e2e8f0;">
-                  <img id="nav-logo" src="/<%= _s.logo_file || 'logo.png' %>" style="height:36px;" onerror="this.style.opacity=.2">
+                  <img id="nav-logo" src="/<%= _s.logo_file || 'logo.png' %>" style="height:36px;" data-img-fallback="dim" data-fallback-opacity="0.2">
                   <div>
                     <div class="fw-bold" style="font-family:var(--font-display); font-size:1.3rem; color:var(--primary);" id="pv-name"><%= _s.site_name %></div>
                     <div class="script-accent" style="font-size:.9rem; color:#64748b;" id="pv-tag"><%= _s.site_tagline %></div>
@@ -139,7 +139,7 @@
   </div>
 </div>
 
-<script>
+<script nonce="<%= cspNonce %>">
 (function(){
   function bind(pickerId, inputId){
     var p = document.getElementById(pickerId), i = document.getElementById(inputId);
