@@ -1,6 +1,10 @@
 import { all, batch, run } from "./query.js";
 
-/** Full schema as ordered DDL statements. Every statement is idempotent. */
+/**
+ * Table DDL only — CREATE TABLE IF NOT EXISTS. Every statement is idempotent. Indexes are deliberately NOT in this array: they
+ * are created AFTER the column-alignment migrations (see INDEXES), because
+ * CREATE INDEX on a column that does not exist yet fails the whole batch.
+ */
 const DDL: string[] = [
   `CREATE TABLE IF NOT EXISTS schema_migrations (id TEXT PRIMARY KEY, applied_at TEXT NOT NULL)`,
   `CREATE TABLE IF NOT EXISTS users (
@@ -38,12 +42,6 @@ const DDL: string[] = [
     is_active INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_admin ON users(is_admin, is_active)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_verified ON users(is_verified)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_blood ON users(blood_group)`,
-  `CREATE INDEX IF NOT EXISTS idx_users_district ON users(district)`,
 
   `CREATE TABLE IF NOT EXISTS products (
     id TEXT PRIMARY KEY,
@@ -58,8 +56,6 @@ const DDL: string[] = [
     sales_count INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`,
-  `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
 
   `CREATE TABLE IF NOT EXISTS orders (
     id TEXT PRIMARY KEY,
@@ -81,8 +77,6 @@ const DDL: string[] = [
     note TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`,
 
   `CREATE TABLE IF NOT EXISTS order_items (
     id TEXT PRIMARY KEY,
@@ -94,7 +88,6 @@ const DDL: string[] = [
     qty INTEGER NOT NULL,
     line_total REAL NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`,
 
   `CREATE TABLE IF NOT EXISTS blood_requests (
     id TEXT PRIMARY KEY,
@@ -130,8 +123,6 @@ const DDL: string[] = [
     created_at TEXT NOT NULL DEFAULT (datetime('now')),
     updated_at TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_blood_status ON blood_requests(status)`,
-  `CREATE INDEX IF NOT EXISTS idx_blood_group ON blood_requests(blood_group)`,
 
   `CREATE TABLE IF NOT EXISTS activities (
     id TEXT PRIMARY KEY,
@@ -141,7 +132,6 @@ const DDL: string[] = [
     meta TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(created_at)`,
 
   // One institutional registry: a hospital is a kind of organization, not a duplicate entity.
   `CREATE TABLE IF NOT EXISTS organizations (
@@ -166,7 +156,7 @@ const DDL: string[] = [
     updated_at TEXT NOT NULL,
     UNIQUE(created_by, request_key)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_organizations_directory ON organizations(kind, status, district, name)`,
+
   `CREATE TABLE IF NOT EXISTS organization_members (
     organization_id TEXT NOT NULL REFERENCES organizations(id),
     user_id TEXT NOT NULL REFERENCES users(id),
@@ -176,7 +166,6 @@ const DDL: string[] = [
     updated_at TEXT NOT NULL,
     PRIMARY KEY(organization_id, user_id)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_organization_members_user ON organization_members(user_id, active)`,
 
   `CREATE TABLE IF NOT EXISTS donations (
     id TEXT PRIMARY KEY,
@@ -190,8 +179,6 @@ const DDL: string[] = [
     idempotency_key TEXT NOT NULL UNIQUE,
     created_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_donations_donor ON donations(donor_id, donated_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_donations_request ON donations(request_id)`,
 
   // User↔admin messaging (subject + reply threading; recipient_id 'admin'
   // means the site administrator).
@@ -207,8 +194,6 @@ const DDL: string[] = [
     read_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages(recipient_id)`,
 
   // Live Messaging (support chat): sessions are keyed by an opaque
   // session_key (guests included), messages are appended per session.
@@ -224,7 +209,6 @@ const DDL: string[] = [
     is_open INTEGER NOT NULL DEFAULT 1,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_live_sessions_open ON live_sessions(is_open)`,
 
   `CREATE TABLE IF NOT EXISTS live_messages (
     id TEXT PRIMARY KEY,
@@ -235,7 +219,6 @@ const DDL: string[] = [
     is_read INTEGER NOT NULL DEFAULT 0,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_live_messages_key ON live_messages(session_key)`,
 
   `CREATE TABLE IF NOT EXISTS settings (
     key TEXT PRIMARY KEY,
@@ -260,8 +243,7 @@ const DDL: string[] = [
     created_at TEXT NOT NULL,
     updated_at TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_media_owner ON media_assets(owner_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_media_created ON media_assets(created_at)`,
+
   `CREATE TABLE IF NOT EXISTS uploads (
     id TEXT PRIMARY KEY,
     filename TEXT NOT NULL UNIQUE,
@@ -277,7 +259,6 @@ const DDL: string[] = [
     data TEXT NOT NULL,
     expires_at INTEGER NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`,
 
   // kind: 'product' (product_id set) or 'site' (general testimonial).
   // status: pending → approved | rejected (admin moderation queue).
@@ -297,9 +278,6 @@ const DDL: string[] = [
     admin_replied_at TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews(is_approved)`,
 
   // Anti-D medication entries (Admin → Content manager; seeds from content.ts).
   `CREATE TABLE IF NOT EXISTS anti_d_info (
@@ -324,7 +302,6 @@ const DDL: string[] = [
     source TEXT NOT NULL DEFAULT 'admin',
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_resources_category ON resources(category)`,
 
   // Single active site notice (shown in the site header).
   `CREATE TABLE IF NOT EXISTS site_notice (
@@ -349,7 +326,7 @@ const DDL: string[] = [
     user_id TEXT REFERENCES users(id), created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_ai_conversations_owner ON ai_conversations(owner_key, updated_at)`,
+
   `CREATE TABLE IF NOT EXISTS ai_submissions (
     conversation_id TEXT NOT NULL REFERENCES ai_conversations(id),
     request_id TEXT NOT NULL, message TEXT NOT NULL,
@@ -367,7 +344,6 @@ const DDL: string[] = [
     model TEXT,
     created_at TEXT NOT NULL DEFAULT (datetime('now'))
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON ai_messages(conversation_id)`,
 
   // ---------------------------------------------------------------------
   // v3 — notifications, payments ledger, audit trail, RBAC, navigation,
@@ -403,9 +379,6 @@ const DDL: string[] = [
     read_at TEXT,
     created_at TEXT NOT NULL
   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedupe ON notifications(user_id, dedupe_key)`,
-  `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at)`,
 
   // Payment ledger. One row per money movement (charge or refund) so an order's
   // payment history survives status changes and duplicate confirmations.
@@ -428,9 +401,6 @@ const DDL: string[] = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_tx_order ON transactions(order_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_tx_user ON transactions(user_id, created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_tx_status ON transactions(status)`,
 
   // Admin/security audit trail (secrets are redacted before insert).
   `CREATE TABLE IF NOT EXISTS audit_logs (
@@ -446,10 +416,6 @@ const DDL: string[] = [
     user_agent TEXT,
     created_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id)`,
-  `CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action)`,
-  `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id)`,
 
   // RBAC. `users.role` stays the source of truth for the existing contract;
   // roles/permissions describe what each role may do and are re-read from the
@@ -476,7 +442,6 @@ const DDL: string[] = [
     permission_key TEXT NOT NULL,
     PRIMARY KEY (role_key, permission_key)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_key)`,
 
   // Navigation manager. Seeded once from the built-in site route catalogue so
   // GET /api/meta/routes keeps its exact shape, then admin-editable.
@@ -497,7 +462,6 @@ const DDL: string[] = [
     created_at TEXT NOT NULL,
     updated_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_nav_area ON navigation(area, is_active, position)`,
 
   // Single-use hashed tokens (password reset, email verification). Only the
   // SHA-256 hash is stored — a database leak cannot be replayed.
@@ -511,8 +475,6 @@ const DDL: string[] = [
     ip TEXT,
     created_at TEXT NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_tokens_user ON auth_tokens(user_id, purpose)`,
-  `CREATE INDEX IF NOT EXISTS idx_tokens_expires ON auth_tokens(expires_at)`,
 
   // SMS metadata only. Message bodies and OTP codes are deliberately excluded
   // so delivery logs can never become a plaintext OTP history.
@@ -531,9 +493,7 @@ const DDL: string[] = [
     created_at TEXT NOT NULL,
     sent_at TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_sms_deliveries_created ON sms_deliveries(created_at)`,
-  `CREATE INDEX IF NOT EXISTS idx_sms_deliveries_status ON sms_deliveries(status, created_at)`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_deliveries_dedupe ON sms_deliveries(dedupe_key)`,
+
   `CREATE TABLE IF NOT EXISTS phone_otps (
     phone TEXT NOT NULL,
     purpose TEXT NOT NULL,
@@ -546,7 +506,6 @@ const DDL: string[] = [
     consumed_at INTEGER,
     PRIMARY KEY (phone, purpose)
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_phone_otps_expiry ON phone_otps(expires_at)`,
 
   // Shared rate-limit counters. Serverless instances do not share memory, so
   // the in-process limiter alone cannot stop a distributed brute-force; the
@@ -556,7 +515,6 @@ const DDL: string[] = [
     count INTEGER NOT NULL DEFAULT 0,
     window_end INTEGER NOT NULL
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_rate_limits_end ON rate_limits(window_end)`,
 
   // Outgoing mail that still has to be delivered (SMTP off/failed at request
   // time). Flushed opportunistically and by GET /api/cron/maintenance.
@@ -565,7 +523,7 @@ const DDL: string[] = [
     sender_email TEXT, sender_name TEXT, sender_id TEXT, secret TEXT NOT NULL,
     is_default INTEGER NOT NULL DEFAULT 0, created_at TEXT NOT NULL
   )`,
-  `CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_default ON delivery_profiles(kind) WHERE is_default=1`,
+
   `CREATE TABLE IF NOT EXISTS email_outbox (
     id TEXT PRIMARY KEY,
     to_email TEXT NOT NULL,
@@ -580,7 +538,7 @@ const DDL: string[] = [
     created_at TEXT NOT NULL,
     sent_at TEXT
   )`,
-  `CREATE INDEX IF NOT EXISTS idx_outbox_status ON email_outbox(status, created_at)`,
+
 ];
 
 export const SETTINGS_DEFAULTS: Record<string, string> = {
@@ -649,6 +607,18 @@ export const SETTINGS_DEFAULTS: Record<string, string> = {
   live_chat_enabled: "1",
   live_activity_enabled: "1",
 };
+
+/**
+ * Attach migration-stage context to a failure. The message carries the stage
+ * name; the structured fields (stage, pendingAlters, statements/tables) name
+ * tables and columns only — never values, hosts or SQL text.
+ */
+function stageError(stage: string, err: unknown, extra: Record<string, unknown> = {}): Error {
+  const cause = err as Error | undefined;
+  const wrapped = new Error(`schema ${stage} stage failed: ${cause?.message ?? String(err)}`);
+  Object.assign(wrapped, { stage, ...extra, cause });
+  return wrapped;
+}
 
 /** Add one column if the table does not have it yet. Single-table helper. */
 export async function ensureColumn(table: string, column: string, definition: string): Promise<void> {
@@ -739,18 +709,81 @@ const MIGRATIONS: Array<[string, string, string]> = [
   // v4: object-storage metadata. Existing BLOB rows remain readable unchanged.
   ["uploads", "external_url", "TEXT"],
   ["uploads", "storage_provider", "TEXT NOT NULL DEFAULT 'turso'"],
+  // v4-column-alignment-v1: the production failure. users.is_active was in this
+  // list but products.is_active and navigation.is_active were not, so a legacy
+  // database could never create the indexes that reference them. SQLite's
+  // ALTER TABLE ... ADD COLUMN fills existing rows with the declared DEFAULT —
+  // every pre-existing product stays visible (is_active = 1) and every existing
+  // navigation entry stays visible; no record is lost, rewritten or reseeded.
+  ["products", "is_active", "INTEGER NOT NULL DEFAULT 1"],
+  ["navigation", "is_active", "INTEGER NOT NULL DEFAULT 1"],
 ];
 
 /**
- * Indexes that depend on a migrated column. They MUST be created after
- * `ensureColumn` runs — on a legacy database the column does not exist yet when
- * the DDL block above executes, and `CREATE INDEX` would fail the whole
- * bootstrap.
+ * Every index in the schema, created ONLY after the column-alignment migrations
+ * have run (step 4 below) — never inside the CREATE TABLE batch.
  *
- * SQLite treats NULLs as distinct in a UNIQUE index, so the rows written before
- * v3 (client_message_id IS NULL) never collide with each other.
+ * This ordering is the repair for the production bootstrap failure
+ * ("no such column: is_active (at offset 62)"): the index
+ * `idx_users_admin ON users(is_admin, is_active)` used to live in the same
+ * batch as the CREATE TABLEs, which runs BEFORE the ALTER that adds the
+ * column to a legacy database — so the whole batch failed and the database
+ * never became ready. CREATE INDEX IF NOT EXISTS is idempotent, so re-running
+ * this list on an aligned database is a no-op.
  */
-const POST_MIGRATION_INDEXES: string[] = [
+const INDEXES: string[] = [
+  `CREATE INDEX IF NOT EXISTS idx_users_role ON users(role)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_admin ON users(is_admin, is_active)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_active ON users(is_active)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_verified ON users(is_verified)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_blood ON users(blood_group)`,
+  `CREATE INDEX IF NOT EXISTS idx_users_district ON users(district)`,
+  `CREATE INDEX IF NOT EXISTS idx_products_category ON products(category)`,
+  `CREATE INDEX IF NOT EXISTS idx_products_slug ON products(slug)`,
+  `CREATE INDEX IF NOT EXISTS idx_orders_user ON orders(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_orders_status ON orders(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_order_items_order ON order_items(order_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_blood_status ON blood_requests(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_blood_group ON blood_requests(blood_group)`,
+  `CREATE INDEX IF NOT EXISTS idx_activities_created ON activities(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_organizations_directory ON organizations(kind, status, district, name)`,
+  `CREATE INDEX IF NOT EXISTS idx_organization_members_user ON organization_members(user_id, active)`,
+  `CREATE INDEX IF NOT EXISTS idx_donations_donor ON donations(donor_id, donated_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_donations_request ON donations(request_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_messages_sender ON messages(sender_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_messages_recipient ON messages(recipient_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_live_sessions_open ON live_sessions(is_open)`,
+  `CREATE INDEX IF NOT EXISTS idx_live_messages_key ON live_messages(session_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_media_owner ON media_assets(owner_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_media_created ON media_assets(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_sessions_expires ON sessions(expires_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_reviews_product ON reviews(product_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reviews_user ON reviews(user_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_reviews_approved ON reviews(is_approved)`,
+  `CREATE INDEX IF NOT EXISTS idx_resources_category ON resources(category)`,
+  `CREATE INDEX IF NOT EXISTS idx_ai_conversations_owner ON ai_conversations(owner_key, updated_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_ai_messages_conv ON ai_messages(conversation_id)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_notifications_dedupe ON notifications(user_id, dedupe_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_notifications_user ON notifications(user_id, is_read, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_notifications_created ON notifications(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_tx_order ON transactions(order_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_tx_user ON transactions(user_id, created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_tx_status ON transactions(status)`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_created ON audit_logs(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_actor ON audit_logs(actor_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_action ON audit_logs(action)`,
+  `CREATE INDEX IF NOT EXISTS idx_audit_entity ON audit_logs(entity_type, entity_id)`,
+  `CREATE INDEX IF NOT EXISTS idx_role_permissions_role ON role_permissions(role_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_nav_area ON navigation(area, is_active, position)`,
+  `CREATE INDEX IF NOT EXISTS idx_tokens_user ON auth_tokens(user_id, purpose)`,
+  `CREATE INDEX IF NOT EXISTS idx_tokens_expires ON auth_tokens(expires_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_sms_deliveries_created ON sms_deliveries(created_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_sms_deliveries_status ON sms_deliveries(status, created_at)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_sms_deliveries_dedupe ON sms_deliveries(dedupe_key)`,
+  `CREATE INDEX IF NOT EXISTS idx_phone_otps_expiry ON phone_otps(expires_at)`,
+  `CREATE INDEX IF NOT EXISTS idx_rate_limits_end ON rate_limits(window_end)`,
+  `CREATE UNIQUE INDEX IF NOT EXISTS idx_delivery_default ON delivery_profiles(kind) WHERE is_default=1`,
+  `CREATE INDEX IF NOT EXISTS idx_outbox_status ON email_outbox(status, created_at)`,
   `CREATE INDEX IF NOT EXISTS idx_requests_institution ON blood_requests(institution_id, created_at)`,
   `CREATE UNIQUE INDEX IF NOT EXISTS idx_live_messages_client
      ON live_messages(session_key, client_message_id)`,
@@ -782,62 +815,115 @@ const POST_MIGRATION_INDEXES: string[] = [
  * permanent rather than transient: the API "loaded forever" and never came up.
  *
  * Grouping the same statements into `batch()` calls makes each group ONE HTTP
- * request, so the schema stage now costs at most 5 round trips:
+ * request, so the schema stage now costs at most 8 round trips:
  *
- *   1. every CREATE TABLE / CREATE INDEX statement
+ *   1. every CREATE TABLE statement
  *   2. one `PRAGMA table_info` per *distinct* migrated table
  *   3. only the ALTERs that are genuinely missing (zero on a warm database)
- *   4. the indexes that depend on migrated columns
+ *   4. every index in the schema (safe: all indexed columns exist by now)
  *   5. the settings defaults (`ON CONFLICT DO NOTHING`)
+ *   6. the `bootstrap-column-alignment-v1` marker in schema_migrations, which is
+ *      written only after every stage above succeeded
  *
  * Semantics are unchanged: `batch()` wraps the group in a transaction, and every
  * statement was already idempotent, so a partially applied group is impossible
  * and a re-run is a no-op.
  */
 export async function applySchema(): Promise<void> {
-  // (1) All table + index creation in a single request.
-  await batch(DDL);
+  // Every stage names itself in the error it throws, so a cold-start failure
+  // in the log says WHICH step broke (ddl/pragma/alter/index/settings/marker)
+  // and which columns were pending — never values, hosts or SQL text.
+  try {
+    // (1) All table creation in a single request. Indexes deliberately do NOT
+    // run here: on a legacy database some indexed columns do not exist yet.
+    await batch(DDL);
+  } catch (err) {
+    throw stageError("ddl", err, { statements: DDL.length });
+  }
 
-  // (2) Discover existing columns for every migrated table at once. MIGRATIONS
-  // lists ~56 (table, column) pairs but only a handful of distinct tables, so
-  // deduplicating first is what turns 56 requests into one.
+  // (2) Discover existing columns for every migrated table at once.
   const tables = [...new Set(MIGRATIONS.map(([table]) => table))];
-  const infos = await batch(tables.map((table) => `PRAGMA table_info(${table})`));
+  let infos;
+  try {
+    infos = await batch(tables.map((table) => `PRAGMA table_info(${table})`));
+  } catch (err) {
+    throw stageError("pragma", err, { tables });
+  }
   const existing = new Map<string, Set<string>>();
   tables.forEach((table, i) => {
     const rows = (infos[i]?.rows ?? []) as unknown as Array<{ name: string }>;
     existing.set(table, new Set(rows.map((r) => r.name)));
   });
 
-  // (3) Add only what is actually missing. On any database this build has seen
-  // before this array is empty and the request is skipped entirely.
+  // (3) Add only what is actually missing. BEGIN IMMEDIATE serializes
+  // concurrent instances: a second instance waits on the write lock instead of
+  // racing the ALTER, and if it still cannot acquire it fails fast with
+  // SQLITE_BUSY — the caller's backoff retries and converges, because every
+  // statement here is idempotent. Existing records keep their data; SQLite
+  // backfills the new columns with the declared DEFAULT.
   const alters: string[] = [];
   for (const [table, column, definition] of MIGRATIONS) {
     if (!existing.get(table)?.has(column)) {
       alters.push(`ALTER TABLE ${table} ADD COLUMN ${column} ${definition}`);
     }
   }
-  if (alters.length > 0) await batch(alters);
+  const pendingAlters = alters.map((sql) => {
+    const col = /ADD COLUMN (\S+)/.exec(sql)?.[1];
+    const tbl = /ALTER TABLE (\S+)/.exec(sql)?.[1];
+    return `${tbl}.${col}`;
+  });
+  if (alters.length > 0) {
+    try {
+      await batch(alters, "write");
+    } catch (err) {
+      throw stageError("alter", err, { pendingAlters });
+    }
+  }
 
-  // (4) Indexes that depend on a migrated column — must follow the ALTERs.
-  await batch(POST_MIGRATION_INDEXES);
+  // (4) Every index in the schema — safe now: all indexed columns exist.
+  try {
+    await batch(INDEXES, "write");
+  } catch (err) {
+    throw stageError("index", err, { pendingAlters });
+  }
 
   // One-time brand migration; keep every account and domain row untouched.
-  await batch([
-    `UPDATE settings SET value = 'BloodFerry' WHERE key = 'site_name' AND value IN ('BloodOra', 'Bloodora')`,
-    `UPDATE settings SET value = replace(value, 'BloodOra', 'BloodFerry') WHERE key IN ('footer_note', 'site_description')`,
-    `UPDATE settings SET value = 'DONATE • TRANSFUSE • SAVE LIVES' WHERE key = 'site_tagline' AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE id = 'bloodferry-brand-v1')`,
-    `UPDATE settings SET value = CASE key WHEN 'logo_file' THEN '/assets/brand/bloodferry-logo.png' ELSE '/favicon.png' END WHERE key IN ('logo_file', 'favicon_file') AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE id = 'bloodferry-brand-v1')`,
-    `INSERT INTO schema_migrations VALUES ('bloodferry-brand-v1', datetime('now')) ON CONFLICT(id) DO NOTHING`,
-  ]);
+  try {
+    await batch([
+      `UPDATE settings SET value = 'BloodFerry' WHERE key = 'site_name' AND value IN ('BloodOra', 'Bloodora')`,
+      `UPDATE settings SET value = replace(value, 'BloodOra', 'BloodFerry') WHERE key IN ('footer_note', 'site_description')`,
+      `UPDATE settings SET value = 'DONATE • TRANSFUSE • SAVE LIVES' WHERE key = 'site_tagline' AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE id = 'bloodferry-brand-v1')`,
+      `UPDATE settings SET value = CASE key WHEN 'logo_file' THEN '/assets/brand/bloodferry-logo.png' ELSE '/favicon.png' END WHERE key IN ('logo_file', 'favicon_file') AND NOT EXISTS (SELECT 1 FROM schema_migrations WHERE id = 'bloodferry-brand-v1')`,
+      `INSERT INTO schema_migrations VALUES ('bloodferry-brand-v1', datetime('now')) ON CONFLICT(id) DO NOTHING`,
+    ], "write");
+  } catch (err) {
+    throw stageError("brand-migration", err);
+  }
 
   // (5) Settings defaults, inserted but never overwriting an admin's edit.
-  await batch(
-    Object.entries(SETTINGS_DEFAULTS).map(
-      ([key, value]) =>
-        [`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING`, [key, value]] as [string, unknown[]],
-    ),
-  );
+  try {
+    await batch(
+      Object.entries(SETTINGS_DEFAULTS).map(
+        ([key, value]) =>
+          [`INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO NOTHING`, [key, value]] as [string, unknown[]],
+      ),
+      "write",
+    );
+  } catch (err) {
+    throw stageError("settings", err, { keys: Object.keys(SETTINGS_DEFAULTS).length });
+  }
+
+  // (6) Record the column-alignment repair LAST — only after every stage above
+  // has succeeded. A failure anywhere rethrows before this point, so a broken
+  // migration is never marked applied; the next boot re-runs the idempotent
+  // sequence and converges.
+  try {
+    await batch([
+      `INSERT INTO schema_migrations (id, applied_at) VALUES ('bootstrap-column-alignment-v1', datetime('now')) ON CONFLICT(id) DO NOTHING`,
+    ], "write");
+  } catch (err) {
+    throw stageError("marker", err);
+  }
 }
 
 export const TABLES = [

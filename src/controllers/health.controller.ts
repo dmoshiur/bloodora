@@ -35,9 +35,18 @@ export function liveness(_req: Request, res: Response): void {
   });
 }
 
-/** The tables every request path depends on. Read-only presence check. */
-const REQUIRED_TABLES = ["users", "settings"] as const;
-const REQUIRED_TABLES_SQL = `SELECT COUNT(*) AS n FROM sqlite_master WHERE type = 'table' AND name IN (${REQUIRED_TABLES.map((t) => `'${t}'`).join(", ")})`;
+/**
+ * The tables (and migrated columns) every request path depends on. Read-only
+ * presence checks — deliberately stricter than "the tables exist": the
+ * production outage was exactly a column (users.is_active) missing on a legacy
+ * database whose tables were all present, so table presence alone called this
+ * instance healthy while every query on the column failed.
+ */
+const REQUIRED_TABLES = ["users", "settings", "products"] as const;
+const REQUIRED_SHAPE_SQL = `SELECT
+  (SELECT COUNT(*) FROM sqlite_master WHERE type = 'table' AND name IN (${REQUIRED_TABLES.map((t) => `'${t}'`).join(", ")})) AS tables,
+  (SELECT COUNT(*) FROM pragma_table_info('users') WHERE name = 'is_active') AS users_is_active,
+  (SELECT COUNT(*) FROM pragma_table_info('products') WHERE name = 'is_active') AS products_is_active`;
 
 interface ReadinessCheck {
   ok: boolean;
@@ -59,7 +68,9 @@ interface ReadinessCheck {
  * read-only operations, each bounded by `HEALTH_DB_TIMEOUT_MS`:
  *
  *   1. connectivity — `SELECT 1` through the breaker-bypassing health path;
- *   2. schema      — the required tables (users, settings) exist;
+ *   2. schema      — the required tables (users, settings, products) exist AND
+ *                     carry the migrated columns the site queries (users.is_active,
+ *                     products.is_active);
  *   3. data read   — a real `SELECT COUNT(*)` against `users` answers.
  *
  * Any failure yields 503 with the coarse per-check category. Nothing here
@@ -140,12 +151,16 @@ export async function readiness(req: Request, res: Response): Promise<void> {
     "unknown",
   );
 
-  // 2. Schema — required tables exist (no DDL is issued by this probe).
+  // 2. Schema — required tables AND the migrated columns that production rows
+  // depend on exist (no DDL is issued by this probe).
   if (connected) {
     await checkOne(
       "schema",
-      REQUIRED_TABLES_SQL,
-      (row) => Number(row?.n ?? 0) === REQUIRED_TABLES.length,
+      REQUIRED_SHAPE_SQL,
+      (row) =>
+        Number(row?.tables ?? 0) === REQUIRED_TABLES.length &&
+        Number(row?.users_is_active ?? 0) === 1 &&
+        Number(row?.products_is_active ?? 0) === 1,
       "schema_missing",
     );
   } else {

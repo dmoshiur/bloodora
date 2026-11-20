@@ -142,10 +142,13 @@ function startBootstrap(): Promise<void> {
       bootstrapping = null; // allow a later retry after the backoff
       lastFailureAt = Date.now();
       consecutiveFailures += 1;
+      const staged = err as (Error & { stage?: string; pendingAlters?: string[] }) | undefined;
       logger.warn("db: bootstrap failed — backing off before the next attempt", {
         attempt: consecutiveFailures,
         backoffMs: retryBackoffMs(),
-        err: String((err as Error)?.message ?? err),
+        err: String(staged?.message ?? err),
+        stage: staged?.stage,
+        pendingAlters: staged?.pendingAlters,
       });
       throw err;
     });
@@ -240,9 +243,15 @@ async function seedContent(): Promise<string> {
   const writes: Array<[string, unknown[]]> = [];
   if (antidCount === 0) {
     for (const ind of antidReference.indications) {
+      // Seeded rows must use the exact built-in English source strings: the
+      // frontend localizer resolves API rows against its trilingual source
+      // index, and only exact sources (condition/who/when) round-trip to bn/ar.
+      // Free-text combinations (or helper copy) leaked English into non-English
+      // pages. The schema requires a non-null dosage; keep it empty so the view
+      // (which hides falsy dosage) omits the line — dosing lives in the reference.
       writes.push([
         `INSERT INTO anti_d_info (id, title, description, timing, dosage, image_file) VALUES (?, ?, ?, ?, ?, ?)`,
-        [randomId(), ind.condition, `${ind.who}. ${ind.note}`, ind.when, "See the dosing schedule", null],
+        [randomId(), ind.condition, ind.who, ind.when, "", null],
       ]);
     }
   }

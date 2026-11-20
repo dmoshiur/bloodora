@@ -150,7 +150,13 @@ export function localizeContent(incoming, bundled, lang = DEFAULT_LOCALE, index 
   const activeLang = LOCALES.includes(lang) ? lang : DEFAULT_LOCALE;
 
   // Nothing from the source: render the bundled reference in the right locale.
-  if (incoming == null || incoming === undefined) return localizeContent(bundled, null, activeLang, index, path);
+  // When there is no bundled reference either (API rows localized via
+  // `localizeFromSource(row, null, …)` may legitimately contain null fields,
+  // e.g. an empty review rating), there is simply nothing to resolve.
+  if (incoming == null || incoming === undefined) {
+    if (bundled == null) return null;
+    return localizeContent(bundled, null, activeLang, index, path);
+  }
 
   if (Array.isArray(incoming)) {
     const fallback = Array.isArray(bundled) ? bundled : [];
