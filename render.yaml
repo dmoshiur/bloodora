@@ -1,0 +1,36 @@
+# Render Blueprint for the BloodFerry unified application.
+# The repository can also deploy to Vercel (see vercel.json); both paths build the same app.
+# Fill in the sync:false variables in the Render dashboard — never commit them.
+services:
+  - type: web
+    name: bloodora
+    runtime: node
+    plan: free
+    buildCommand: npm ci && npm run build
+    startCommand: npm start
+    healthCheckPath: /health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: JWT_SECRET
+        generateValue: true
+      - key: TURSO_DATABASE_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: FRONTEND_URL
+        sync: false
+      - key: SMS_PROVIDER
+        value: disabled
+      - key: SMTP_ENABLED
+        value: "0"
+      - key: RESEND_API_KEY
+        sync: false
+      - key: GROQ_API_KEY
+        sync: false
+      - key: AI_API_KEY
+        sync: false
+      - key: AI_TIMEOUT_MS
+        value: "6000"
+      - key: LOG_LEVEL
+        value: info

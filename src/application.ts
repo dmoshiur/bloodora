@@ -63,17 +63,22 @@ import { createWebRouter } from "./web/router.js";
  * `unknown` keeps the compiler from re-deriving a shape it may be wrong about.
  * Options stay fully typed through helmet's own `HelmetOptions`.
  */
-type HelmetMiddleware = (options?: Readonly<HelmetOptions>) => express.RequestHandler;
+type HelmetMiddleware = (
+  options?: Readonly<HelmetOptions>,
+) => express.RequestHandler;
 
 const helmet: HelmetMiddleware = (() => {
   const ns = helmetExports as unknown as Record<string, unknown>;
   const resolved = [ns.default, ns.helmet, ns].find(
-    (candidate): candidate is HelmetMiddleware => typeof candidate === "function",
+    (candidate): candidate is HelmetMiddleware =>
+      typeof candidate === "function",
   );
   if (typeof resolved !== "function") {
     // Never reached with a real helmet install; keeps a broken/partial one legible
     // instead of dying later as "helmet is not a function" inside createApp().
-    throw new Error("helmet: resolved module is not callable (expected a default-exported middleware)");
+    throw new Error(
+      "helmet: resolved module is not callable (expected a default-exported middleware)",
+    );
   }
   return resolved;
 })();
@@ -85,7 +90,11 @@ const helmet: HelmetMiddleware = (() => {
  * Matching on the *original* URL only (never a rewritten/mounted path) keeps this
  * honest: it is exactly what the client asked for.
  */
-export function isProbePath(req: { path?: string; originalUrl?: string; url?: string }): boolean {
+export function isProbePath(req: {
+  path?: string;
+  originalUrl?: string;
+  url?: string;
+}): boolean {
   const url = String(req.originalUrl ?? req.url ?? "").split("?")[0];
   return url === "/health" || url === "/api/health" || url.endsWith("/health");
 }
@@ -93,7 +102,10 @@ export function isProbePath(req: { path?: string; originalUrl?: string; url?: st
 function createApp(): express.Express {
   const bootStarted = Date.now();
   const stage = (msg: string, fields?: Record<string, unknown>) =>
-    logger.info(`[BOOT] ${msg}`, { ...(fields ?? {}), sinceStartMs: Date.now() - bootStarted });
+    logger.info(`[BOOT] ${msg}`, {
+      ...(fields ?? {}),
+      sinceStartMs: Date.now() - bootStarted,
+    });
 
   stage("loading configuration", {
     env: config.nodeEnv,
@@ -125,7 +137,11 @@ function createApp(): express.Express {
   app.use(compression());
 
   // Static files are served before body parsing, sessions and DB bootstrap.
-  const staticOptions = { maxAge: config.isProd ? "1h" : 0, etag: true, fallthrough: true };
+  const staticOptions = {
+    maxAge: config.isProd ? "1h" : 0,
+    etag: true,
+    fallthrough: true,
+  };
   app.use(express.static(path.join(root, "public"), staticOptions));
   app.use("/public", express.static(path.join(root, "public"), staticOptions));
 
@@ -133,7 +149,23 @@ function createApp(): express.Express {
   // sessions, or any other external service. Keep these routes before all
   // potentially asynchronous middleware so a cold Vercel invocation always
   // gets a fast response (and favicon probes cannot consume the timeout).
+  // The probe answers "is this instance minimally able to serve?", not merely
+  // "is the process alive?". In production, a missing required variable
+  // (TURSO_DATABASE_URL/TURSO_AUTH_TOKEN/JWT_SECRET/FRONTEND_URL) means every
+  // login AND session signature fails — a state that must turn deploy health
+  // red instead of serving a warm zombie that rejects all forms. The variable
+  // NAMES are safe to expose; values never are.
   const liveness = (_req: express.Request, res: express.Response) => {
+    if (config.productionConfigMissing.length > 0) {
+      res.status(503).json({
+        name: "bloodora-backend",
+        service: "bloodora-backend",
+        status: "degraded",
+        missing: config.productionConfigMissing,
+        health: "/api/health",
+      });
+      return;
+    }
     res.json({
       name: "bloodora-backend",
       service: "bloodora-backend",
@@ -147,9 +179,15 @@ function createApp(): express.Express {
 
   // Structured HTTP access logs (request line only — no bodies, no cookies).
   app.use(
-    morgan((tokens, req, res) => `${tokens.method(req, res)} ${req.url.split("?")[0]} ${tokens.status(req, res)} ${tokens["response-time"](req, res)}ms`, {
-      stream: { write: (msg: string) => logger.debug("http", { line: msg.trim() }) },
-    }),
+    morgan(
+      (tokens, req, res) =>
+        `${tokens.method(req, res)} ${req.url.split("?")[0]} ${tokens.status(req, res)} ${tokens["response-time"](req, res)}ms`,
+      {
+        stream: {
+          write: (msg: string) => logger.debug("http", { line: msg.trim() }),
+        },
+      },
+    ),
   );
 
   app.use(
@@ -158,7 +196,11 @@ function createApp(): express.Express {
         directives: {
           defaultSrc: ["'self'"],
           scriptSrc: ["'self'", "'unsafe-inline'"],
-          styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+          styleSrc: [
+            "'self'",
+            "'unsafe-inline'",
+            "https://fonts.googleapis.com",
+          ],
           fontSrc: ["'self'", "data:", "https://fonts.gstatic.com"],
           imgSrc: ["'self'", "data:", "blob:", "https:"],
           connectSrc: ["'self'"],
@@ -186,11 +228,21 @@ function createApp(): express.Express {
         callback(null, true);
         return;
       }
-      callback(Object.assign(new Error("Origin not allowed by CORS"), { status: 403, code: "CORS_NOT_ALLOWED" }));
+      callback(
+        Object.assign(new Error("Origin not allowed by CORS"), {
+          status: 403,
+          code: "CORS_NOT_ALLOWED",
+        }),
+      );
     },
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
-    allowedHeaders: ["Content-Type", "Authorization", "X-CSRF-Token", "X-Requested-With"],
+    allowedHeaders: [
+      "Content-Type",
+      "Authorization",
+      "X-CSRF-Token",
+      "X-Requested-With",
+    ],
     maxAge: 600,
   });
   app.use((req, res, next) => {
@@ -199,8 +251,13 @@ function createApp(): express.Express {
     const origin = req.headers.origin;
     if (origin) {
       try {
-        if (new URL(origin).host.toLowerCase() === req.get("host")?.toLowerCase()) return next();
-      } catch { /* malformed origins go through the rejecting CORS policy */ }
+        if (
+          new URL(origin).host.toLowerCase() === req.get("host")?.toLowerCase()
+        )
+          return next();
+      } catch {
+        /* malformed origins go through the rejecting CORS policy */
+      }
     }
     return crossOrigin(req, res, next);
   });
@@ -216,6 +273,21 @@ function createApp(): express.Express {
   // `GET /api/health` for every browser that had ever logged in, which is exactly
   // the dependency the probe exists to report on. Skipping it for probes also
   // removes the last way the health check could stall on the session store.
+  //
+  // Non-probe requests await the shared, memoized schema bootstrap FIRST. On a
+  // fresh deployment the `sessions` table does not exist until the first API
+  // bootstrap runs — and web page requests run no API logic before the session
+  // store, so the store read failed open ("no session"), the CSRF layer then saw
+  // a session without a token, and every form post was rejected. Awaiting the
+  // bootstrap removes the race entirely; on warm invocations it is one memoized
+  // promise. A failed bootstrap still renders pages (their data sources have
+  // fallbacks) and API routes keep their honest 503 gate below.
+  const ensureReadyFirst = (next: express.NextFunction) => {
+    ensureDbReady().then(
+      () => next(),
+      () => next(), // pages degrade to fallback branding; mutating requests fail with the DB-503 envelope at the API boundary
+    );
+  };
   const sessionMiddleware = session({
     name: "connect.sid",
     store: new TursoSessionStore(),
@@ -236,7 +308,7 @@ function createApp(): express.Express {
       next();
       return;
     }
-    sessionMiddleware(req, res, next);
+    ensureReadyFirst(() => sessionMiddleware(req, res, next));
   });
   app.use(csrfProtection);
 
@@ -252,7 +324,11 @@ function createApp(): express.Express {
   // causing every `/api/health` request to pay the DB init cost and to fail
   // with 503 when Turso is down — exactly the opposite of what the probe is
   // for. Accept both forms.
-  const dbReady = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const dbReady = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
     if (isProbePath(req)) {
       next();
       return;
@@ -260,8 +336,13 @@ function createApp(): express.Express {
     ensureDbReady()
       .then(() => next())
       .catch((err) => {
-        const shaped = err as { status?: number; code?: string; message?: string };
-        const alreadyShaped = shaped?.status === 503 && shaped?.code === "DB_NOT_READY";
+        const shaped = err as {
+          status?: number;
+          code?: string;
+          message?: string;
+        };
+        const alreadyShaped =
+          shaped?.status === 503 && shaped?.code === "DB_NOT_READY";
         // The breaker's rejection is already the right 503; log it once, quietly.
         // Anything else is an unexpected failure and deserves the full report.
         if (alreadyShaped) {
@@ -276,7 +357,12 @@ function createApp(): express.Express {
           error: err instanceof Error ? err.message : String(err),
           path: req.originalUrl.split("?")[0],
         });
-        next(Object.assign(new Error("Database is not ready"), { status: 503, code: "DB_NOT_READY" }));
+        next(
+          Object.assign(new Error("Database is not ready"), {
+            status: 503,
+            code: "DB_NOT_READY",
+          }),
+        );
       });
   };
   // Language resolution runs after body parsing (it reads a `lang` field) and
@@ -284,7 +370,11 @@ function createApp(): express.Express {
   // skipped for the health probe: a probe carries neither `?lang=` nor a
   // supported Accept-Language, so it would trigger a settings read and make the
   // "is the database up?" endpoint depend on the database.
-  const withLanguage = (req: express.Request, res: express.Response, next: express.NextFunction) => {
+  const withLanguage = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
     if (isProbePath(req)) {
       next();
       return;

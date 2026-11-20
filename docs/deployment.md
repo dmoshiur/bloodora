@@ -85,6 +85,8 @@ Logs should identify request IDs, dependency categories, bootstrap state, budget
 
 If Vercel returns HTML `FUNCTION_INVOCATION_TIMEOUT` or `FUNCTION_INVOCATION_FAILED`, inspect platform logs and configuration first; those responses occur outside the normal application JSON envelope.
 
+> Incident remediation for the deployed service: see [render-deployment.md](render-deployment.md) for the root causes (session bootstrap order, session/token failure semantics, missing production configuration now reported by `/health`) and the required Render/Vercel environment checklist.
+
 ## External validation still required
 
 Local tests do not prove real paid/provider behavior. Before enabling production delivery, perform separately authorized low-volume checks for Blob write/read/delete, Resend and, when applicable, legacy SMTP pre-configuration fallback, each selected SMS adapter, sender IDs, delivery receipts, costs, and failure handling. Payment ledger checks require admin reconciliation; no hosted gateway webhook exists.
