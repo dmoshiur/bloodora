@@ -42,6 +42,7 @@ export function normalizeOrigin(value: string): string {
   return parsed.origin.toLowerCase();
 }
 
+const dbMissingBoot: string[] = [];
 export interface Config {
   nodeEnv: string;
   isProd: boolean;
@@ -126,6 +127,14 @@ export interface Config {
 
   jwtSecret: string;
   jwtTtlDays: number;
+  /**
+   * Production variables absent at boot whose absence NOTHING can compensate
+   * for (session signing, origin validation). Liveness reports 503-degraded
+   * until they exist. Database misconfiguration is deliberately NOT part of
+   * this list: it already surfaces as the documented 503 DB_* envelopes and
+   * the /api/health degraded state, and liveness must stay DB-free.
+   */
+  productionConfigMissing: string[];
   cookieDomain: string;
   cookieSecure: boolean;
 
@@ -187,7 +196,8 @@ export interface Config {
 function build(): Config {
   const nodeEnv = env.NODE_ENV || "development";
   const isProd = nodeEnv === "production";
-  const rawFrontend = env.FRONTEND_URL || (isProd ? "" : "http://localhost:3000");
+  const rawFrontend =
+    env.FRONTEND_URL || (isProd ? "" : "http://localhost:3000");
   let frontendOrigins: string[] = [];
   if (rawFrontend.trim()) {
     const parts = rawFrontend
@@ -202,7 +212,10 @@ function build(): Config {
         // Keep the server alive even if one origin is malformed — log and skip
         // the bad entry instead of crashing the whole function (which would
         // surface as FUNCTION_INVOCATION_FAILED / timeout on Vercel).
-        logger.warn("env: skipping invalid FRONTEND_URL entry", { entry: p, error: String(err) });
+        logger.warn("env: skipping invalid FRONTEND_URL entry", {
+          entry: p,
+          error: String(err),
+        });
       }
     }
     frontendOrigins = parsed;
@@ -222,7 +235,10 @@ function build(): Config {
   // a deadline: Vercel killed the function and answered with an HTML
   // `504 FUNCTION_INVOCATION_TIMEOUT` instead of our JSON envelope.
   // ---------------------------------------------------------------------------
-  const functionMaxDurationMs = Math.max(1_000, int(env.FUNCTION_MAX_DURATION_MS, 10_000));
+  const functionMaxDurationMs = Math.max(
+    1_000,
+    int(env.FUNCTION_MAX_DURATION_MS, 10_000),
+  );
   const responseReserveMs = Math.min(
     Math.max(0, int(env.RESPONSE_RESERVE_MS, 500)),
     Math.floor(functionMaxDurationMs / 2),
@@ -250,11 +266,16 @@ function build(): Config {
 
   /** Any deadline that outlives the invocation is clamped into it (and logged). */
   const clamped: string[] = [];
-  const deadline = (name: string, requested: number, ceiling = budgetMs): number => {
+  const deadline = (
+    name: string,
+    requested: number,
+    ceiling = budgetMs,
+  ): number => {
     // 0 / negative means "disabled" by this codebase's convention — respect it.
     // (Returning 0 rather than `Math.max(0, requested)` keeps a NaN from ever
     // reaching a setTimeout, where Node would coerce it to 1 and fire at once.)
-    if (!Number.isFinite(requested) || requested <= 0) return Number.isFinite(requested) ? Math.max(0, requested) : 0;
+    if (!Number.isFinite(requested) || requested <= 0)
+      return Number.isFinite(requested) ? Math.max(0, requested) : 0;
     if (requested <= ceiling) return requested;
     clamped.push(`${name}: ${requested}ms -> ${ceiling}ms`);
     return ceiling;
@@ -262,15 +283,22 @@ function build(): Config {
 
   const rawDbTimeoutMs = Math.max(0, int(env.DB_TIMEOUT_MS, 5_000));
   const rawDbBatchTimeoutMs = Math.max(0, int(env.DB_BATCH_TIMEOUT_MS, 9_000));
-  const rawDbBootstrapTimeoutMs = Math.max(0, int(env.DB_BOOTSTRAP_TIMEOUT_MS, 8_000));
-  const rawHealthDbTimeoutMs = Math.max(0, int(env.HEALTH_DB_TIMEOUT_MS, 1_500));
+  const rawDbBootstrapTimeoutMs = Math.max(
+    0,
+    int(env.DB_BOOTSTRAP_TIMEOUT_MS, 8_000),
+  );
+  const rawHealthDbTimeoutMs = Math.max(
+    0,
+    int(env.HEALTH_DB_TIMEOUT_MS, 1_500),
+  );
   const rawSessionTimeoutMs = Math.max(0, int(env.SESSION_TIMEOUT_MS, 3_000));
   // Unset means "answer by the caller-safe point": the outer failsafe should fire
   // as late as is still safe FOR THE WHOLE CHAIN, never earlier than an operator
   // asked for and never later than the caller can tolerate.
-  const rawRequestTimeoutMs = env.REQUEST_TIMEOUT_MS === undefined || env.REQUEST_TIMEOUT_MS === ""
-    ? answerByMs
-    : Math.max(0, int(env.REQUEST_TIMEOUT_MS, answerByMs));
+  const rawRequestTimeoutMs =
+    env.REQUEST_TIMEOUT_MS === undefined || env.REQUEST_TIMEOUT_MS === ""
+      ? answerByMs
+      : Math.max(0, int(env.REQUEST_TIMEOUT_MS, answerByMs));
   // A Groq answer normally lands in 1–4 s. The old 25 s default was clamped to the
   // whole invocation, which meant one slow model call could consume every
   // millisecond the CALLER also needed — so the default is now sized for the work,
@@ -286,6 +314,7 @@ function build(): Config {
     isProd,
     port: int(env.PORT, 4000),
     logLevel: env.LOG_LEVEL || "info",
+    productionConfigMissing: [],
     tursoDatabaseUrl: env.TURSO_DATABASE_URL || "",
     tursoAuthToken: env.TURSO_AUTH_TOKEN || "",
     functionMaxDurationMs,
@@ -304,14 +333,21 @@ function build(): Config {
     dbBatchTimeoutMs: deadline("DB_BATCH_TIMEOUT_MS", rawDbBatchTimeoutMs),
     // Must stay under the platform's function maxDuration, otherwise the runtime
     // kills the invocation (FUNCTION_INVOCATION_FAILED) instead of us answering.
-    dbBootstrapTimeoutMs: deadline("DB_BOOTSTRAP_TIMEOUT_MS", rawDbBootstrapTimeoutMs),
+    dbBootstrapTimeoutMs: deadline(
+      "DB_BOOTSTRAP_TIMEOUT_MS",
+      rawDbBootstrapTimeoutMs,
+    ),
     healthDbTimeoutMs: deadline("HEALTH_DB_TIMEOUT_MS", rawHealthDbTimeoutMs),
     sessionTimeoutMs: deadline("SESSION_TIMEOUT_MS", rawSessionTimeoutMs),
     // The outer failsafe. It MUST fire before the platform does, otherwise the
     // client gets Vercel's HTML 504 instead of our JSON one and can never tell a
     // slow backend from a dead one — and it must fire early enough that a caller
     // running under the SAME platform limit can still answer the browser.
-    requestTimeoutMs: deadline("REQUEST_TIMEOUT_MS", rawRequestTimeoutMs, answerByMs),
+    requestTimeoutMs: deadline(
+      "REQUEST_TIMEOUT_MS",
+      rawRequestTimeoutMs,
+      answerByMs,
+    ),
     // TOTAL budget for one AI interaction including retries, not per attempt.
     // The retry loop in ai.service.ts spends down against this. Clamped to
     // `answerByMs` because the AI answer has to travel back through the frontend
@@ -322,7 +358,11 @@ function build(): Config {
     // for one send — and `flush()` sends up to 50 of them in a loop. Dividing the
     // budget by three keeps the phases inside it; smtp.service.ts additionally
     // bounds each send as a whole.
-    smtpTimeoutMs: deadline("SMTP_TIMEOUT_MS", rawSmtpTimeoutMs, Math.floor(budgetMs / 3)),
+    smtpTimeoutMs: deadline(
+      "SMTP_TIMEOUT_MS",
+      rawSmtpTimeoutMs,
+      Math.floor(budgetMs / 3),
+    ),
     // An SSE stream holds its invocation open for its whole lifetime, so it has
     // to end itself before the budget runs out — and before the proxying frontend
     // function (same platform limit) is killed mid-stream, which the browser sees
@@ -347,7 +387,11 @@ function build(): Config {
     // receive our JSON upload error instead of an opaque platform response.
     maxUploadMb: Math.min(4, Math.max(1, int(env.MAX_UPLOAD_MB, 4))),
     blobReadWriteToken: env.BLOB_READ_WRITE_TOKEN || "",
-    uploadTimeoutMs: deadline("UPLOAD_TIMEOUT_MS", rawUploadTimeoutMs, answerByMs),
+    uploadTimeoutMs: deadline(
+      "UPLOAD_TIMEOUT_MS",
+      rawUploadTimeoutMs,
+      answerByMs,
+    ),
     resend: {
       apiKey: env.RESEND_API_KEY || "",
       fromName: env.RESEND_FROM_NAME || "BloodFerry",
@@ -377,16 +421,22 @@ function build(): Config {
   };
 
   if (isProd) {
+    // Liveness-visible absences: no amount of retrying or DB workaround helps.
     const missing: string[] = [];
-    if (!config.tursoDatabaseUrl) missing.push("TURSO_DATABASE_URL");
-    if (!config.tursoAuthToken) missing.push("TURSO_AUTH_TOKEN");
-    if (!config.jwtSecret) missing.push("JWT_SECRET");
-    // FRONTEND_URL is a comma-separated list, so checking the normalized list
-    // against the raw env string incorrectly rejected every multi-origin setup
-    // (and values with a harmless trailing slash).
+    if (!process.env.JWT_SECRET?.trim()) missing.push("JWT_SECRET");
     if (!env.FRONTEND_URL?.trim() || config.frontendOrigins.length === 0) {
       missing.push("FRONTEND_URL");
     }
+    // Database misconfiguration cannot be papered over either, but it has its
+    // own dedicated, tested surface (503 DB_NOT_CONFIGURED / /api/health), so it
+    // is reported here loudly rather than through the liveness probe.
+    const dbMissing = dbMissingBoot;
+    if (!config.tursoDatabaseUrl) dbMissing.push("TURSO_DATABASE_URL");
+    else if (
+      /^https?:|^libsql:/i.test(config.tursoDatabaseUrl) &&
+      !config.tursoAuthToken
+    )
+      dbMissing.push("TURSO_AUTH_TOKEN");
     if (missing.length > 0) {
       // DO NOT throw in production: throwing at module load makes Vercel's
       // function crash before it can export a handler, surfacing as
@@ -395,8 +445,9 @@ function build(): Config {
       // instead of a JSON error. Keep the process alive so liveness probes
       // (GET /) still answer 200 and API routes can return 503 with a
       // readable envelope. The missing vars are still logged loudly.
+      config.productionConfigMissing = missing;
       logger.error(
-        `Production environment is missing required variables: ${missing.join(", ")} — server will start in degraded mode (liveness answers, API routes return 503)`,
+        `Production environment is missing variables no code path can compensate for: ${missing.join(", ")} — server starts degraded, /health reports 503 until they are set`,
       );
       // Generate an ephemeral JWT secret so the server can still sign cookies
       // / tokens for the current instance instead of crashing on every auth
@@ -409,6 +460,11 @@ function build(): Config {
         );
       }
     }
+  }
+  if (dbMissingBoot.length > 0) {
+    logger.error(
+      `Production database is misconfigured: ${dbMissingBoot.join(", ")} — API requests will answer 503 (DB_NOT_CONFIGURED / DB_AUTH_FAILED) until fixed; see docs/render-deployment.md`,
+    );
   }
   if (clamped.length > 0) {
     // Loud, once, at boot: an operator who set AI_TIMEOUT_MS=25000 needs to see
@@ -442,7 +498,9 @@ function build(): Config {
     // Use an ephemeral secret so `npm run dev` works out of the box; sessions
     // won't survive a restart (as expected in dev).
     config.jwtSecret = crypto.randomBytes(32).toString("hex");
-    logger.warn("auth: JWT_SECRET not set — using an ephemeral dev secret (tokens die on restart)");
+    logger.warn(
+      "auth: JWT_SECRET not set — using an ephemeral dev secret (tokens die on restart)",
+    );
   }
 
   return config;

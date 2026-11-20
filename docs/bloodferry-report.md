@@ -299,6 +299,12 @@ See [admin-delivery-profiles.md](admin-delivery-profiles.md) for setup, permissi
 
 Evidence: `/tmp/bloodferry-profiles-final-build.log`, `/tmp/bloodferry-profiles-final-tests.log`, `/tmp/bloodferry-profiles-browser.log`. Remaining gates include live Resend verified-domain delivery, actual SMS acceptance/receipt, live Groq credentials/model response, deployment rehearsal and the previously documented unfinished institutional/UI/fan-out features. Profile deletion/deactivation and online encryption-key rotation are not implemented; read the operational caveats before production activation.
 
+## CSRF incident remediation (2026-11-20, branch arena/9f3afcca-bloodora)
+
+A global `CSRF_TOKEN_INVALID` failure on deployed forms was traced to compounding causes: (1) the session store read ran before the schema bootstrap, so fresh/degraded instances silently minted a session without a token on every request; (2) an unloadable session cookie was reported identically to a tampered token; (3) production booted with missing/ephemeral signing configuration and an always-`ok` liveness probe. Fixes: schema bootstrap awaited before the session middleware for non-probe requests; a distinct 403 `CSRF_SESSION_MISSING` (CSRF fully enabled) for unloadable sessions; `/health` now reports `503 degraded` with the missing variable names (never values) when required production variables are absent; new production-mode regression suite (`csrf-session.test.mjs`, `prod-degraded.test.mjs`). See [render-deployment.md](render-deployment.md) for the full root-cause analysis, the Render blueprint (`render.yaml`) and required hosted configuration.
+
+Hosted verification status: Vercel project metadata (names/targets only) confirmed the same defect class — all variables scoped to `preview`, including an empty preview `JWT_SECRET` and an ephemeral `file:/tmp` preview database — and is documented; no values or dashboards were changed. Render is not connected in this environment and direct access to the deployed host is blocked; the live login acceptance flow must be performed by an operator after the Render environment checklist is applied. Local isolated production-mode tests pass; this is not proof of the hosted deployment.
+
 ## Pre-merge current-tree verification (2026-11-20)
 
 A final Chromium run on the current tree passed all **12 browser tests** after the Groq/admin adjustments and documentation alignment. No live provider, deployment, DNS or secret changes were performed as part of this verification.
